@@ -1,35 +1,10 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
+import { AUTH_ROLES } from "../utils/constants";
 
 const HomePage = () => {
   const navigate = useNavigate();
 
-  const roles = [
-    {
-      id: "admin",
-      title: "Administrator",
-      description:
-        "System oversight, student management, audit logs, alert monitoring, and model management",
-      icon: "fas fa-user-tie",
-      path: "/auth",
-    },
-    {
-      id: "staff",
-      title: "Staff",
-      description:
-        "Monitor student performance, generate reports, and coordinate interventions",
-      icon: "fas fa-clipboard-user",
-      path: "/auth",
-    },
-    {
-      id: "student",
-      title: "Student",
-      description:
-        "View personal success prediction, track progress, and receive academic guidance",
-      icon: "fas fa-graduation-cap",
-      path: "/auth",
-    },
-  ];
+  const roles = Object.values(AUTH_ROLES);
 
   const features = [
     {

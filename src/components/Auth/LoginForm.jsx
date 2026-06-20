@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
-const LoginForm = ({ onSwitch }) => {
+const LoginForm = ({ roleConfig, onSwitch }) => {
   const { login, error, setError } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -12,17 +13,15 @@ const LoginForm = ({ onSwitch }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (login(email, password)) {
-      navigate("/dashboard");
+    if (login(email, password, roleConfig.id)) {
+      navigate(getDashboardPath(roleConfig.id));
     }
   };
 
   return (
     <div className={styles.formView}>
-      <div className={styles.fvHeading}>Welcome back</div>
-      <div className={styles.fvSub}>
-        Login to your Architecture Titans account
-      </div>
+      <div className={styles.fvHeading}>{roleConfig.loginTitle}</div>
+      <div className={styles.fvSub}>{roleConfig.loginSubtitle}</div>
 
       {error && (
         <div className={styles.errorBox}>
@@ -38,13 +37,13 @@ const LoginForm = ({ onSwitch }) => {
       <form onSubmit={handleSubmit}>
         <div className={styles.fGroup}>
           <label className={styles.fLabel} htmlFor="email">
-            Email address
+            {roleConfig.emailLabel}
           </label>
           <input
             id="email"
             type="email"
             className={styles.fInput}
-            placeholder="you@wmsu.edu.ph"
+            placeholder={roleConfig.emailPlaceholder}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -100,7 +99,7 @@ const LoginForm = ({ onSwitch }) => {
         </div>
 
         <button type="submit" className={styles.btnGold}>
-          Login
+          Login as {roleConfig.shortTitle}
         </button>
       </form>
 

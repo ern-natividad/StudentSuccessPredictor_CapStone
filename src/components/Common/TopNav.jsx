@@ -1,4 +1,3 @@
-import React from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useDashboard } from "../../hooks/useDashboard";
 import { generateInitials } from "../../utils/authUtils";
@@ -8,6 +7,12 @@ const TopNav = ({ onLogout }) => {
   const { user } = useAuth();
   const { toggleNotificationsPanel, alerts } = useDashboard();
   const initials = generateInitials(user.name);
+  const roleLabel =
+    user.role === "admin"
+      ? "System Administrator"
+      : user.role === "staff"
+        ? "Academic Staff"
+        : "Architecture Student - 3rd Year";
 
   return (
     <nav className={styles.topNav}>
@@ -60,9 +65,7 @@ const TopNav = ({ onLogout }) => {
         </button>
         <div>
           <div className={styles.navUserName}>{user.name}</div>
-          <div className={styles.navUserRole}>
-            Architecture {user.role} · 3rd Year
-          </div>
+          <div className={styles.navUserRole}>{roleLabel}</div>
         </div>
         <div className={styles.navAvatar}>{initials}</div>
         <button className={styles.navLogout} onClick={onLogout}>

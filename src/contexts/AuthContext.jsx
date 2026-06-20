@@ -1,4 +1,5 @@
-import React, { createContext, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { AuthContext } from "./AuthContextBase";
 import {
   validateCredentials,
   generateNameFromEmail,
@@ -8,20 +9,18 @@ import {
   getRole,
 } from "../utils/authUtils";
 
-export const AuthContext = createContext();
-
 export const AuthProvider = ({ children }) => {
   const session = getUserSession();
   const [user, setUser] = useState({
     name: session.userName,
     role: session.userRole,
     email: "",
-    isAuthenticated: !!session.userName,
+    isAuthenticated: Boolean(session.userName),
   });
 
   const [error, setError] = useState("");
 
-  const login = useCallback((email, password) => {
+  const login = useCallback((email, password, selectedRole = "student") => {
     setError("");
 
     if (!email || !password) {
@@ -35,6 +34,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     const role = getRole(email);
+
+    if (role !== selectedRole) {
+      setError(`This account is not registered as ${selectedRole}.`);
+      return false;
+    }
+
     const name = generateNameFromEmail(email);
 
     storeUserSession(name, role);
@@ -49,28 +54,41 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signup = useCallback(
-    (
-      firstName,
-      lastName,
-      email,
-      studentId,
-      year,
-      password,
-      confirmPassword,
-      termsAccepted,
-    ) => {
+    (formData, selectedRole = "student") => {
       setError("");
+
+      const {
+        firstName,
+        lastName,
+        email,
+        studentId,
+        employeeId,
+        year,
+        department,
+        accessCode,
+        password,
+        confirmPassword,
+        termsAccepted,
+      } = formData;
+      const roleId = selectedRole || "student";
+      const roleSpecificId = roleId === "student" ? studentId : employeeId;
+      const roleSpecificGroup = roleId === "student" ? year : department;
 
       if (
         !firstName ||
         !lastName ||
         !email ||
-        !studentId ||
-        !year ||
+        !roleSpecificId ||
+        !roleSpecificGroup ||
         !password ||
         !confirmPassword
       ) {
         setError("Please complete all fields.");
+        return false;
+      }
+
+      if (roleId !== "student" && !accessCode) {
+        setError("Please enter the role access code.");
         return false;
       }
 
@@ -85,12 +103,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const name = `${firstName} ${lastName}`;
-      const role = getRole(email);
 
-      storeUserSession(name, role);
+      storeUserSession(name, roleId);
       setUser({
         name,
-        role,
+        role: roleId,
         email: email.toLowerCase(),
         isAuthenticated: true,
       });

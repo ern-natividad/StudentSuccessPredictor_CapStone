@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
-const SignupForm = ({ onSwitch }) => {
+const SignupForm = ({ roleConfig, onSwitch }) => {
   const { signup, error, setError } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -11,7 +12,10 @@ const SignupForm = ({ onSwitch }) => {
     lastName: "",
     email: "",
     studentId: "",
-    year: "1st",
+    employeeId: "",
+    year: roleConfig.id === "student" ? roleConfig.groupOptions[0] : "",
+    department: roleConfig.id !== "student" ? roleConfig.groupOptions[0] : "",
+    accessCode: "",
     password: "",
     confirmPassword: "",
     termsAccepted: false,
@@ -43,37 +47,16 @@ const SignupForm = ({ onSwitch }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const {
-      firstName,
-      lastName,
-      email,
-      studentId,
-      year,
-      password,
-      confirmPassword,
-      termsAccepted,
-    } = formData;
 
-    if (
-      signup(
-        firstName,
-        lastName,
-        email,
-        studentId,
-        year,
-        password,
-        confirmPassword,
-        termsAccepted,
-      )
-    ) {
-      navigate("/dashboard");
+    if (signup(formData, roleConfig.id)) {
+      navigate(getDashboardPath(roleConfig.id));
     }
   };
 
   return (
     <div className={styles.formView}>
-      <h2 className={styles.formHeading}>Create Account</h2>
-      <p className={styles.formSubtitle}>Join the student success predictor</p>
+      <h2 className={styles.formHeading}>{roleConfig.signupTitle}</h2>
+      <p className={styles.formSubtitle}>{roleConfig.signupSubtitle}</p>
 
       {error && (
         <div className={styles.errorBox}>
@@ -110,44 +93,60 @@ const SignupForm = ({ onSwitch }) => {
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Email</label>
+            <label className={styles.formLabel}>{roleConfig.emailLabel}</label>
             <input
               type="email"
               name="email"
               className={styles.formInput}
-              placeholder="student@wmsu.edu.ph"
+              placeholder={roleConfig.emailPlaceholder}
               value={formData.email}
               onChange={handleInputChange}
             />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Student ID</label>
+            <label className={styles.formLabel}>{roleConfig.idLabel}</label>
             <input
               type="text"
-              name="studentId"
+              name={roleConfig.idName}
               className={styles.formInput}
-              placeholder="202301-01-001"
-              value={formData.studentId}
+              placeholder={roleConfig.idPlaceholder}
+              value={formData[roleConfig.idName]}
               onChange={handleInputChange}
             />
           </div>
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Year Level</label>
+          <label className={styles.formLabel}>{roleConfig.groupLabel}</label>
           <select
-            name="year"
+            name={roleConfig.groupName}
             className={styles.formSelect}
-            value={formData.year}
+            value={formData[roleConfig.groupName]}
             onChange={handleInputChange}
           >
-            <option value="1st">1st Year</option>
-            <option value="2nd">2nd Year</option>
-            <option value="3rd">3rd Year</option>
-            <option value="4th">4th Year</option>
-            <option value="5th">5th Year</option>
+            {roleConfig.groupOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
           </select>
         </div>
+
+        {roleConfig.id !== "student" && (
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              {roleConfig.accessCodeLabel}
+            </label>
+            <input
+              type="password"
+              name="accessCode"
+              className={styles.formInput}
+              placeholder={roleConfig.accessCodePlaceholder}
+              value={formData.accessCode}
+              onChange={handleInputChange}
+            />
+          </div>
+        )}
 
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Password</label>
@@ -238,7 +237,7 @@ const SignupForm = ({ onSwitch }) => {
         </div>
 
         <button type="submit" className={styles.btnGold}>
-          Create Account
+          Create {roleConfig.shortTitle} Account
         </button>
       </form>
 

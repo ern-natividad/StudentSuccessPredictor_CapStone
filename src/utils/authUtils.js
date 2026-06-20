@@ -1,10 +1,24 @@
-import { ROLE_MAP, VALID_CREDS } from "./constants";
+import { AUTH_ROLES, ROLE_DASHBOARD_PATHS, ROLE_MAP, VALID_CREDS } from "./constants";
 
 /**
  * Get the role for a given email
  */
 export const getRole = (email) => {
   return ROLE_MAP[email.toLowerCase()] || "student";
+};
+
+/**
+ * Get supported role content for auth screens
+ */
+export const getAuthRole = (role) => {
+  return AUTH_ROLES[role] || AUTH_ROLES.student;
+};
+
+/**
+ * Get the landing page for a role after authentication
+ */
+export const getDashboardPath = (role) => {
+  return ROLE_DASHBOARD_PATHS[role] || ROLE_DASHBOARD_PATHS.student;
 };
 
 /**
@@ -59,7 +73,7 @@ export const storeUserSession = (name, role) => {
  */
 export const getUserSession = () => {
   return {
-    userName: sessionStorage.getItem("userName") || "Juan Dela Cruz",
+    userName: sessionStorage.getItem("userName") || "",
     userRole: sessionStorage.getItem("userRole") || "student",
   };
 };

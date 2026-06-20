@@ -1,7 +1,89 @@
 // Authentication credentials and role mapping
+export const AUTH_ROLES = {
+  admin: {
+    id: "admin",
+    title: "Administrator",
+    shortTitle: "Admin",
+    description:
+      "System oversight, student management, audit logs, alert monitoring, and model management",
+    icon: "fas fa-user-tie",
+    path: "/auth/admin",
+    loginTitle: "Administrator Login",
+    loginSubtitle: "Access system oversight, audit logs, and model tools",
+    signupTitle: "Create Administrator Account",
+    signupSubtitle: "Register an account for system-level access",
+    emailLabel: "Administrator Email",
+    emailPlaceholder: "admin@wmsu.edu.ph",
+    idLabel: "Administrator ID",
+    idName: "employeeId",
+    idPlaceholder: "ADM-2026-001",
+    groupLabel: "Administrative Office",
+    groupName: "department",
+    groupOptions: ["System Office", "College Dean", "Registrar", "Program Chair"],
+    accessCodeLabel: "Admin Access Code",
+    accessCodePlaceholder: "Enter admin access code",
+  },
+  staff: {
+    id: "staff",
+    title: "Staff",
+    shortTitle: "Staff",
+    description:
+      "Monitor student performance, generate reports, and coordinate interventions",
+    icon: "fas fa-clipboard-user",
+    path: "/auth/staff",
+    loginTitle: "Staff Login",
+    loginSubtitle: "Access monitoring, reports, and intervention tools",
+    signupTitle: "Create Staff Account",
+    signupSubtitle: "Register an account for academic support access",
+    emailLabel: "Staff Email",
+    emailPlaceholder: "staff@wmsu.edu.ph",
+    idLabel: "Staff ID",
+    idName: "employeeId",
+    idPlaceholder: "STF-2026-001",
+    groupLabel: "Assigned Unit",
+    groupName: "department",
+    groupOptions: [
+      "Architecture Department",
+      "Guidance Office",
+      "Student Affairs",
+      "Academic Advising",
+    ],
+    accessCodeLabel: "Staff Access Code",
+    accessCodePlaceholder: "Enter staff access code",
+  },
+  student: {
+    id: "student",
+    title: "Student",
+    shortTitle: "Student",
+    description:
+      "View personal success prediction, track progress, and receive academic guidance",
+    icon: "fas fa-graduation-cap",
+    path: "/auth/student",
+    loginTitle: "Student Login",
+    loginSubtitle: "Access your prediction, progress, and academic guidance",
+    signupTitle: "Create Student Account",
+    signupSubtitle: "Join the student success predictor",
+    emailLabel: "Student Email",
+    emailPlaceholder: "student@wmsu.edu.ph",
+    idLabel: "Student ID",
+    idName: "studentId",
+    idPlaceholder: "202301-01-001",
+    groupLabel: "Year Level",
+    groupName: "year",
+    groupOptions: ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"],
+  },
+};
+
+export const ROLE_DASHBOARD_PATHS = {
+  admin: "/admin",
+  staff: "/admin",
+  student: "/dashboard",
+};
+
 export const ROLE_MAP = {
   "admin@wmsu.edu.ph": "admin",
   "staff@wmsu.edu.ph": "staff",
+  "student@wmsu.edu.ph": "student",
   admin: "admin",
   staff: "staff",
 };
@@ -11,6 +93,7 @@ export const VALID_CREDS = {
   staff: "staff123",
   "admin@wmsu.edu.ph": "admin123",
   "staff@wmsu.edu.ph": "staff123",
+  "student@wmsu.edu.ph": "student123",
   student: "student123",
 };
 
