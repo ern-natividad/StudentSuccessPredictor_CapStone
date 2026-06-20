@@ -278,3 +278,5 @@ Refer to:
 **Architecture Titans - WMSU Student Success Predictor v1.3.0**
 
 ✨ Successfully converted from Vanilla JS to React!
+
+Fix the dashboard for the Student Access and Staff Access
