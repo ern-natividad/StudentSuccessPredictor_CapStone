@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Screening Module — WMSU Student Success Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .screening-rubric { display: grid; gap: 16px; }
+    .rubric-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; padding: 16px; }
+    .criterion-row { display: grid; grid-template-columns: 150px 1fr 100px; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .star-rating { display: flex; gap: 6px; font-size: 20px; cursor: pointer; }
+    .star-rating .star { color: #ccc; cursor: pointer; transition: 0.2s; }
+    .star-rating .star.active { color: #F5C200; }
+    .star-rating .star:hover, .star-rating .star.hover { color: #F5C200; }
+  </style>
+</head>
+<body>
+
+<div id="dashboard-screen">
+  <nav class="top-nav">
+    <div class="nav-logo">
+      <span class="nav-logo-text">Screening Module</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-items">
+      <button class="nav-item active" onclick="showPage('applicants')">Applicants</button>
+      <button class="nav-item" onclick="showPage('screening')">Screening</button>
+      <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-logout" onclick="window.location.href='admin-dashboard.html'">Back to Admin</button>
+    </div>
+  </nav>
+
+  <div class="dash-body">
+    <aside class="sidebar">
+      <div class="sidebar-section-label">Screening</div>
+      <button class="sidebar-item active" onclick="showPage('applicants')">
+        <span class="si-icon"><i class="fas fa-clipboard"></i></span> Applicants
+      </button>
+      <button class="sidebar-item" onclick="showPage('screening')">
+        <span class="si-icon">✏️</span> Evaluate
+      </button>
+      <button class="sidebar-item" onclick="showPage('analytics')">
+        <span class="si-icon"><i class="fas fa-chart-bar"></i></span> Analytics
+      </button>
+      <button class="sidebar-item" onclick="showPage('rubrics')">
+        <span class="si-icon">📐</span> Rubrics
+      </button>
+    </aside>
+
+    <main class="page-content">
+
+      <!-- APPLICANTS PAGE -->
+      <div class="page-view active" id="pg-applicants">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Applicants</div>
+            <div class="page-sub">245 total · 187 evaluated · 58 pending</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-outline-sm">Import CSV</button>
+            <button class="btn-sm btn-gold-sm">Export Results</button>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="Search by name or ID..."/>
+          <select class="filter-select">
+            <option>All status</option>
+            <option>Pending</option>
+            <option>Completed</option>
+            <option>Rejected</option>
+          </select>
+          <select class="filter-select">
+            <option>All departments</option>
+            <option>CCS</option>
+            <option>COE</option>
+            <option>CAS</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Applicant ID</th>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>WMSU-CET</th>
+                  <th>HS GWA</th>
+                  <th>Status</th>
+                  <th>Readiness</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="applicants-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREENING PAGE -->
+      <div class="page-view" id="pg-screening">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Evaluate Applicant</div>
+            <div class="page-sub">Pre-admission screening evaluation</div>
+          </div>
+        </div>
+
+        <div id="screening-content" style="display:none;">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+              <div><div class="card-title">Applicant Information</div></div>
+            </div>
+            <div class="card-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+              <div>
+                <div style="font-size:12px;color:var(--sand);margin-bottom:4px;">Name</div>
+                <div id="sc-name" style="font-weight:600;"></div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--sand);margin-bottom:4px;">Applicant ID</div>
+                <div id="sc-id" style="font-family:monospace;"></div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--sand);margin-bottom:4px;">Department</div>
+                <div id="sc-dept" style="font-weight:600;"></div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--sand);margin-bottom:4px;">WMSU-CET Score</div>
+                <div id="sc-cet" style="font-weight:600;color:var(--gold);"></div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--sand);margin-bottom:4px;">HS GWA</div>
+                <div id="sc-gwa" style="font-weight:600;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Evaluation Rubric</div></div>
+            </div>
+            <div class="card-body">
+              <div class="screening-rubric" id="rubric-criteria"></div>
+              <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(0,0,0,0.1);">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div>
+                    <div style="font-size:12px;color:var(--sand);margin-bottom:8px;text-transform:uppercase;font-weight:700;">Weighted Score</div>
+                    <div style="font-size:32px;font-weight:700;color:var(--gold);" id="weighted-score">3.65</div>
+                    <div style="font-size:12px;color:var(--sand);margin-top:4px;">out of 5.0</div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;color:var(--sand);margin-bottom:8px;text-transform:uppercase;font-weight:700;">Recommendation</div>
+                    <div style="font-size:24px;font-weight:700;" id="recommendation" style="color:var(--gold);">
+                      <span style="color:var(--green);">✓ RECOMMENDED</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <textarea placeholder="Evaluator notes..." style="width:100%;margin-top:16px;padding:12px;border:1px solid rgba(0,0,0,0.1);border-radius:8px;font-family:inherit;" id="eval-notes" rows="4"></textarea>
+              <div style="margin-top:16px;display:flex;gap:8px;">
+                <button class="btn-sm btn-gold-sm" onclick="submitEvaluation()">Save Evaluation</button>
+                <button class="btn-sm btn-outline-sm" onclick="cancelEvaluation()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="no-screening" style="text-align:center;padding:60px 20px;">
+          <div style="font-size:48px;margin-bottom:16px;"><i class="fas fa-clipboard" style="color: var(--gold);"></i></div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px;">No applicant selected</div>
+          <div style="color:var(--sand);">Select an applicant from the list to begin evaluation</div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS PAGE -->
+      <div class="page-view" id="pg-analytics">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Screening Analytics</div>
+            <div class="page-sub">Evaluation statistics and insights</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Evaluation Progress</div></div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;justify-content:space-around;">
+              <div style="text-align:center;">
+                <div style="font-size:40px;font-weight:700;color:var(--green);">187</div>
+                <div style="font-size:12px;color:var(--sand);margin-top:4px;">Completed</div>
+              </div>
+              <div style="width:1px;height:80px;background:rgba(0,0,0,0.1);"></div>
+              <div style="text-align:center;">
+                <div style="font-size:40px;font-weight:700;color:var(--orange);">58</div>
+                <div style="font-size:12px;color:var(--sand);margin-top:4px;">Pending</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Readiness Distribution</div></div>
+            </div>
+            <div class="card-body">
+              <canvas id="readiness-chart" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Criteria Performance</div></div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Communication</span><span style="font-weight:600;">4.1/5.0</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                    <div style="height:100%;width:82%;background:var(--gold);"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Tech Aptitude</span><span style="font-weight:600;">4.3/5.0</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                    <div style="height:100%;width:86%;background:var(--gold);"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Problem Solving</span><span style="font-weight:600;">4.0/5.0</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                    <div style="height:100%;width:80%;background:var(--gold);"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Top Performers</div></div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead><tr><th>Name</th><th>Score</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Maria Santos</td><td><span style="font-weight:600;color:var(--green);">4.9/5.0</span></td><td><span class="risk-badge risk-low">✓ Rec.</span></td></tr>
+                  <tr><td>Juan Reyes</td><td><span style="font-weight:600;color:var(--green);">4.8/5.0</span></td><td><span class="risk-badge risk-low">✓ Rec.</span></td></tr>
+                  <tr><td>Ana Garcia</td><td><span style="font-weight:600;color:var(--orange);">4.5/5.0</span></td><td><span class="risk-badge risk-medium">? Poss.</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUBRICS PAGE -->
+      <div class="page-view" id="pg-rubrics">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Evaluation Rubrics</div>
+            <div class="page-sub">Department-specific screening criteria</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-gold-sm">+ New Rubric</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">CCS - College of Computing Studies</div></div>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;gap:12px;">
+              <div style="display:grid;grid-template-columns:200px 1fr 80px;gap:12px;padding:12px;background:#f9f9f9;border-radius:6px;">
+                <div style="font-weight:600;">Communication Skills</div>
+                <div style="color:var(--sand);">Ability to articulate ideas and collaborate</div>
+                <div style="text-align:right;font-weight:700;color:var(--gold);">20%</div>
+              </div>
+              <div style="display:grid;grid-template-columns:200px 1fr 80px;gap:12px;padding:12px;background:#f9f9f9;border-radius:6px;">
+                <div style="font-weight:600;">Technical Aptitude</div>
+                <div style="color:var(--sand);">Foundation in programming and problem-solving</div>
+                <div style="text-align:right;font-weight:700;color:var(--gold);">30%</div>
+              </div>
+              <div style="display:grid;grid-template-columns:200px 1fr 80px;gap:12px;padding:12px;background:#f9f9f9;border-radius:6px;">
+                <div style="font-weight:600;">Problem Solving</div>
+                <div style="color:var(--sand);">Logical thinking and analytical skills</div>
+                <div style="text-align:right;font-weight:700;color:var(--gold);">25%</div>
+              </div>
+              <div style="display:grid;grid-template-columns:200px 1fr 80px;gap:12px;padding:12px;background:#f9f9f9;border-radius:6px;">
+                <div style="font-weight:600;">Teamwork</div>
+                <div style="color:var(--sand);">Collaboration and interpersonal skills</div>
+                <div style="text-align:right;font-weight:700;color:var(--gold);">25%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="screening.js"></script>
+</body>
+</html>

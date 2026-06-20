@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — Architecture Titans — WMSU Student Success Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     ADMIN DASHBOARD SCREEN
+══════════════════════════════════════ -->
+<div id="dashboard-screen">
+
+  <!-- TOP NAV -->
+  <nav class="top-nav">
+    <div class="nav-logo">
+      <svg class="nav-logo-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#F5C200" opacity=".15"/>
+        <path d="M16,4 L14,14 L16,15 L18,14 Z" fill="#F5C200"/>
+        <rect x="10" y="13" width="12" height="10" rx="1" fill="#C9A200"/>
+        <rect x="8" y="22" width="16" height="3" rx="1" fill="#8B6F00"/>
+        <rect x="8" y="23" width="16" height="3" rx="1" fill="#F5C200" opacity=".3"/>
+      </svg>
+      <span class="nav-logo-text">Architecture Titans — Admin</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-right">
+      <div class="nav-bell" onclick="toggleNotif()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="nav-bell-badge">7</div>
+      </div>
+      <div>
+        <div class="nav-user-name" id="nav-uname">Admin User</div>
+        <div class="nav-user-role" id="nav-urole">System Administrator</div>
+      </div>
+      <div class="nav-avatar" id="nav-avatar">AD</div>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-head">Notifications</div>
+    <div class="notif-item"><div class="ni-title"><i class="fas fa-exclamation-triangle"></i> URGENT: 7 students at HIGH FAILURE RISK (4 Critical)</div><div class="ni-time">2 minutes ago</div></div>
+    <div class="notif-item"><div class="ni-title"><i class="fas fa-bell"></i> High GPA drop detected for 2 students this week</div><div class="ni-time">1 hour ago</div></div>
+    <div class="notif-item"><div class="ni-title"><i class="fas fa-check"></i> Intervention scheduled for Pedro Santos</div><div class="ni-time">3 hours ago</div></div>
+  </div>
+
+  <div class="dash-body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section-label">Admin</div>
+      <button class="sidebar-item active" onclick="showPage('dashboard')">
+        <span class="si-icon"><i class="fas fa-chart-bar"></i></span> Dashboard
+      </button>
+      <button class="sidebar-item" onclick="showPage('students')">
+        <span class="si-icon"><i class="fas fa-users"></i></span> All Students
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">System</div>
+      <button class="sidebar-item" onclick="showPage('auditlogs')">
+        <span class="si-icon"><i class="fas fa-clipboard"></i></span> Audit Logs
+      </button>
+      <button class="sidebar-item" onclick="showPage('alerts')">
+        <span class="si-icon"><i class="fas fa-exclamation-triangle"></i></span> Alerts
+        <span class="si-badge">7</span>
+      </button>
+      <button class="sidebar-item">
+        <span class="si-icon"><i class="fas fa-cog"></i></span> Settings
+      </button>
+      <button class="sidebar-item">
+        <span class="si-icon"><i class="fas fa-lock"></i></span> User Management
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Modules</div>
+      <button class="sidebar-item" onclick="window.location.href='screening.html'">
+        <span class="si-icon"><i class="fas fa-clipboard"></i></span> Screening
+      </button>
+      <button class="sidebar-item" onclick="window.location.href='reports.html'">
+        <span class="si-icon"><i class="fas fa-chart-bar"></i></span> Reports
+      </button>
+      <button class="sidebar-item" onclick="window.location.href='intervention-tracking.html'">
+        <span class="si-icon"><i class="fas fa-comment"></i></span> Interventions
+      </button>
+      <button class="sidebar-item" onclick="window.location.href='model-management.html'">
+        <span class="si-icon"><i class="fas fa-brain"></i></span> Model Mgmt
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Reports</div>
+      <button class="sidebar-item">
+        <span class="si-icon"><i class="fas fa-file-alt"></i></span> System Reports
+      </button>
+    </aside>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content">
+
+      <!-- ── ADMIN DASHBOARD PAGE ── -->
+      <div class="page-view active" id="pg-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Admin Dashboard</div>
+            <div class="page-sub">System Overview · Architecture Dept. · A.Y. 2025–2026</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-outline-sm">Export Report</button>
+            <button class="btn-sm btn-gold-sm">Run Predictions</button>
+          </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stat-grid">
+          <div class="stat-card gold-accent">
+            <div class="stat-label">Total Students</div>
+            <div class="stat-value">342</div>
+            <div class="stat-delta">↑ +28 this semester</div>
+          </div>
+          <div class="stat-card red-accent">
+            <div class="stat-label">At-Risk Students</div>
+            <div class="stat-value">7</div>
+            <div class="stat-delta down"><i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> 4 CRITICAL this week</div>
+          </div>
+          <div class="stat-card green-accent">
+            <div class="stat-label">Model Accuracy</div>
+            <div class="stat-value">88.4%</div>
+            <div class="stat-delta">Latest: v1.3.0</div>
+          </div>
+          <div class="stat-card orange-accent">
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value">156</div>
+            <div class="stat-delta">68 online now</div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Risk Distribution</div>
+                <div class="card-sub">All active students · Architecture</div>
+              </div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;gap:20px;">
+              <canvas id="risk-chart" width="140" height="140" style="flex-shrink:0;"></canvas>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block;"></span>Low</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">218 (63.7%)</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--gold);display:inline-block;"></span>Medium</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">65 (19.0%)</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--high-risk);display:inline-block;"></span>High</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">35 (10.2%)</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--crit-risk);display:inline-block;"></span>Critical</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">12 (3.5%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">System Activity</div>
+                <div class="card-sub">Last 30 days</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="activity-chart" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT ACTIVITY + TOP ALERTS -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent System Activity</div>
+              <button class="btn-sm btn-outline-sm" onclick="showPage('auditlogs')">View all</button>
+            </div>
+            <div id="recent-activity-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Top Critical Alerts</div>
+              <div class="card-sub">Requires immediate attention</div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead><tr><th>Student</th><th>Alert Type</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Juan Dela Cruz</td><td>GPA Risk</td><td><span class="risk-badge risk-critical">Critical</span></td></tr>
+                  <tr><td>Pedro Santos</td><td>Probation Risk</td><td><span class="risk-badge risk-critical">Critical</span></td></tr>
+                  <tr><td>Rosa Manalang</td><td>Grad Delay</td><td><span class="risk-badge risk-high">High</span></td></tr>
+                  <tr><td>Marco Tan</td><td>Low GPA Trend</td><td><span class="risk-badge risk-high">High</span></td></tr>
+                  <tr><td>Luz Ramos</td><td>Missing Prerequisites</td><td><span class="risk-badge risk-medium">Medium</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- end admin dashboard page -->
+
+
+      <!-- ── STUDENTS PAGE ── -->
+      <div class="page-view" id="pg-students">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Students</div>
+            <div class="page-sub">342 enrolled students · College of Architecture</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-outline-sm">Import CSV</button>
+            <button class="btn-sm btn-gold-sm">Add Student</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="Search by name or ID..." oninput="filterStudents(this.value)"/>
+          <select class="filter-select" onchange="filterStudents()">
+            <option value="">All risk levels</option>
+            <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+          </select>
+          <select class="filter-select">
+            <option value="">All year levels</option>
+            <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="students-table">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Year</th>
+                  <th>Current GPA</th>
+                  <th>Pred. Grad GPA</th>
+                  <th>Confidence</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- end students page -->
+
+
+      <!-- ── AUDIT LOGS PAGE ── -->
+      <div class="page-view" id="pg-auditlogs">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Audit Logs</div>
+            <div class="page-sub">System activity and user actions</div>
+          </div>
+          <div class="page-actions">
+            <input type="date" class="filter-input" style="max-width:150px;"/>
+            <button class="btn-sm btn-outline-sm">Export</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="audit-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Details</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- end audit logs page -->
+
+
+      <!-- ── ALERTS PAGE ── -->
+      <div class="page-view" id="pg-alerts">
+        <div class="page-header">
+          <div>
+            <div class="page-title">System Alerts</div>
+            <div class="page-sub"><i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> 7 at-risk students requiring intervention (4 CRITICAL, 2 HIGH)</div>
+          </div>
+          <div class="page-actions">
+            <select class="filter-select"><option>All severities</option><option>Critical</option><option>High</option><option>Medium</option></select>
+            <button class="btn-sm btn-gold-sm">Acknowledge All</button>
+          </div>
+        </div>
+        <div class="card mb-16">
+          <div class="card-header"><div class="card-title">Active Alerts</div></div>
+          <div id="alerts-list"></div>
+        </div>
+      </div><!-- end alerts page -->
+
+    </main>
+  </div><!-- end dash-body -->
+
+  <div class="page-footer">
+    <span>WMSU Architecture Titans — Admin Dashboard v1.3.0</span>
+    <span>Model accuracy: 88.4% · Last retrained: Nov 2025</span>
+  </div>
+</div><!-- end dashboard screen -->
+
+<script src="admin-dashboard.js"></script>
+</body>
+</html>
