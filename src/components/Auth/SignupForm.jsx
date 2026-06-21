@@ -241,7 +241,7 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: "14px", fontSize: "12px" }}>
+      <p className={styles.authSwitch}>
         Already have an account?{" "}
         <button type="button" className={styles.formLink} onClick={onSwitch}>
           Sign in

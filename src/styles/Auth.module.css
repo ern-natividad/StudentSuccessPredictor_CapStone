@@ -3,6 +3,8 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
   background: #0f0d08;
   position: relative;
   overflow: hidden;
@@ -42,6 +44,7 @@
   display: flex;
   width: 860px;
   min-height: 560px;
+  max-height: calc(100vh - 32px);
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow:
@@ -147,6 +150,7 @@
   display: flex;
   flex-direction: column;
   padding: 40px 40px 36px;
+  overflow-y: auto;
 }
 
 .backButton {
