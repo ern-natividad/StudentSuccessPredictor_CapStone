@@ -28,7 +28,7 @@ const HomePage = () => {
       desc: "Comprehensive academic assessment",
     },
     {
-      icon: "fas fa-file-chart-line",
+      icon: "fas fa-chart-pie",
       title: "Advanced Reports",
       desc: "Detailed performance analytics",
     },
@@ -65,7 +65,7 @@ const HomePage = () => {
               marginBottom: "12px",
             }}
           >
-            <i className="fas fa-graduation-cap"></i> WMSU Student Success
+            <i className="fas fa-graduation-cap"></i> Architecture Student Success
             Predictor
           </div>
           <div
@@ -100,6 +100,9 @@ const HomePage = () => {
                 textAlign: "center",
                 cursor: "pointer",
                 transition: "all 0.3s",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
@@ -156,6 +159,9 @@ const HomePage = () => {
                   fontWeight: "600",
                   cursor: "pointer",
                   transition: "all 0.3s",
+                  alignSelf: "center",
+                  marginTop: "auto",
+                  width: "160px",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "#C9A200";
@@ -237,7 +243,7 @@ const HomePage = () => {
             paddingBottom: "20px",
           }}
         >
-          Architecture Titans — WMSU Student Success Predictor v1.3.0
+          Architecture Titans — WMSU Student Success Predictor v1.1.0
         </div>
       </div>
     </div>
