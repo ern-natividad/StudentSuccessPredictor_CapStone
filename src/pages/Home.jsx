@@ -65,8 +65,7 @@ const HomePage = () => {
               marginBottom: "12px",
             }}
           >
-            <i className="fas fa-graduation-cap"></i> Architecture Student Success
-            Predictor
+            Architecture Student Success Predictor
           </div>
           <div
             style={{ fontSize: "20px", color: "#faf6ec", marginBottom: "8px" }}

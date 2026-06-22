@@ -7,6 +7,7 @@ import HomePage from "./pages/Home";
 import AuthPage from "./components/Auth/AuthPage";
 import DashboardLayout from "./components/Dashboard/DashboardLayout";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
+import StaffDashboard from "./components/Dashboard/StaffDashboard";
 
 function App() {
   return (
@@ -29,8 +30,16 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={["admin", "staff"]}>
+              <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <StaffDashboard />
               </ProtectedRoute>
             }
           />

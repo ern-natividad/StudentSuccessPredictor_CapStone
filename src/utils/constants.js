@@ -76,7 +76,7 @@ export const AUTH_ROLES = {
 
 export const ROLE_DASHBOARD_PATHS = {
   admin: "/admin",
-  staff: "/admin",
+  staff: "/staff",
   student: "/dashboard",
 };
 
