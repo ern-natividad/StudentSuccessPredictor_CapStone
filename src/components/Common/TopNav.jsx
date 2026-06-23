@@ -30,7 +30,7 @@ const TopNav = ({ onLogout }) => {
       <nav className={styles.topNav}>
         <div className={styles.navLogo}>
           <BrandHelmet className={styles.navLogoIcon} />
-          <span className={styles.navLogoText}>Engineering Titans</span>
+          <span className={styles.navLogoText}>Engineering Hawks</span>
         </div>
         <div className={styles.navDivider}></div>
         <div className={styles.navRight}>

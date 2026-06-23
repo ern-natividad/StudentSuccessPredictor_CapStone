@@ -42,9 +42,9 @@ const HomePage = () => {
   return (
     <div
       style={{
-        background: "linear-gradient(135deg, #1c1a13 0%, #2a2723 100%)",
+        background: "linear-gradient(135deg, #1e0c0e 0%, #2a1215 100%)",
         minHeight: "100vh",
-        color: "#faf6ec",
+        color: "#fdf4f5",
         padding: "40px 20px",
       }}
     >
@@ -61,18 +61,18 @@ const HomePage = () => {
             style={{
               fontSize: "48px",
               fontWeight: "700",
-              color: "#F5C200",
+              color: "#800020",
               marginBottom: "12px",
             }}
           >
             Engineering Student Success Predictor
           </div>
           <div
-            style={{ fontSize: "20px", color: "#faf6ec", marginBottom: "8px" }}
+            style={{ fontSize: "20px", color: "#fdf4f5", marginBottom: "8px" }}
           >
             Predictive Analytics for Student Success
           </div>
-          <div style={{ color: "#c9a9a0", fontSize: "16px" }}>
+          <div style={{ color: "#c09098", fontSize: "16px" }}>
             Data-driven insights to identify at-risk students and enable timely
             interventions
           </div>
@@ -92,8 +92,8 @@ const HomePage = () => {
               key={role.id}
               onClick={() => navigate(role.path)}
               style={{
-                background: "rgba(245, 194, 0, 0.05)",
-                border: "2px solid #F5C200",
+                background: "rgba(128, 0, 32, 0.05)",
+                border: "2px solid #800020",
                 borderRadius: "16px",
                 padding: "32px",
                 textAlign: "center",
@@ -105,13 +105,13 @@ const HomePage = () => {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.background = "rgba(245, 194, 0, 0.1)";
+                e.currentTarget.style.background = "rgba(128, 0, 32, 0.1)";
                 e.currentTarget.style.boxShadow =
-                  "0 12px 24px rgba(245, 194, 0, 0.15)";
+                  "0 12px 24px rgba(128, 0, 32, 0.15)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.background = "rgba(245, 194, 0, 0.05)";
+                e.currentTarget.style.background = "rgba(128, 0, 32, 0.05)";
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
@@ -119,7 +119,7 @@ const HomePage = () => {
                 style={{
                   fontSize: "40px",
                   marginBottom: "16px",
-                  color: "#F5C200",
+                  color: "#800020",
                 }}
               >
                 <i className={role.icon}></i>
@@ -128,7 +128,7 @@ const HomePage = () => {
                 style={{
                   fontSize: "24px",
                   fontWeight: "700",
-                  color: "#F5C200",
+                  color: "#800020",
                   marginBottom: "12px",
                 }}
               >
@@ -136,7 +136,7 @@ const HomePage = () => {
               </div>
               <div
                 style={{
-                  color: "#c9a9a0",
+                  color: "#c09098",
                   fontSize: "14px",
                   marginBottom: "24px",
                   lineHeight: "1.6",
@@ -150,8 +150,8 @@ const HomePage = () => {
                   navigate(role.path);
                 }}
                 style={{
-                  background: "#F5C200",
-                  color: "#1c1a13",
+                  background: "#800020",
+                  color: "#1e0c0e",
                   border: "none",
                   padding: "12px 28px",
                   borderRadius: "8px",
@@ -163,11 +163,11 @@ const HomePage = () => {
                   width: "160px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#C9A200";
+                  e.currentTarget.style.background = "#6b0019";
                   e.currentTarget.style.transform = "scale(1.05)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#F5C200";
+                  e.currentTarget.style.background = "#800020";
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
@@ -190,7 +190,7 @@ const HomePage = () => {
             style={{
               fontSize: "28px",
               fontWeight: "700",
-              color: "#F5C200",
+              color: "#800020",
               marginBottom: "24px",
             }}
           >
@@ -209,7 +209,7 @@ const HomePage = () => {
                   style={{
                     fontSize: "24px",
                     minWidth: "24px",
-                    color: "#F5C200",
+                    color: "#800020",
                   }}
                 >
                   <i className={feature.icon}></i>
@@ -219,12 +219,12 @@ const HomePage = () => {
                     style={{
                       fontWeight: "600",
                       marginBottom: "4px",
-                      color: "#faf6ec",
+                      color: "#fdf4f5",
                     }}
                   >
                     {feature.title}
                   </div>
-                  <div style={{ fontSize: "13px", color: "#c9a9a0" }}>
+                  <div style={{ fontSize: "13px", color: "#c09098" }}>
                     {feature.desc}
                   </div>
                 </div>
@@ -237,12 +237,12 @@ const HomePage = () => {
         <div
           style={{
             textAlign: "center",
-            color: "#c9a9a0",
+            color: "#c09098",
             fontSize: "12px",
             paddingBottom: "20px",
           }}
         >
-          Engineering Titans — WMSU Student Success Predictor v1.1.0
+          Engineering Hawks — WMSU Student Success Predictor v1.1.0
         </div>
       </div>
     </div>

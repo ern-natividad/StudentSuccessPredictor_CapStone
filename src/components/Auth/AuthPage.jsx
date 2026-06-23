@@ -6,101 +6,96 @@ import { useAuth } from "../../hooks/useAuth";
 import { getAuthRole } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
-const HelmetSVG = () => (
+/* Phoenix / Eagle logo inspired by the uploaded image — gold bird with open book & pen */
+const PhoenixSVG = () => (
   <svg
     className={styles.brandHelmet}
     viewBox="0 0 100 100"
     xmlns="http://www.w3.org/2000/svg"
   >
     <defs>
-      <radialGradient id="hg1" cx="50%" cy="40%">
-        <stop offset="0%" stopColor="#F5C200" />
-        <stop offset="100%" stopColor="#8B6F00" />
+      <radialGradient id="pg1" cx="50%" cy="40%">
+        <stop offset="0%" stopColor="#c8860a" />
+        <stop offset="100%" stopColor="#7a4f00" />
+      </radialGradient>
+      <radialGradient id="pg2" cx="50%" cy="60%">
+        <stop offset="0%" stopColor="#e0a020" />
+        <stop offset="100%" stopColor="#9a6200" />
       </radialGradient>
     </defs>
-    {/* plume */}
+
+    {/* Circular arc background (partial ring like the reference) */}
     <path
-      d="M50,8 C40,6 28,10 24,20 C30,16 40,16 50,20"
-      fill="#C9A200"
-      opacity=".6"
-    />
-    <path
-      d="M50,8 C60,6 72,10 76,20 C70,16 60,16 50,20"
-      fill="#C9A200"
-      opacity=".6"
-    />
-    <path d="M50,5 L44,22 L50,20 L56,22 Z" fill="url(#hg1)" />
-    {/* crest base */}
-    <rect x="44" y="18" width="12" height="6" rx="2" fill="#A67C00" />
-    {/* helmet bowl */}
-    <path
-      d="M20,42 C20,25 33,18 50,18 C67,18 80,25 80,42 L80,55 C80,60 76,63 72,63 L28,63 C24,63 20,60 20,55 Z"
-      fill="url(#hg1)"
-    />
-    {/* visor */}
-    <path d="M26,50 L74,50 L72,63 L28,63 Z" fill="#8B6F00" opacity=".7" />
-    {/* cheek guard left */}
-    <path
-      d="M20,42 L16,58 C16,62 20,65 24,64 L28,63 L20,55 Z"
-      fill="#C9A200"
-      opacity=".8"
-    />
-    {/* cheek guard right */}
-    <path
-      d="M80,42 L84,58 C84,62 80,65 76,64 L72,63 L80,55 Z"
-      fill="#C9A200"
-      opacity=".8"
-    />
-    {/* neck guard */}
-    <rect x="28" y="62" width="44" height="8" rx="2" fill="#8B6F00" />
-    {/* eye slot */}
-    <rect
-      x="28"
-      y="44"
-      width="44"
-      height="8"
-      rx="3"
-      fill="#1c1810"
-      opacity=".8"
-    />
-    {/* highlight */}
-    <path
-      d="M32,28 C36,24 44,22 50,22"
+      d="M15,55 A38,38 0 1,1 85,55"
       fill="none"
-      stroke="rgba(255,255,255,0.2)"
-      strokeWidth="2"
+      stroke="url(#pg2)"
+      strokeWidth="4"
       strokeLinecap="round"
+      opacity="0.7"
     />
-    {/* sword cross */}
-    <line
-      x1="14"
-      y1="70"
-      x2="86"
-      y2="70"
-      stroke="#C9A200"
-      strokeWidth="3"
-      strokeLinecap="round"
-      opacity=".5"
+
+    {/* Open book base */}
+    <path
+      d="M22,68 Q50,60 78,68 L75,78 Q50,72 25,78 Z"
+      fill="url(#pg1)"
+      opacity="0.9"
     />
-    <line
-      x1="50"
-      y1="58"
-      x2="50"
-      y2="90"
-      stroke="#C9A200"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      opacity=".5"
+    {/* Book spine line */}
+    <line x1="50" y1="61" x2="50" y2="78" stroke="#7a4f00" strokeWidth="1.5" />
+    {/* Left page */}
+    <path d="M25,78 Q37,70 50,61 L50,78 Z" fill="#c8860a" opacity="0.7" />
+    {/* Right page */}
+    <path d="M75,78 Q63,70 50,61 L50,78 Z" fill="#e0a020" opacity="0.7" />
+
+    {/* Pen / quill pointing diagonally up-right from book */}
+    <line x1="62" y1="74" x2="82" y2="50" stroke="url(#pg2)" strokeWidth="2.5" strokeLinecap="round" />
+    <polygon points="82,50 77,54 79,56" fill="#c8860a" />
+
+    {/* Body of the bird */}
+    <ellipse cx="50" cy="46" rx="12" ry="9" fill="url(#pg1)" />
+
+    {/* Left wing — swept back */}
+    <path
+      d="M50,44 C42,38 28,30 18,34 C26,36 34,42 38,48 C40,46 44,45 50,44 Z"
+      fill="url(#pg2)"
     />
-    <rect
-      x="44"
-      y="68"
-      width="12"
-      height="4"
-      rx="1"
-      fill="#A67C00"
-      opacity=".7"
+    <path
+      d="M50,44 C42,36 24,22 14,26 C22,30 34,38 38,48 Z"
+      fill="#c8860a"
+      opacity="0.6"
     />
+
+    {/* Right wing — swept back */}
+    <path
+      d="M50,44 C58,38 72,30 82,34 C74,36 66,42 62,48 C60,46 56,45 50,44 Z"
+      fill="url(#pg2)"
+    />
+    <path
+      d="M50,44 C58,36 76,22 86,26 C78,30 66,38 62,48 Z"
+      fill="#c8860a"
+      opacity="0.6"
+    />
+
+    {/* Neck */}
+    <path d="M46,40 Q50,34 54,40 L52,46 L48,46 Z" fill="url(#pg1)" />
+
+    {/* Head */}
+    <ellipse cx="50" cy="32" rx="7" ry="6" fill="url(#pg1)" />
+
+    {/* Beak */}
+    <path d="M56,31 L63,33 L56,35 Z" fill="#9a6200" />
+
+    {/* Eye */}
+    <circle cx="53" cy="30" r="1.5" fill="#1a0808" />
+    <circle cx="53.5" cy="29.5" r="0.5" fill="rgba(255,255,255,0.6)" />
+
+    {/* Crown / crest feathers */}
+    <path d="M50,26 L47,18 L50,22 L53,16 L52,22 L56,19 L53,24 Z" fill="url(#pg2)" />
+
+    {/* Tail feathers */}
+    <path d="M44,54 C38,60 30,66 26,72 C34,66 42,60 48,56 Z" fill="#c8860a" opacity="0.8" />
+    <path d="M50,55 C48,62 46,70 44,76 C48,68 52,62 52,56 Z" fill="#e0a020" opacity="0.8" />
+    <path d="M56,54 C62,60 70,66 74,72 C66,66 58,60 52,56 Z" fill="#c8860a" opacity="0.8" />
   </svg>
 );
 
@@ -121,7 +116,7 @@ const AuthPage = () => {
       <div className={styles.authCard}>
         {/* Brand Panel */}
         <div className={styles.brandPanel}>
-          <HelmetSVG />
+          <PhoenixSVG />
           <div className={styles.brandWordmark}>
             <span className={styles.dept}>Engineering</span>
             <span className={styles.system}>WMSU HAWKS</span>

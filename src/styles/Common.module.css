@@ -11,9 +11,9 @@
 }
 
 .btnSmall:hover {
-  background: rgba(245, 194, 0, 0.08);
-  border-color: var(--gold-dark);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.08);
+  border-color: #6b0019;
+  color: #800020;
 }
 
 .btnSmallOutline {
@@ -28,8 +28,8 @@
 }
 
 .btnSmallOutline:hover {
-  border-color: var(--gold-dark);
-  background: rgba(245, 194, 0, 0.04);
+  border-color: #6b0019;
+  background: rgba(128, 0, 32, 0.04);
 }
 
 .btnSmallDanger {
@@ -57,8 +57,8 @@
 }
 
 .tableHead {
-  background: rgba(245, 194, 0, 0.04);
-  border-bottom: 2px solid rgba(245, 194, 0, 0.15);
+  background: rgba(128, 0, 32, 0.04);
+  border-bottom: 2px solid rgba(128, 0, 32, 0.15);
 }
 
 .tableHead th {
@@ -78,7 +78,7 @@
 }
 
 .tableRow:hover {
-  background: rgba(245, 194, 0, 0.02);
+  background: rgba(128, 0, 32, 0.02);
 }
 
 .tableCell {
@@ -145,7 +145,7 @@
 }
 
 .sliderValue {
-  color: var(--gold);
+  color: #800020;
   font-weight: 700;
 }
 
@@ -170,18 +170,18 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--gold);
+  background: #800020;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(245, 194, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(128, 0, 32, 0.3);
 }
 
 .sliderInput::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--gold);
+  background: #800020;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(245, 194, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(128, 0, 32, 0.3);
   border: none;
 }
 
@@ -194,7 +194,7 @@
 .statValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--gold);
+  color: #800020;
   line-height: 1.2;
 }
 
@@ -214,8 +214,8 @@
 }
 
 .badgeGold {
-  background: rgba(245, 194, 0, 0.15);
-  color: var(--gold-dark);
+  background: rgba(128, 0, 32, 0.15);
+  color: #6b0019;
 }
 
 .badgePrimary {
@@ -233,9 +233,9 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid rgba(245, 194, 0, 0.2);
+  border: 3px solid rgba(128, 0, 32, 0.2);
   border-radius: 50%;
-  border-top-color: var(--gold);
+  border-top-color: #800020;
   animation: spin 0.8s linear infinite;
 }
 

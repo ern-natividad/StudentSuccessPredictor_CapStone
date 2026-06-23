@@ -1,7 +1,7 @@
 .dashboardScreen {
   display: flex;
   min-height: 100vh;
-  background: var(--cream);
+  background: #fdf4f5;
   flex-direction: column;
 }
 
@@ -14,8 +14,8 @@
 /* TOP NAV */
 .topNav {
   height: 60px;
-  background: var(--black);
-  border-bottom: 1px solid rgba(245, 194, 0, 0.15);
+  background: #120608;
+  border-bottom: 1px solid rgba(128, 0, 32, 0.15);
   display: flex;
   align-items: center;
   padding: 0 24px;
@@ -41,14 +41,14 @@
 .navLogoText {
   font-family: "Playfair Display", serif;
   font-size: 16px;
-  color: var(--gold);
+  color: #800020;
   letter-spacing: 1px;
 }
 
 .navDivider {
   width: 1px;
   height: 24px;
-  background: rgba(245, 194, 0, 0.15);
+  background: rgba(128, 0, 32, 0.15);
   flex-shrink: 0;
 }
 
@@ -76,13 +76,13 @@
 }
 
 .navItem:hover {
-  background: rgba(245, 194, 0, 0.08);
+  background: rgba(128, 0, 32, 0.08);
   color: var(--gold-muted);
 }
 
 .navItem.active {
-  background: rgba(245, 194, 0, 0.12);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.12);
+  color: #800020;
 }
 
 .navItem.hasAlert {
@@ -109,8 +109,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(245, 194, 0, 0.08);
-  border: 1px solid rgba(245, 194, 0, 0.18);
+  background: rgba(128, 0, 32, 0.08);
+  border: 1px solid rgba(128, 0, 32, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -122,8 +122,8 @@
 }
 
 .navBell:hover {
-  background: rgba(245, 194, 0, 0.15);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.15);
+  color: #800020;
 }
 
 .navBellBadge {
@@ -145,7 +145,7 @@
 .navUserName {
   font-size: 13px;
   font-weight: 600;
-  color: var(--cream);
+  color: #fdf4f5;
 }
 
 .navUserRole {
@@ -157,7 +157,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--gold);
+  background: #800020;
   color: var(--ink);
   display: flex;
   align-items: center;
@@ -169,7 +169,7 @@
 .navLogout {
   padding: 6px 12px;
   background: transparent;
-  border: 1px solid rgba(245, 194, 0, 0.3);
+  border: 1px solid rgba(128, 0, 32, 0.3);
   color: var(--sand);
   border-radius: var(--radius-sm);
   font-size: 11px;
@@ -178,9 +178,9 @@
 }
 
 .navLogout:hover {
-  background: rgba(245, 194, 0, 0.1);
-  border-color: var(--gold-dark);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.1);
+  border-color: #6b0019;
+  color: #800020;
 }
 
 /* NOTIFICATION PANEL */
@@ -223,7 +223,7 @@
 }
 
 .notifItem:hover {
-  background: rgba(245, 194, 0, 0.04);
+  background: rgba(128, 0, 32, 0.04);
 }
 
 .niTitle {
@@ -241,8 +241,8 @@
 /* SIDEBAR */
 .sidebar {
   width: 240px;
-  background: var(--charcoal);
-  border-right: 1px solid rgba(245, 194, 0, 0.08);
+  background: #1e0c0e;
+  border-right: 1px solid rgba(128, 0, 32, 0.08);
   display: flex;
   flex-direction: column;
   padding: 16px 0;
@@ -278,13 +278,13 @@
 }
 
 .sidebarItem:hover {
-  background: rgba(245, 194, 0, 0.08);
+  background: rgba(128, 0, 32, 0.08);
   color: var(--gold-muted);
 }
 
 .sidebarItem.active {
-  background: rgba(245, 194, 0, 0.15);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.15);
+  color: #800020;
 }
 
 .siIcon {
@@ -298,8 +298,8 @@
 
 .siBadge {
   margin-left: auto;
-  background: rgba(245, 194, 0, 0.15);
-  color: var(--gold);
+  background: rgba(128, 0, 32, 0.15);
+  color: #800020;
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
@@ -309,7 +309,7 @@
 
 .sidebarDivider {
   height: 1px;
-  background: rgba(245, 194, 0, 0.08);
+  background: rgba(128, 0, 32, 0.08);
   margin: 8px 0;
 }
 
