@@ -1,7 +1,7 @@
 .dashboardScreen {
   display: flex;
   min-height: 100vh;
-  background: #fdf4f5;
+  background: #F5F5F5;
   flex-direction: column;
 }
 
@@ -13,9 +13,9 @@
 
 /* TOP NAV */
 .topNav {
-  height: 60px;
-  background: #120608;
-  border-bottom: 1px solid rgba(128, 0, 32, 0.15);
+  height: 64px;
+  background: linear-gradient(90deg, #0F0F0F 0%, #1A1A1A 100%);
+  border-bottom: 2px solid rgba(220, 20, 60, 0.15);
   display: flex;
   align-items: center;
   padding: 0 24px;
@@ -23,51 +23,53 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .navLogo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
   flex-shrink: 0;
 }
 
 .navLogoIcon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .navLogoText {
-  font-family: "Playfair Display", serif;
-  font-size: 16px;
-  color: #800020;
+  font-family: var(--heading);
+  font-size: 18px;
+  color: #DC143C;
   letter-spacing: 1px;
+  font-weight: 700;
 }
 
 .navDivider {
-  width: 1px;
-  height: 24px;
-  background: rgba(128, 0, 32, 0.15);
+  width: 2px;
+  height: 28px;
+  background: rgba(220, 20, 60, 0.2);
   flex-shrink: 0;
 }
 
 .navItems {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
 }
 
 .navItem {
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--sand);
-  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #B0B0B0;
+  border-radius: 6px;
   cursor: pointer;
   border: none;
   background: none;
-  transition: all 0.15s;
+  transition: all 0.2s;
   letter-spacing: 0.3px;
   display: flex;
   align-items: center;
@@ -76,13 +78,14 @@
 }
 
 .navItem:hover {
-  background: rgba(128, 0, 32, 0.08);
-  color: var(--gold-muted);
+  background: rgba(220, 20, 60, 0.1);
+  color: #FF6B6B;
 }
 
 .navItem.active {
-  background: rgba(128, 0, 32, 0.12);
-  color: #800020;
+  background: rgba(220, 20, 60, 0.2);
+  color: #DC143C;
+  font-weight: 700;
 }
 
 .navItem.hasAlert {
@@ -90,10 +93,10 @@
 }
 
 .notificationDot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--crit-risk);
+  background: #FF6B6B;
 }
 
 .navRight {

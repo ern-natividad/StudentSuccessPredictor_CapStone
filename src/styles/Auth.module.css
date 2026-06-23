@@ -5,7 +5,7 @@
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  background: #120608;
+  background: linear-gradient(135deg, #0F0F0F 0%, #1A1A1A 100%);
   position: relative;
   overflow: hidden;
 }
@@ -13,30 +13,30 @@
 .authScreen::before {
   content: "";
   position: absolute;
-  width: 600px;
-  height: 600px;
+  width: 800px;
+  height: 800px;
   background: radial-gradient(
     circle,
-    rgba(128, 0, 32, 0.12) 0%,
+    rgba(220, 20, 60, 0.15) 0%,
     transparent 70%
   );
-  top: -100px;
-  left: -100px;
+  top: -200px;
+  left: -200px;
   pointer-events: none;
 }
 
 .authScreen::after {
   content: "";
   position: absolute;
-  width: 400px;
-  height: 400px;
+  width: 600px;
+  height: 600px;
   background: radial-gradient(
     circle,
-    rgba(128, 0, 32, 0.08) 0%,
+    rgba(220, 20, 60, 0.1) 0%,
     transparent 70%
   );
-  bottom: -80px;
-  right: -80px;
+  bottom: -150px;
+  right: -150px;
   pointer-events: none;
 }
 
@@ -45,11 +45,11 @@
   width: 860px;
   min-height: 560px;
   max-height: calc(100vh - 32px);
-  border-radius: var(--radius-xl);
+  border-radius: 16px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(128, 0, 32, 0.25),
-    0 24px 64px rgba(0, 0, 0, 0.6);
+    0 0 0 1px rgba(220, 20, 60, 0.2),
+    0 32px 80px rgba(0, 0, 0, 0.8);
   position: relative;
   z-index: 1;
 }
@@ -57,8 +57,8 @@
 .brandPanel {
   width: 300px;
   min-width: 300px;
-  background: linear-gradient(160deg, #1e0c0e 0%, #120608 100%);
-  border-right: 1px solid rgba(128, 0, 32, 0.2);
+  background: linear-gradient(160deg, #1A1A1A 0%, #0F0F0F 100%);
+  border-right: 1px solid rgba(220, 20, 60, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +72,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F5C200' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23DC143C' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
 
@@ -90,30 +90,32 @@
 }
 
 .dept {
-  font-family: "Playfair Display", serif;
-  font-size: 20px;
-  color: #800020;
+  font-family: var(--heading);
+  font-size: 22px;
+  color: #DC143C;
   letter-spacing: 2px;
   display: block;
   line-height: 1.2;
+  font-weight: 700;
 }
 
 .system {
-  font-size: 10px;
-  color: #8b0000;
+  font-size: 11px;
+  color: #FF6B6B;
   letter-spacing: 3px;
   text-transform: uppercase;
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
+  font-weight: 600;
 }
 
 .brandRule {
   width: 48px;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(
     90deg,
     transparent,
-    #6b0019,
+    #DC143C,
     transparent
   );
   position: relative;
@@ -121,32 +123,34 @@
 }
 
 .brandSubtitle {
-  font-size: 11px;
-  color: var(--sand);
+  font-size: 12px;
+  color: #B0B0B0;
   text-align: center;
-  line-height: 1.7;
+  line-height: 1.6;
   position: relative;
   z-index: 1;
   max-width: 200px;
   margin: 0;
+  font-weight: 400;
 }
 
 .brandBadge {
-  background: rgba(128, 0, 32, 0.1);
-  border: 1px solid rgba(128, 0, 32, 0.25);
+  background: rgba(220, 20, 60, 0.12);
+  border: 1px solid rgba(220, 20, 60, 0.3);
   border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 10px;
-  color: #800020;
-  letter-spacing: 2px;
+  padding: 8px 16px;
+  font-size: 11px;
+  color: #FF6B6B;
+  letter-spacing: 1px;
   text-transform: uppercase;
   position: relative;
   z-index: 1;
+  font-weight: 600;
 }
 
 .formPanel {
   flex: 1;
-  background: #fdf4f5;
+  background: #F8F8F8;
   display: flex;
   flex-direction: column;
   padding: 40px 40px 36px;
@@ -162,26 +166,27 @@
   padding: 0;
   background: transparent;
   border: none;
-  color: #4a0012;
+  color: #DC143C;
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  transition: color 0.2s;
 }
 
 .backButton:hover {
-  color: var(--ink);
+  color: #8B0000;
 }
 
 .roleBadge {
   align-self: flex-start;
   margin-bottom: 12px;
-  padding: 5px 10px;
-  border: 1px solid rgba(74, 0, 18, 0.25);
-  border-radius: var(--radius-sm);
-  background: rgba(128, 0, 32, 0.14);
-  color: #4a0012;
+  padding: 6px 12px;
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  border-radius: 6px;
+  background: rgba(220, 20, 60, 0.1);
+  color: #DC143C;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -206,30 +211,32 @@
 }
 
 .formHeading {
-  font-family: "Playfair Display", serif;
-  font-size: 24px;
-  color: var(--ink);
-  margin-bottom: 4px;
+  font-family: var(--heading);
+  font-size: 28px;
+  color: #0F0F0F;
+  margin-bottom: 8px;
   font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .formSubtitle {
-  font-size: 13px;
-  color: var(--sand);
-  margin-bottom: 24px;
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 28px;
+  font-weight: 400;
 }
 
 .formGroup {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .formLabel {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--stone);
-  margin-bottom: 5px;
-  letter-spacing: 0.8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0F0F0F;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
@@ -244,23 +251,27 @@
 
 .formInput {
   width: 100%;
-  height: 40px;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  border-radius: var(--radius-sm);
+  height: 44px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
   padding: 0 14px;
-  font-size: 13px;
-  font-family: "Inter", sans-serif;
-  background: var(--white);
-  color: var(--ink);
+  font-size: 14px;
+  font-family: var(--sans);
+  background: #FFFFFF;
+  color: #0F0F0F;
   outline: none;
   transition:
-    border-color 0.16s,
-    box-shadow 0.16s;
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .formInput:focus {
-  border-color: #6b0019;
-  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.14);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
+}
+
+.formInput::placeholder {
+  color: #999999;
 }
 
 .formInputWrap {
@@ -279,32 +290,40 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--sand);
+  color: #999999;
   font-size: 16px;
   line-height: 1;
   padding: 4px;
+  transition: color 0.2s;
+}
+
+.eyeButton:hover {
+  color: #DC143C;
 }
 
 .formSelect {
   width: 100%;
-  height: 40px;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  border-radius: var(--radius-sm);
+  height: 44px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
   padding: 0 14px;
-  font-size: 13px;
-  font-family: "Inter", sans-serif;
-  background: var(--white)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B6F00' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+  font-size: 14px;
+  font-family: var(--sans);
+  background: #FFFFFF
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23DC143C' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
     no-repeat right 12px center;
   appearance: none;
-  color: var(--ink);
+  color: #0F0F0F;
   outline: none;
   cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .formSelect:focus {
-  border-color: #6b0019;
-  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.14);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
 }
 
 .rowSpaced {
@@ -321,25 +340,33 @@
 }
 
 .checkRow input[type="checkbox"] {
-  accent-color: #6b0019;
-  width: 15px;
-  height: 15px;
+  accent-color: #DC143C;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .checkRow label {
-  font-size: 12px;
-  color: var(--stone);
+  font-size: 13px;
+  color: #0F0F0F;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .formLink {
-  font-size: 12px;
-  color: #4a0012;
+  font-size: 13px;
+  color: #DC143C;
   cursor: pointer;
   text-decoration: none;
   background: none;
   border: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.formLink:hover {
+  color: #8B0000;
 }
 
 .formLink:hover {
@@ -354,15 +381,16 @@
 }
 
 .reqPill {
-  font-size: 10px;
-  color: var(--stone);
+  font-size: 11px;
+  color: #666666;
   display: flex;
   align-items: center;
   gap: 3px;
 }
 
 .reqPill.ok {
-  color: var(--green);
+  color: #28A745;
+  font-weight: 600;
 }
 
 .reqPill .dot {
@@ -377,50 +405,61 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .termsRow input[type="checkbox"] {
-  accent-color: #6b0019;
-  margin-top: 2px;
+  accent-color: #DC143C;
+  margin-top: 3px;
   cursor: pointer;
   flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 
 .termsRow label {
-  font-size: 11px;
-  color: var(--stone);
+  font-size: 12px;
+  color: #0F0F0F;
   line-height: 1.6;
+  font-weight: 400;
 }
 
 .termsRow a {
-  color: #4a0012;
+  color: #DC143C;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.termsRow a:hover {
+  text-decoration: underline;
 }
 
 .btnGold {
   width: 100%;
-  height: 42px;
-  background: #800020;
+  height: 44px;
+  background: linear-gradient(135deg, #DC143C 0%, #8B0000 100%);
   border: none;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: "Inter", sans-serif;
-  color: var(--ink);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--sans);
+  color: #FFFFFF;
   cursor: pointer;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  transition: all 0.15s;
-  box-shadow: 0 2px 8px rgba(128, 0, 32, 0.3);
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(220, 20, 60, 0.3);
 }
 
 .btnGold:hover {
-  background: #6b0019;
-  box-shadow: 0 4px 16px rgba(128, 0, 32, 0.4);
+  background: linear-gradient(135deg, #8B0000 0%, #600015 100%);
+  box-shadow: 0 6px 24px rgba(220, 20, 60, 0.4);
+  transform: translateY(-2px);
 }
 
 .btnGold:active {
-  transform: scale(0.98);
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(220, 20, 60, 0.3);
 }
 
 .errorBox {

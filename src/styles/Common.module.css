@@ -1,52 +1,54 @@
 .btnSmall {
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: 8px 14px;
+  font-size: 12px;
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: var(--radius-sm);
-  color: var(--sand);
+  border: 2px solid #E0E0E0;
+  border-radius: 6px;
+  color: #0F0F0F;
   cursor: pointer;
-  transition: all 0.15s;
-  font-weight: 500;
+  transition: all 0.2s;
+  font-weight: 600;
 }
 
 .btnSmall:hover {
-  background: rgba(128, 0, 32, 0.08);
-  border-color: #6b0019;
-  color: #800020;
+  background: rgba(220, 20, 60, 0.08);
+  border-color: #DC143C;
+  color: #DC143C;
 }
 
 .btnSmallOutline {
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: 8px 14px;
+  font-size: 12px;
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: var(--radius-sm);
-  color: var(--sand);
+  border: 2px solid #E0E0E0;
+  border-radius: 6px;
+  color: #0F0F0F;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  font-weight: 600;
 }
 
 .btnSmallOutline:hover {
-  border-color: #6b0019;
-  background: rgba(128, 0, 32, 0.04);
+  border-color: #DC143C;
+  background: rgba(220, 20, 60, 0.05);
+  color: #DC143C;
 }
 
 .btnSmallDanger {
-  padding: 6px 12px;
-  font-size: 11px;
-  background: rgba(192, 57, 43, 0.1);
-  border: 1px solid rgba(192, 57, 43, 0.3);
-  border-radius: var(--radius-sm);
-  color: var(--crit-risk);
+  padding: 8px 14px;
+  font-size: 12px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 2px solid rgba(255, 107, 107, 0.3);
+  border-radius: 6px;
+  color: #FF6B6B;
   cursor: pointer;
-  transition: all 0.15s;
-  font-weight: 500;
+  transition: all 0.2s;
+  font-weight: 600;
 }
 
 .btnSmallDanger:hover {
-  background: rgba(192, 57, 43, 0.15);
-  border-color: var(--crit-risk);
+  background: rgba(255, 107, 107, 0.15);
+  border-color: #FF6B6B;
 }
 
 /* TABLE */
@@ -57,32 +59,32 @@
 }
 
 .tableHead {
-  background: rgba(128, 0, 32, 0.04);
-  border-bottom: 2px solid rgba(128, 0, 32, 0.15);
+  background: rgba(220, 20, 60, 0.05);
+  border-bottom: 2px solid rgba(220, 20, 60, 0.2);
 }
 
 .tableHead th {
-  padding: 12px;
+  padding: 14px 12px;
   text-align: left;
-  font-weight: 600;
-  color: var(--stone);
-  font-size: 11px;
+  font-weight: 700;
+  color: #0F0F0F;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .tableBody td {
-  padding: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  color: var(--ink);
+  padding: 14px 12px;
+  border-bottom: 1px solid #E8E8E8;
+  color: #0F0F0F;
 }
 
 .tableRow:hover {
-  background: rgba(128, 0, 32, 0.02);
+  background: rgba(220, 20, 60, 0.02);
 }
 
 .tableCell {
-  padding: 12px;
+  padding: 14px 12px;
 }
 
 /* METRIC */
@@ -90,25 +92,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 14px 0;
+  border-bottom: 1px solid #E8E8E8;
 }
 
 .metricLabel {
-  font-size: 12px;
-  color: var(--sand);
-  font-weight: 500;
+  font-size: 13px;
+  color: #666666;
+  font-weight: 600;
 }
 
 .metricValue {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  color: #0F0F0F;
 }
 
 .metricUnit {
-  font-size: 11px;
-  color: var(--sand);
+  font-size: 12px;
+  color: #999999;
   margin-left: 4px;
 }
 
@@ -136,28 +138,27 @@
 }
 
 .sliderLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F0F0F;
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
 }
 
 .sliderValue {
-  color: #800020;
+  color: #DC143C;
   font-weight: 700;
 }
 
 .sliderInput {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   background: linear-gradient(
     90deg,
-    rgba(45, 122, 79, 0.2) 0%,
-    rgba(201, 162, 0, 0.2) 50%,
-    rgba(212, 112, 0, 0.2) 100%
+    rgba(220, 20, 60, 0.2) 0%,
+    rgba(220, 20, 60, 0.4) 100%
   );
   outline: none;
   -webkit-appearance: none;
@@ -167,34 +168,35 @@
 .sliderInput::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #800020;
+  background: #DC143C;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(128, 0, 32, 0.3);
+  box-shadow: 0 2px 8px rgba(220, 20, 60, 0.4);
+  border: 3px solid #FFFFFF;
 }
 
 .sliderInput::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #800020;
+  background: #DC143C;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(128, 0, 32, 0.3);
-  border: none;
+  box-shadow: 0 2px 8px rgba(220, 20, 60, 0.4);
+  border: 3px solid #FFFFFF;
 }
 
 /* STATS */
 .statBlock {
   text-align: center;
-  padding: 16px;
+  padding: 20px;
 }
 
 .statValue {
-  font-size: 24px;
-  font-weight: 700;
-  color: #800020;
+  font-size: 32px;
+  font-weight: 800;
+  color: #DC143C;
   line-height: 1.2;
 }
 
