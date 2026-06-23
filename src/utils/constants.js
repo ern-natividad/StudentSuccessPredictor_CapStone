@@ -43,7 +43,7 @@ export const AUTH_ROLES = {
     groupLabel: "Assigned Unit",
     groupName: "department",
     groupOptions: [
-      "Architecture Department",
+      "Engineering Department",
       "Guidance Office",
       "Student Affairs",
       "Academic Advising",

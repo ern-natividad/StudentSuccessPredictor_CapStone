@@ -15,7 +15,7 @@ function initializeUser(){
   
   var initials = userName.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
   document.getElementById('nav-uname').textContent = userName;
-  document.getElementById('nav-urole').textContent = 'Architecture ' + capitalize(userRole) + ' · 3rd Year';
+  document.getElementById('nav-urole').textContent = 'Engineering ' + capitalize(userRole) + ' · 3rd Year';
   document.getElementById('nav-avatar').textContent = initials;
 }
 

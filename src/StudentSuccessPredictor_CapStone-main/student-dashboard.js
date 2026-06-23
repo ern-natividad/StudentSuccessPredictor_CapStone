@@ -11,7 +11,7 @@ function initializeStudent(){
   var userName = sessionStorage.getItem('userName') || 'Juan Dela Cruz';
   var initials = userName.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
   document.getElementById('nav-uname').textContent = userName;
-  document.getElementById('nav-urole').textContent = 'Architecture Student · 3rd Year';
+  document.getElementById('nav-urole').textContent = 'Engineering Student · 3rd Year';
   document.getElementById('nav-avatar').textContent = initials;
   document.getElementById('profile-avatar').textContent = initials;
   document.getElementById('profile-name').textContent = userName;

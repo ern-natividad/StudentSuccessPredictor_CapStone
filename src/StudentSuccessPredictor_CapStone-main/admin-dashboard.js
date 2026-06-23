@@ -119,7 +119,7 @@ function buildActivityChart(){
 /* RECENT ACTIVITY */
 var ACTIVITY_DATA = [
   {user:'Admin (Self)',action:'Generated Student Report',entity:'Juan Dela Cruz',time:'30 min ago',status:'success'},
-  {user:'System',action:'Model Retrain Completed',entity:'Architecture v1.3.0',time:'2 hours ago',status:'success'},
+  {user:'System',action:'Model Retrain Completed',entity:'Engineering v1.3.0',time:'2 hours ago',status:'success'},
   {user:'Dr. Santos',action:'Acknowledged Alert',entity:'Critical Alert #234',time:'3 hours ago',status:'success'},
   {user:'Admin',action:'Updated System Settings',entity:'Audit Log Retention',time:'1 day ago',status:'success'},
   {user:'System',action:'Backup Completed',entity:'Full Database Backup',time:'1 day ago',status:'success'},

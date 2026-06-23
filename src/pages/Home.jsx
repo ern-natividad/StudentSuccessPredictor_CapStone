@@ -65,7 +65,7 @@ const HomePage = () => {
               marginBottom: "12px",
             }}
           >
-            Architecture Student Success Predictor
+            Engineering Student Success Predictor
           </div>
           <div
             style={{ fontSize: "20px", color: "#faf6ec", marginBottom: "8px" }}
@@ -242,7 +242,7 @@ const HomePage = () => {
             paddingBottom: "20px",
           }}
         >
-          Architecture Titans — WMSU Student Success Predictor v1.1.0
+          Engineering Titans — WMSU Student Success Predictor v1.1.0
         </div>
       </div>
     </div>

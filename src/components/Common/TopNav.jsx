@@ -16,7 +16,7 @@ const TopNav = ({ onLogout }) => {
       ? "System Administrator"
       : user.role === "staff"
         ? "Academic Staff"
-        : "Architecture Student - 3rd Year";
+        : "Engineering Student - 3rd Year";
 
   const handleLogoutClick = () => setShowConfirm(true);
   const handleConfirmLogout = () => {
@@ -30,7 +30,7 @@ const TopNav = ({ onLogout }) => {
       <nav className={styles.topNav}>
         <div className={styles.navLogo}>
           <BrandHelmet className={styles.navLogoIcon} />
-          <span className={styles.navLogoText}>Architecture Titans</span>
+          <span className={styles.navLogoText}>Engineering Titans</span>
         </div>
         <div className={styles.navDivider}></div>
         <div className={styles.navRight}>

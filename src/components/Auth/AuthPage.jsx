@@ -123,12 +123,12 @@ const AuthPage = () => {
         <div className={styles.brandPanel}>
           <HelmetSVG />
           <div className={styles.brandWordmark}>
-            <span className={styles.dept}>Architecture</span>
-            <span className={styles.system}>WMSU TITANS</span>
+            <span className={styles.dept}>Engineering</span>
+            <span className={styles.system}>WMSU HAWKS</span>
           </div>
           <div className={styles.brandRule}></div>
           <p className={styles.brandSubtitle}>
-            Student Success Predictor — College of Architecture
+            Student Success Predictor — College of Engineering
           </p>
           <div className={styles.brandBadge}>Est. WMSU</div>
         </div>
