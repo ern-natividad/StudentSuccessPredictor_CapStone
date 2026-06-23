@@ -1,189 +1,204 @@
-# Architecture Titans — WMSU Student Success Predictor
+# WMSU Student Success Predictor - React Application
 
-## Project Structure
+> **Status**: ✅ Successfully converted from Vanilla HTML/CSS/JS to React Framework
 
-The application has been separated into modular files for better organization and maintainability.
+## 📋 Quick Start
 
-### Files
+```bash
+# Install dependencies
+npm install
 
-#### 1. **auth.html** - Authentication Page
-- Login and sign-up forms
-- Brand panel with helmet SVG logo
-- Tab switching between login and signup
-- References external CSS and JavaScript
+# Start development server
+npm run dev
 
-#### 2. **auth.js** - Authentication Logic
-- Login/signup form validation
-- Password requirement checking
-- Eye toggle for password visibility
-- Session storage management
-- Redirect to dashboard on successful login/signup
+# Build for production
+npm run build
+```
 
-#### 3. **dashboard.html** - Main Dashboard
-- Complete student success predictor interface
-- Navigation bar with user info
-- Sidebar with quick navigation
-- Multiple pages: Dashboard, Students, Alerts, Screening, What-If Simulator, Reports
-- Charts, tables, and interactive components
-- References external CSS and JavaScript
+Visit: `http://localhost:5173/`
 
-#### 4. **dashboard.js** - Dashboard Logic
-- User initialization from session storage
-- Navigation and page switching
-- Dashboard data initialization
-- Chart.js implementations:
-  - Risk distribution donut chart
-  - GPA trend line chart
-  - What-If simulator chart
-- Student table management
-- Screening rubric functionality
-- Alert handling
+## 📚 Documentation
 
-#### 5. **styles.css** - Global Styles
-All CSS styling organized by section:
-- Design tokens (colors, spacing, shadows)
-- Auth screen styling
-- Dashboard layout (top nav, sidebar, content area)
-- Component styles (cards, buttons, tables, badges, etc.)
-- Utility classes
-- SVG icon styling
+- **[Setup Guide](./SETUP_GUIDE.md)** - Installation and quick start
+- **[React Migration Guide](./REACT_MIGRATION_GUIDE.md)** - Complete conversion details
+- **[Original Docs](./src/StudentSuccessPredictor_CapStone-main/)** - Legacy HTML/JS documentation
 
----
+## 🎯 What's New
 
-## Getting Started
+### From Vanilla JS to React ✨
 
-### Step 1: Start with Auth Page
-Open **auth.html** in your browser to access the login/signup page.
+- ✅ Component-based architecture
+- ✅ Client-side routing with React Router
+- ✅ State management with Context API
+- ✅ CSS Modules for scoped styling
+- ✅ Modern React hooks and functional components
+- ✅ Protected routes for authentication
+- ✅ Responsive design system
 
-### Step 2: Login
-- Use any email to login (e.g., `user@wmsu.edu.ph`)
-- Any password works for demo purposes
-- Or create a new account by switching to the Sign Up tab
+## 🏗️ Project Structure
 
-### Step 3: Access Dashboard
-After successful authentication, you'll be redirected to **dashboard.html** with your user information displayed.
+```
+src/
+├── components/          # React components
+│   ├── Auth/           # Authentication pages
+│   ├── Dashboard/      # Dashboard pages
+│   ├── AdminDashboard/ # Admin features
+│   ├── Common/         # Shared components
+│   └── ProtectedRoute.jsx
+├── contexts/           # State management (Auth, Dashboard)
+├── hooks/              # Custom React hooks
+├── pages/              # Page components
+├── styles/             # CSS Modules
+├── utils/              # Helper functions
+├── App.jsx             # Main app with routing
+└── main.jsx            # React entry point
+```
 
----
+## 🔐 Test Credentials
 
-## Features
+| Role    | Email                        | Password   |
+| ------- | ---------------------------- | ---------- |
+| Admin   | admin@wmsu.edu.ph or `admin` | admin123   |
+| Staff   | staff@wmsu.edu.ph or `staff` | staff123   |
+| Student | student                      | student123 |
+
+## 📱 Features
 
 ### Authentication
-- Email and password validation
-- Password strength requirements (8+ chars, uppercase, number, special char)
-- Terms of Service acceptance
-- Remember me option
 
-### Dashboard
-- **Overview**: Key metrics (total students, critical alerts, predictions, at-risk students)
-- **Risk Distribution**: Donut chart showing student risk levels
-- **GPA Trends**: Line chart tracking cohort average GPA progression
-- **Recent Alerts**: Quick view of critical academic alerts
-- **Top Performers**: Table of high-performing students
+- Login/Signup with validation
+- Session management
+- Role-based access control
 
-### Students
-- Student list with search and filter
-- Display of current GPA, predicted GPA, and risk levels
-- Sortable columns
+### Dashboard Pages
 
-### Early Alerts
-- List of active alerts by severity
-- Alert icons and descriptions
-- Acknowledgment functionality
+- **Overview** - Key metrics and charts
+- **Students** - Searchable student list with filters
+- **Alerts** - Risk alerts management
+- **Screening** - Academic assessment rubric
+- **What-If Simulator** - GPA prediction simulator
+- **Reports** - Data export options
 
-### Pre-Admission Screening
-- Applicant information entry
-- Rubric-based evaluation (5-star rating system)
-- Automatic recommendation calculation
-- Criteria: Spatial Reasoning, Design Communication, Technical Aptitude, Creativity & Innovation
+### Admin Features
 
-### What-If Simulator
-- Interactive sliders for semester grade adjustments
-- Real-time prediction updates
-- Risk tier changes based on simulated grades
-- Confidence percentage display
-- Actionable insights
+- Model management
+- Audit logs
+- System overview
 
-### Reports
-- Individual student reports
-- Cohort analysis
-- Risk summaries
-- Export options (PDF, Excel, CSV)
+## 🛠️ Technologies Used
+
+- **React 19** - UI framework
+- **React Router 6** - Client-side routing
+- **Vite** - Fast build tool
+- **Chart.js** - Data visualization
+- **CSS Modules** - Scoped styling
+- **Font Awesome** - Icons
+
+## 📖 Development
+
+### Adding New Components
+
+1. Create component in `src/components/[Category]/`
+2. Create corresponding CSS module
+3. Use hooks for state management
+4. Export and use in pages
+
+### Using Context
+
+```jsx
+// Authentication
+const { user, login, logout } = useAuth();
+
+// Dashboard State
+const { students, alerts, currentPage } = useDashboard();
+```
+
+### Creating New Routes
+
+Add to `src/App.jsx`:
+
+```jsx
+<Route
+  path="/new-page"
+  element={
+    <ProtectedRoute>
+      <YourComponent />
+    </ProtectedRoute>
+  }
+/>
+```
+
+## 🎨 Design System
+
+- **Colors**: Gold (#F5C200), Charcoal (#1c1a13), Cream (#faf6ec)
+- **Typography**: Inter (body), Playfair Display (headings)
+- **Components**: Cards, buttons, tables, badges, alerts
+- **Design Tokens**: Defined in `src/styles/globals.css`
+
+## 📦 Build & Deploy
+
+### Development Build
+
+```bash
+npm run dev
+```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Output in `dist/` folder ready for deployment.
+
+## 🔍 Linting
+
+```bash
+npm run lint
+```
+
+## 📝 Key Improvements
+
+| Aspect      | Before           | After              |
+| ----------- | ---------------- | ------------------ |
+| Structure   | Flat HTML files  | Modular components |
+| Navigation  | Page reloads     | SPA routing        |
+| State       | DOM manipulation | Context API        |
+| Styling     | Global CSS       | CSS Modules        |
+| Development | Manual updates   | HMR (hot reload)   |
+| Maintenance | Hard to scale    | Easy to extend     |
+
+## 🚀 Performance
+
+- **Code Splitting**: Routes are auto-split
+- **Lazy Loading**: Components load on demand
+- **Efficient Re-renders**: React optimization
+- **Fast Build**: Vite provides instant HMR
+
+## 📚 Learn More
+
+- [React Documentation](https://react.dev)
+- [React Router Guide](https://reactrouter.com)
+- [Vite Documentation](https://vite.dev)
+- [CSS Modules Spec](https://github.com/css-modules/css-modules)
+
+## 🤝 Contributing
+
+Follow these patterns when adding code:
+
+- Use functional components with hooks
+- Use Context API for shared state
+- Use CSS Modules for styling
+- Follow existing component structure
+- Document complex logic with comments
+
+## 📄 License
+
+This is an academic project for WMSU.
 
 ---
 
-## Design System
+**Architecture Titans** — WMSU Student Success Predictor
+**Version**: 1.3.0 (React Edition)
 
-### Colors
-- **Gold**: `#F5C200` (primary accent)
-- **Gold Dark**: `#C9A200` (hover/active)
-- **Black**: `#0f0d08` (background)
-- **Cream**: `#faf6ec` (light background)
-- **Risk Colors**:
-  - Low: `#2d7a4f` (green)
-  - Medium: `#c9a200` (gold)
-  - High: `#d47000` (orange)
-  - Critical: `#c0392b` (red)
-
-### Typography
-- **Font Family**: Inter (sans-serif)
-- **Display**: Playfair Display (serif for headings)
-- **Sizes**: 10px to 26px (semantic sizing)
-
-### Spacing
-- Radius: 6px (sm), 10px (md), 16px (lg), 24px (xl)
-- Shadows: Subtle card shadow, lift shadow for modals
-- Gap/Padding: 8px to 28px increments
-
----
-
-## Technical Stack
-
-- **HTML5** - Semantic markup
-- **CSS3** - Modern styling with CSS variables
-- **JavaScript (Vanilla)** - No frameworks
-- **Chart.js** - Data visualization library
-- **Google Fonts** - Typography (Inter, Playfair Display)
-
----
-
-## Browser Compatibility
-
-- Chrome/Edge (latest)
-- Firefox (latest)
-- Safari (latest)
-- Modern browsers supporting CSS Grid, Flexbox, and CSS Variables
-
----
-
-## Future Enhancements
-
-- Backend API integration
-- Real database for student data
-- PDF report generation
-- Email notifications
-- Mobile responsive improvements
-- Dark mode toggle
-- Advanced filtering and search
-
----
-
-## File Size Summary
-
-- **auth.html**: ~12 KB
-- **auth.js**: ~3 KB
-- **dashboard.html**: ~35 KB
-- **dashboard.js**: ~18 KB
-- **styles.css**: ~27 KB
-
-**Total**: ~95 KB (highly optimized for web)
-
----
-
-## Notes
-
-- Session data is stored in `sessionStorage` (cleared on browser close)
-- All data is currently mock data for demonstration
-- Charts use Chart.js library loaded from CDN
-- Fonts loaded from Google Fonts CDN
-
-Enjoy using the Architecture Titans Student Success Predictor!
+Successfully migrated from Vanilla JS to React Framework! 🎉

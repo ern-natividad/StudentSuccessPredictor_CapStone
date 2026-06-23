@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Intervention Tracking — WMSU Student Success Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div id="dashboard-screen">
+  <nav class="top-nav">
+    <div class="nav-logo">
+      <span class="nav-logo-text">Intervention Tracking</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-items">
+      <button class="nav-item active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-item" onclick="showPage('students')">Students</button>
+      <button class="nav-item" onclick="showPage('history')">History</button>
+      <button class="nav-item" onclick="showPage('analytics')">Analytics</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-logout" onclick="window.location.href='admin-dashboard.html'">Back to Admin</button>
+    </div>
+  </nav>
+
+  <div class="dash-body">
+    <aside class="sidebar">
+      <div class="sidebar-section-label">Interventions</div>
+      <button class="sidebar-item active" onclick="showPage('dashboard')">
+        <span class="si-icon"><i class="fas fa-chart-bar"></i></span> Dashboard
+      </button>
+      <button class="sidebar-item" onclick="showPage('students')">
+        <span class="si-icon"><i class="fas fa-users"></i></span> Students
+      </button>
+      <button class="sidebar-item" onclick="showPage('history')">
+        <span class="si-icon"><i class="fas fa-scroll"></i></span> History
+      </button>
+      <button class="sidebar-item" onclick="showPage('analytics')">
+        <span class="si-icon"><i class="fas fa-chart-line"></i></span> Analytics
+      </button>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Quick Actions</div>
+      <button class="sidebar-item" onclick="showPage('students');alert('Select a student to create intervention')">
+        <span class="si-icon">➕</span> New Intervention
+      </button>
+    </aside>
+
+    <main class="page-content">
+
+      <!-- DASHBOARD PAGE -->
+      <div class="page-view active" id="pg-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Intervention Dashboard</div>
+            <div class="page-sub">Track academic support and follow-ups</div>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card gold-accent">
+            <div class="stat-label">Active Interventions</div>
+            <div class="stat-value">47</div>
+            <div class="stat-delta">12 pending follow-up</div>
+          </div>
+          <div class="stat-card green-accent">
+            <div class="stat-label">Completed This Term</div>
+            <div class="stat-value">156</div>
+            <div class="stat-delta">87% success rate</div>
+          </div>
+          <div class="stat-card orange-accent">
+            <div class="stat-label">Students Supported</div>
+            <div class="stat-value">203</div>
+            <div class="stat-delta">18% of total cohort</div>
+          </div>
+          <div class="stat-card red-accent">
+            <div class="stat-label">Overdue Follow-ups</div>
+            <div class="stat-value">5</div>
+            <div class="stat-delta">Action required</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Recent Interventions</div>
+                <div class="card-sub">Latest entries</div>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="display:flex;flex-direction:column;">
+                <div style="padding:12px;border-bottom:1px solid rgba(0,0,0,0.08);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;">
+                  <div>
+                    <div style="font-weight:600;">Maria Santos (STU-001)</div>
+                    <div style="font-size:12px;color:var(--sand);margin-top:4px;"><i class="fas fa-book"></i> Academic Tutoring - Advanced Math</div>
+                    <div style="font-size:11px;color:var(--sand);margin-top:2px;">By: Dr. Lopez | Dec 15, 2025</div>
+                  </div>
+                  <span class="risk-badge risk-low">✓ Completed</span>
+                </div>
+                <div style="padding:12px;border-bottom:1px solid rgba(0,0,0,0.08);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;">
+                  <div>
+                    <div style="font-weight:600;">Juan Dela Cruz (STU-005)</div>
+                    <div style="font-size:12px;color:var(--sand);margin-top:4px;"><i class="fas fa-comment"></i> Counseling Session - Personal Issues</div>
+                    <div style="font-size:11px;color:var(--sand);margin-top:2px;">By: Ms. Rivera | Dec 14, 2025</div>
+                  </div>
+                  <span class="risk-badge risk-medium">⏳ In Progress</span>
+                </div>
+                <div style="padding:12px;border-bottom:1px solid rgba(0,0,0,0.08);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;">
+                  <div>
+                    <div style="font-weight:600;">Anna Reyes (STU-008)</div>
+                    <div style="font-size:12px;color:var(--sand);margin-top:4px;"><i class="fas fa-bullseye"></i> Career Advising - Major Selection</div>
+                    <div style="font-size:11px;color:var(--sand);margin-top:2px;">By: Dr. Santos | Dec 12, 2025</div>
+                  </div>
+                  <span class="risk-badge risk-low">✓ Completed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Intervention Type Distribution</div>
+                <div class="card-sub">This semester</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="intervention-chart" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Pending Follow-ups (Due Soon)</div>
+              <div class="card-sub">Actions required</div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Intervention Type</th>
+                  <th>Initial Date</th>
+                  <th>Follow-up Due</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background:#fff8f0;">
+                  <td>Rosa Lim (STU-003)</td>
+                  <td>Academic Advising</td>
+                  <td class="muted">Nov 28</td>
+                  <td style="color:var(--red);font-weight:600;">Dec 18 (Overdue)</td>
+                  <td><span class="risk-badge risk-medium">⏳ Pending</span></td>
+                  <td><button class="btn-sm btn-outline-sm" style="font-size:10px;">Follow-up</button></td>
+                </tr>
+                <tr>
+                  <td>Pedro Cruz (STU-004)</td>
+                  <td>Tutoring Session</td>
+                  <td class="muted">Dec 02</td>
+                  <td class="muted">Dec 19 (Tomorrow)</td>
+                  <td><span class="risk-badge risk-medium">⏳ Pending</span></td>
+                  <td><button class="btn-sm btn-outline-sm" style="font-size:10px;">Follow-up</button></td>
+                </tr>
+                <tr>
+                  <td>Miguel Torres (STU-007)</td>
+                  <td>Career Counseling</td>
+                  <td class="muted">Nov 15</td>
+                  <td class="muted">Dec 20</td>
+                  <td><span class="risk-badge risk-medium">⏳ Pending</span></td>
+                  <td><button class="btn-sm btn-outline-sm" style="font-size:10px;">Follow-up</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STUDENTS PAGE -->
+      <div class="page-view" id="pg-students">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Intervention Students</div>
+            <div class="page-sub">203 students with active or recent interventions</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-gold-sm">+ New Intervention</button>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="Search by name or ID..."/>
+          <select class="filter-select">
+            <option>All status</option>
+            <option>Active</option>
+            <option>Completed</option>
+            <option>Pending Follow-up</option>
+          </select>
+          <select class="filter-select">
+            <option>All types</option>
+            <option>Tutoring</option>
+            <option>Counseling</option>
+            <option>Academic Advising</option>
+            <option>Career Guidance</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Year</th>
+                  <th>Last Intervention</th>
+                  <th>Type</th>
+                  <th>Advisor</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span style="font-weight:600;">Maria Santos</span> <div class="muted">STU-001</div></td>
+                  <td class="muted">1st Year</td>
+                  <td class="muted">Dec 15</td>
+                  <td><i class="fas fa-book"></i> Tutoring</td>
+                  <td>Dr. Lopez</td>
+                  <td><span class="risk-badge risk-low">✓ Completed</span></td>
+                  <td><button class="btn-sm btn-outline-sm" style="font-size:10px;">Details</button></td>
+                </tr>
+                <tr>
+                  <td><span style="font-weight:600;">Juan Dela Cruz</span> <div class="muted">STU-005</div></td>
+                  <td class="muted">3rd Year</td>
+                  <td class="muted">Dec 14</td>
+                  <td><i class="fas fa-comment"></i> Counseling</td>
+                  <td>Ms. Rivera</td>
+                  <td><span class="risk-badge risk-medium">⏳ Active</span></td>
+                  <td><button class="btn-sm btn-outline-sm" style="font-size:10px;">Details</button></td>
+                </tr>
+                <tr>
+                  <td><span style="font-weight:600;">Rosa Lim</span> <div class="muted">STU-003</div></td>
+                  <td class="muted">2nd Year</td>
+                  <td class="muted">Nov 28</td>
+                  <td><i class="fas fa-graduation-cap"></i> Advising</td>
+                  <td>Dr. Gutierrez</td>
+                  <td><span class="risk-badge risk-medium">⏳ Pending FU</span></td>
+                  <td><button class="btn-sm btn-gold-sm" style="font-size:10px;">Follow-up</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY PAGE -->
+      <div class="page-view" id="pg-history">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Intervention History</div>
+            <div class="page-sub">Complete intervention records</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Student</th>
+                  <th>Type</th>
+                  <th>Advisor</th>
+                  <th>Outcome</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="muted">Dec 15, 2025</td>
+                  <td>Maria Santos (STU-001)</td>
+                  <td><i class="fas fa-book"></i> Academic Tutoring</td>
+                  <td>Dr. Lopez</td>
+                  <td><span class="risk-badge risk-low">✓ Success</span></td>
+                  <td class="muted" style="max-width:200px;overflow:hidden;">Improved comprehension in advanced topics</td>
+                </tr>
+                <tr>
+                  <td class="muted">Dec 12, 2025</td>
+                  <td>Anna Reyes (STU-008)</td>
+                  <td><i class="fas fa-bullseye"></i> Career Advising</td>
+                  <td>Dr. Santos</td>
+                  <td><span class="risk-badge risk-low">✓ Success</span></td>
+                  <td class="muted" style="max-width:200px;overflow:hidden;">Decided to pursue Software Engineering track</td>
+                </tr>
+                <tr>
+                  <td class="muted">Dec 10, 2025</td>
+                  <td>Pedro Cruz (STU-004)</td>
+                  <td><i class="fas fa-comment"></i> Personal Counseling</td>
+                  <td>Ms. Martinez</td>
+                  <td><span class="risk-badge risk-medium">In Progress</span></td>
+                  <td class="muted" style="max-width:200px;overflow:hidden;">Follow-up session scheduled</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS PAGE -->
+      <div class="page-view" id="pg-analytics">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Intervention Analytics</div>
+            <div class="page-sub">Effectiveness and impact metrics</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Intervention Effectiveness</div>
+                <div class="card-sub">Success rates by type</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Academic Tutoring</span><span style="font-weight:600;color:var(--green);">92%</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:92%;background:var(--green);"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Career Advising</span><span style="font-weight:600;color:var(--green);">88%</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:88%;background:var(--green);"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">
+                    <span>Personal Counseling</span><span style="font-weight:600;color:var(--green);">85%</span>
+                  </div>
+                  <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:85%;background:var(--green);"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Impact on GPA</div>
+                <div class="card-sub">Before vs. after intervention</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="impact-chart" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="intervention.js"></script>
+</body>
+</html>

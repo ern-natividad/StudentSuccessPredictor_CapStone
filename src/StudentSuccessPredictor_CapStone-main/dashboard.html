@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Engineering HAWKS — WMSU Student Success Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     DASHBOARD SCREEN
+══════════════════════════════════════ -->
+<div id="dashboard-screen">
+
+  <!-- TOP NAV -->
+  <nav class="top-nav">
+    <div class="nav-logo">
+      <svg class="nav-logo-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#F5C200" opacity=".15"/>
+        <path d="M16,4 L14,14 L16,15 L18,14 Z" fill="#F5C200"/>
+        <rect x="10" y="13" width="12" height="10" rx="1" fill="#C9A200"/>
+        <rect x="8" y="22" width="16" height="3" rx="1" fill="#8B6F00"/>
+        <rect x="8" y="23" width="16" height="3" rx="1" fill="#F5C200" opacity=".3"/>
+      </svg>
+      <span class="nav-logo-text">Engineering HAWKS</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-items">
+      <button class="nav-item active" onclick="showPage('dashboard')">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('students')">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Students
+      </button>
+      <button class="nav-item has-alert" onclick="showPage('alerts')">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Alerts
+        <span class="ni-dot"></span>
+      </button>
+      <button class="nav-item" onclick="showPage('screening')">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Screening
+      </button>
+      <button class="nav-item" onclick="showPage('simulator')">
+        <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        What-If
+      </button>
+      <button class="nav-item" onclick="showPage('reports')">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Reports
+      </button>
+    </div>
+    <div class="nav-right">
+      <div class="nav-bell" onclick="toggleNotif()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="nav-bell-badge">3</div>
+      </div>
+      <div>
+        <div class="nav-user-name" id="nav-uname">Juan Dela Cruz</div>
+        <div class="nav-user-role" id="nav-urole">Engineering Student · 3rd Year</div>
+      </div>
+      <div class="nav-avatar" id="nav-avatar">JD</div>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-head">Notifications</div>
+    <div class="notif-item"><div class="ni-title"><i class="fas fa-exclamation-triangle"></i> Risk alert updated for your profile</div><div class="ni-time">2 minutes ago</div></div>
+    <div class="notif-item"><div class="ni-title"><i class="fas fa-clipboard"></i> Screening results available</div><div class="ni-time">1 hour ago</div></div>
+    <div class="notif-item"><div class="ni-title">✅ Prediction model retrained (v1.3.0)</div><div class="ni-time">Yesterday</div></div>
+  </div>
+
+  <div class="dash-body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section-label">Overview</div>
+      <button class="sidebar-item active" onclick="showPage('dashboard')">
+        <span class="si-icon"><i class="fas fa-chart-bar"></i></span> Dashboard
+      </button>
+      <button class="sidebar-item" onclick="showPage('students')">
+        <span class="si-icon"><i class="fas fa-users"></i></span> All Students
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Academic</div>
+      <button class="sidebar-item" onclick="showPage('simulator')">
+        <span class="si-icon">🔬</span> What-If Simulator
+      </button>
+      <button class="sidebar-item" onclick="showPage('alerts')">
+        <span class="si-icon"><i class="fas fa-exclamation-triangle"></i></span> Early Alerts
+        <span class="si-badge">5</span>
+      </button>
+      <button class="sidebar-item" onclick="showPage('screening')">
+        <span class="si-icon">📝</span> Pre-Admission
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Reports</div>
+      <button class="sidebar-item" onclick="showPage('reports')">
+        <span class="si-icon"><i class="fas fa-file-alt"></i></span> Generate Reports
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">System</div>
+      <button class="sidebar-item">
+        <span class="si-icon">⚙️</span> Settings
+        <span class="si-badge warn">!</span>
+      </button>
+      <button class="sidebar-item">
+        <span class="si-icon"><i class="fas fa-lock"></i></span> Audit Logs
+      </button>
+    </aside>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content">
+
+      <!-- ── DASHBOARD PAGE ── -->
+      <div class="page-view active" id="pg-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-sub">Engineering Dept. · A.Y. 2025–2026 · Last sync: Today 3:00 AM</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-outline-sm">Export PDF</button>
+            <button class="btn-sm btn-gold-sm">Run Predictions</button>
+          </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stat-grid">
+          <div class="stat-card gold-accent">
+            <div class="stat-label">Total Students</div>
+            <div class="stat-value">342</div>
+            <div class="stat-delta">↑ +28 this semester</div>
+          </div>
+          <div class="stat-card red-accent">
+            <div class="stat-label">Critical Alerts</div>
+            <div class="stat-value">12</div>
+            <div class="stat-delta down">↑ +3 this week</div>
+          </div>
+          <div class="stat-card green-accent">
+            <div class="stat-label">Predictions Made</div>
+            <div class="stat-value">338</div>
+            <div class="stat-delta neutral">98.8% coverage</div>
+          </div>
+          <div class="stat-card orange-accent">
+            <div class="stat-label">At-Risk Students</div>
+            <div class="stat-value">47</div>
+            <div class="stat-delta down">13.7% of cohort</div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Risk Distribution</div>
+                <div class="card-sub">All active students · 1st Sem 2025</div>
+              </div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;gap:20px;">
+              <canvas id="risk-chart" width="140" height="140" style="flex-shrink:0;"></canvas>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block;"></span>Low risk</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">218 <span style="font-size:10px;color:var(--sand);font-weight:400;">(63.7%)</span></span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--gold);display:inline-block;"></span>Medium</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">65 <span style="font-size:10px;color:var(--sand);font-weight:400;">(19.0%)</span></span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--high-risk);display:inline-block;"></span>High</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">35 <span style="font-size:10px;color:var(--sand);font-weight:400;">(10.2%)</span></span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink)"><span style="width:10px;height:10px;border-radius:50%;background:var(--crit-risk);display:inline-block;"></span>Critical</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink);">12 <span style="font-size:10px;color:var(--sand);font-weight:400;">(3.5%)</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">GPA Trend by Semester</div>
+                <div class="card-sub">Cohort average · Engineering Dept.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="gpa-trend-chart" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT ALERTS + TOP STUDENTS -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent Alerts</div>
+              <button class="btn-sm btn-outline-sm" onclick="showPage('alerts')">View all</button>
+            </div>
+            <div id="recent-alerts-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Top Performers</div>
+              <div class="card-sub">Highest predicted GPA</div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead><tr><th>Student</th><th>Pred. GPA</th><th>Risk</th></tr></thead>
+                <tbody>
+                  <tr><td>Maria Santos</td><td style="font-weight:600;color:var(--green)">3.95</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+                  <tr><td>Jose Reyes</td><td style="font-weight:600;color:var(--green)">3.88</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+                  <tr><td>Ana Lim</td><td style="font-weight:600;color:var(--green)">3.82</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+                  <tr><td>Carlos Mendoza</td><td style="font-weight:600;color:var(--gold-deeper)">3.74</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+                  <tr><td>Sofia Garcia</td><td style="font-weight:600;color:var(--gold-deeper)">3.71</td><td><span class="risk-badge risk-medium">Medium</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- end dashboard page -->
+
+
+      <!-- ── STUDENTS PAGE ── -->
+      <div class="page-view" id="pg-students">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Students</div>
+            <div class="page-sub">342 enrolled students · College of Engineering</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-sm btn-outline-sm">Import CSV</button>
+            <button class="btn-sm btn-gold-sm">Add Student</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="Search by name or ID..." oninput="filterStudents(this.value)"/>
+          <select class="filter-select" onchange="filterStudents()">
+            <option value="">All risk levels</option>
+            <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+          </select>
+          <select class="filter-select">
+            <option value="">All year levels</option>
+            <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="students-table">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Year</th>
+                  <th>Current GPA</th>
+                  <th>Pred. Grad GPA</th>
+                  <th>Confidence</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- end students page -->
+
+
+      <!-- ── ALERTS PAGE ── -->
+      <div class="page-view" id="pg-alerts">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Early Alerts</div>
+            <div class="page-sub">5 active alerts requiring attention</div>
+          </div>
+          <div class="page-actions">
+            <select class="filter-select"><option>All severities</option><option>Critical</option><option>High</option><option>Medium</option></select>
+            <button class="btn-sm btn-gold-sm">Acknowledge All</button>
+          </div>
+        </div>
+        <div class="card mb-16">
+          <div class="card-header"><div class="card-title">Active Alerts</div></div>
+          <div id="alerts-list"></div>
+        </div>
+      </div><!-- end alerts page -->
+
+
+      <!-- ── SCREENING PAGE ── -->
+      <div class="page-view" id="pg-screening">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Pre-Admission Screening</div>
+            <div class="page-sub">Engineering Department · Rubric-based evaluation</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <!-- APPLICANT INFO -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">Applicant Information</div></div>
+            <div class="card-body">
+              <div class="f-group"><label class="f-label">Applicant name</label><input class="f-input" type="text" value="Andrei Reyes" placeholder="Full name"/></div>
+              <div class="f-row">
+                <div class="f-group"><label class="f-label">WMSU-CET Score</label><input class="f-input" type="number" value="87" placeholder="0-100"/></div>
+                <div class="f-group"><label class="f-label">HS GWA</label><input class="f-input" type="number" value="92" placeholder="0-100"/></div>
+              </div>
+              <div class="f-group"><label class="f-label">Interview date</label><input class="f-input" type="date" value="2025-12-15"/></div>
+              <div class="f-group"><label class="f-label">Evaluator notes</label><textarea class="f-input" rows="3" style="height:auto;padding:10px 14px;resize:vertical;">Applicant demonstrated strong spatial reasoning skills and enthusiasm for architectural design. Communication was clear and confident.</textarea></div>
+            </div>
+          </div>
+
+          <!-- RUBRIC SCORING -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Evaluation Rubric</div>
+              <div class="card-sub">Engineering Department criteria</div>
+            </div>
+            <div class="card-body">
+              <div id="rubric-criteria"></div>
+              <div id="rubric-result"></div>
+              <button class="btn-gold" style="margin-top:14px;" onclick="saveScreening()">Save Evaluation</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- end screening page -->
+
+
+      <!-- ── SIMULATOR PAGE ── -->
+      <div class="page-view" id="pg-simulator">
+        <div class="page-header">
+          <div>
+            <div class="page-title">What-If Simulator</div>
+            <div class="page-sub">Explore how grade changes affect predicted outcomes</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Select Student</div></div>
+            <div class="card-body">
+              <div class="f-group">
+                <label class="f-label">Student</label>
+                <select class="f-select" onchange="updateSim()">
+                  <option>Juan Dela Cruz (Current: 2.85 GPA)</option>
+                  <option>Maria Santos (Current: 3.72 GPA)</option>
+                  <option>Jose Reyes (Current: 3.50 GPA)</option>
+                </select>
+              </div>
+              <div id="sim-sliders"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Predicted Outcomes</div></div>
+            <div class="card-body">
+              <div class="sim-result-box" id="sim-result">
+                <div class="sim-result-item">
+                  <div class="sim-result-label">Pred. Grad GPA</div>
+                  <div class="sim-result-val" id="sim-gpa">3.12</div>
+                  <div class="sim-result-delta" id="sim-gpa-d">+0.27 from baseline</div>
+                </div>
+                <div class="sim-result-item">
+                  <div class="sim-result-label">Risk tier</div>
+                  <div class="sim-result-val" id="sim-risk" style="font-size:16px;">Medium</div>
+                  <div class="sim-result-delta" id="sim-risk-d">↓ from High</div>
+                </div>
+                <div class="sim-result-item">
+                  <div class="sim-result-label">Confidence</div>
+                  <div class="sim-result-val" id="sim-conf">87%</div>
+                  <div class="sim-result-delta">Model v1.3.0</div>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <canvas id="sim-chart" height="160"></canvas>
+              </div>
+
+              <div style="margin-top:14px;padding:12px 14px;background:var(--gold-pale);border-radius:var(--radius-sm);border:1px solid rgba(197,162,0,0.2);">
+                <div style="font-size:11px;font-weight:700;color:var(--gold-deeper);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;">Insight</div>
+                <div style="font-size:12px;color:var(--ink);" id="sim-insight">Maintaining a 3.2+ average in remaining semesters moves this student from High to Medium risk. Focus on Design Studio and Structures courses for maximum GPA impact.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end simulator page -->
+
+
+      <!-- ── REPORTS PAGE ── -->
+      <div class="page-view" id="pg-reports">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Reports</div>
+            <div class="page-sub">Generate and export academic reports</div>
+          </div>
+        </div>
+        <div class="three-col">
+          <div class="card" style="cursor:pointer;" onclick="alert('Generating Individual Student Report...')">
+            <div class="card-body" style="text-align:center;padding:28px 20px;">
+              <div style="font-size:32px;margin-bottom:12px;">👤</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Individual Student</div>
+              <div style="font-size:11px;color:var(--sand);">Full academic profile, prediction breakdown, trajectory chart, and recommended interventions.</div>
+              <button class="btn-sm btn-gold-sm" style="margin-top:14px;width:100%;">Generate</button>
+            </div>
+          </div>
+          <div class="card" style="cursor:pointer;">
+            <div class="card-body" style="text-align:center;padding:28px 20px;">
+              <div style="font-size:32px;margin-bottom:12px;"><i class="fas fa-chart-bar"></i></div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Cohort Analysis</div>
+              <div style="font-size:11px;color:var(--sand);">Risk tier distribution, average metrics, trend analysis, and department comparison stats.</div>
+              <button class="btn-sm btn-gold-sm" style="margin-top:14px;width:100%;">Generate</button>
+            </div>
+          </div>
+          <div class="card" style="cursor:pointer;">
+            <div class="card-body" style="text-align:center;padding:28px 20px;">
+              <div style="font-size:32px;margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i></div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Risk Summary</div>
+              <div style="font-size:11px;color:var(--sand);">All active alerts, student-alert mapping, advisor info, and resolution status.</div>
+              <button class="btn-sm btn-gold-sm" style="margin-top:14px;width:100%;">Generate</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Export Options</div></div>
+          <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div style="font-size:12px;color:var(--stone);">Format:</div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);cursor:pointer;"><input type="radio" name="exp-fmt" value="pdf" checked style="accent-color:var(--gold-dark)"/> PDF</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);cursor:pointer;"><input type="radio" name="exp-fmt" value="xlsx" style="accent-color:var(--gold-dark)"/> Excel (.xlsx)</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);cursor:pointer;"><input type="radio" name="exp-fmt" value="csv" style="accent-color:var(--gold-dark)"/> CSV</label>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <select class="filter-select"><option>All cohorts</option><option>A.Y. 2025-2026</option><option>A.Y. 2024-2025</option></select>
+              <button class="btn-sm btn-outline-sm">Schedule Export</button>
+              <button class="btn-sm btn-gold-sm">Download Now</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- end reports page -->
+
+    </main>
+  </div><!-- end dash-body -->
+
+  <div class="page-footer">
+    <span>WMSU Engineering HAWKS — Student Success Predictor v1.3.0</span>
+    <span>Model accuracy: 88.4% · Last retrained: Nov 2025</span>
+  </div>
+</div><!-- end dashboard screen -->
+
+<script src="dashboard.js"></script>
+</body>
+</html>
