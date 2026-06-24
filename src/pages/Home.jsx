@@ -42,9 +42,9 @@ const HomePage = () => {
   return (
     <div
       style={{
-        background: "linear-gradient(135deg, #1e0c0e 0%, #2a1215 100%)",
+        background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
         minHeight: "100vh",
-        color: "#fdf4f5",
+        color: "#F8FAFC",
         padding: "40px 20px",
       }}
     >
@@ -61,18 +61,29 @@ const HomePage = () => {
             style={{
               fontSize: "48px",
               fontWeight: "700",
-              color: "#800020",
+              color: "#F8FAFC",
               marginBottom: "12px",
             }}
           >
             Engineering Student Success Predictor
           </div>
+
           <div
-            style={{ fontSize: "20px", color: "#fdf4f5", marginBottom: "8px" }}
+            style={{
+              fontSize: "20px",
+              color: "#CBD5E1",
+              marginBottom: "8px",
+            }}
           >
             Predictive Analytics for Student Success
           </div>
-          <div style={{ color: "#c09098", fontSize: "16px" }}>
+
+          <div
+            style={{
+              color: "#94A3B8",
+              fontSize: "16px",
+            }}
+          >
             Data-driven insights to identify at-risk students and enable timely
             interventions
           </div>
@@ -92,26 +103,24 @@ const HomePage = () => {
               key={role.id}
               onClick={() => navigate(role.path)}
               style={{
-                background: "rgba(128, 0, 32, 0.05)",
-                border: "2px solid #800020",
+                background: "#FFFFFF",
+                border: "1px solid #E2E8F0",
                 borderRadius: "16px",
                 padding: "32px",
                 textAlign: "center",
                 cursor: "pointer",
-                transition: "all 0.3s",
+                transition: "all 0.3s ease",
                 display: "flex",
                 flexDirection: "column",
                 height: "100%",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.background = "rgba(128, 0, 32, 0.1)";
+                e.currentTarget.style.transform = "translateY(-6px)";
                 e.currentTarget.style.boxShadow =
-                  "0 12px 24px rgba(128, 0, 32, 0.15)";
+                  "0 15px 30px rgba(0,0,0,0.12)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.background = "rgba(128, 0, 32, 0.05)";
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
@@ -119,24 +128,26 @@ const HomePage = () => {
                 style={{
                   fontSize: "40px",
                   marginBottom: "16px",
-                  color: "#800020",
+                  color: "#B91C1C",
                 }}
               >
                 <i className={role.icon}></i>
               </div>
+
               <div
                 style={{
                   fontSize: "24px",
                   fontWeight: "700",
-                  color: "#800020",
+                  color: "#0F172A",
                   marginBottom: "12px",
                 }}
               >
                 {role.title}
               </div>
+
               <div
                 style={{
-                  color: "#c09098",
+                  color: "#64748B",
                   fontSize: "14px",
                   marginBottom: "24px",
                   lineHeight: "1.6",
@@ -144,30 +155,31 @@ const HomePage = () => {
               >
                 {role.description}
               </div>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(role.path);
                 }}
                 style={{
-                  background: "#800020",
-                  color: "#1e0c0e",
+                  background: "#B91C1C",
+                  color: "#FFFFFF",
                   border: "none",
                   padding: "12px 28px",
                   borderRadius: "8px",
                   fontWeight: "600",
                   cursor: "pointer",
-                  transition: "all 0.3s",
+                  transition: "all 0.3s ease",
                   alignSelf: "center",
                   marginTop: "auto",
                   width: "160px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#6b0019";
+                  e.currentTarget.style.background = "#DC2626";
                   e.currentTarget.style.transform = "scale(1.05)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#800020";
+                  e.currentTarget.style.background = "#B91C1C";
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
@@ -180,7 +192,7 @@ const HomePage = () => {
         {/* Features Section */}
         <div
           style={{
-            background: "rgba(0, 0, 0, 0.3)",
+            background: "#1E293B",
             borderRadius: "16px",
             padding: "40px",
             marginBottom: "40px",
@@ -190,12 +202,13 @@ const HomePage = () => {
             style={{
               fontSize: "28px",
               fontWeight: "700",
-              color: "#800020",
+              color: "#F8FAFC",
               marginBottom: "24px",
             }}
           >
             Key Features
           </div>
+
           <div
             style={{
               display: "grid",
@@ -209,22 +222,29 @@ const HomePage = () => {
                   style={{
                     fontSize: "24px",
                     minWidth: "24px",
-                    color: "#800020",
+                    color: "#EF4444",
                   }}
                 >
                   <i className={feature.icon}></i>
                 </div>
+
                 <div>
                   <div
                     style={{
                       fontWeight: "600",
                       marginBottom: "4px",
-                      color: "#fdf4f5",
+                      color: "#F8FAFC",
                     }}
                   >
                     {feature.title}
                   </div>
-                  <div style={{ fontSize: "13px", color: "#c09098" }}>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#CBD5E1",
+                    }}
+                  >
                     {feature.desc}
                   </div>
                 </div>
@@ -237,7 +257,7 @@ const HomePage = () => {
         <div
           style={{
             textAlign: "center",
-            color: "#c09098",
+            color: "#94A3B8",
             fontSize: "12px",
             paddingBottom: "20px",
           }}
