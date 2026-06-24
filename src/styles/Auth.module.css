@@ -5,7 +5,7 @@
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  background: linear-gradient(135deg, #fff7f7 0%, #ffffff 100%);
   position: relative;
   overflow: hidden;
 }
@@ -15,11 +15,7 @@
   position: absolute;
   width: 800px;
   height: 800px;
-  background: radial-gradient(
-    circle,
-    rgba(220, 20, 60, 0.15) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(139, 0, 0, 0.08) 0%, transparent 70%);
   top: -200px;
   left: -200px;
   pointer-events: none;
@@ -30,11 +26,7 @@
   position: absolute;
   width: 600px;
   height: 600px;
-  background: radial-gradient(
-    circle,
-    rgba(185, 28, 28, 0.08) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(139, 0, 0, 0.05) 0%, transparent 70%);
   bottom: -150px;
   right: -150px;
   pointer-events: none;
@@ -47,9 +39,7 @@
   max-height: calc(100vh - 32px);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow:
-  0 0 0 1px rgba(226, 232, 240, 0.1),
-  0 25px 50px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 0 0 1px rgba(139, 0, 0, 0.08), 0 25px 50px rgba(15, 23, 42, 0.14);
   position: relative;
   z-index: 1;
 }
@@ -57,8 +47,8 @@
 .brandPanel {
   width: 300px;
   min-width: 300px;
-  background: linear-gradient(160deg, #1E293B 0%, #0F172A 100%);
-  border-right: 1px solid rgba(185, 28, 28, 0.12);
+  background: linear-gradient(160deg, #8B0000 0%, #5c0000 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -138,7 +128,7 @@
 
 .brandSubtitle {
   font-size: 12px;
-  color: #CBD5E1;
+  color: #fce7e7;
   text-align: center;
   line-height: 1.6;
   position: relative;
@@ -149,12 +139,12 @@
 }
 
 .brandBadge {
-  background: rgba(185, 28, 28, 0.15);
-  border: 1px solid rgba(185, 28, 28, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 11px;
-  color: #FF6B6B;
+  color: #fff;
   letter-spacing: 1px;
   text-transform: uppercase;
   position: relative;
@@ -180,7 +170,7 @@
   padding: 0;
   background: transparent;
   border: none;
-  color: #B91C1C;
+  color: #8B0000;
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
@@ -190,17 +180,17 @@
 }
 
 .backButton:hover {
-  color: #DC2626;
+  color: #a00000;
 }
 
 .roleBadge {
   align-self: flex-start;
   margin-bottom: 12px;
   padding: 6px 12px;
-  border: 1px solid rgba(185, 28, 28, 0.25);
+  border: 1px solid rgba(139, 0, 0, 0.2);
   border-radius: 6px;
-  background: rgba(185, 28, 28, 0.08);  
-  color: #B91C1C;
+  background: #fff5f5;
+  color: #8B0000;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -266,7 +256,7 @@
 .formInput {
   width: 100%;
   height: 44px;
-  border: 2px solid #E0E0E0;
+  border: 1.5px solid #e7c9c9;
   border-radius: 8px;
   padding: 0 14px;
   font-size: 14px;
@@ -274,14 +264,12 @@
   background: #FFFFFF;
   color: #0F0F0F;
   outline: none;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .formInput:focus {
-  border-color: #B91C1C;
-box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+  border-color: #8B0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.12);
 }
 
 .formInput::placeholder {
@@ -318,26 +306,24 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 .formSelect {
   width: 100%;
   height: 44px;
-  border: 2px solid #E0E0E0;
+  border: 1.5px solid #e7c9c9;
   border-radius: 8px;
   padding: 0 14px;
   font-size: 14px;
   font-family: var(--sans);
   background: #FFFFFF
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23DC143C' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B0000' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
     no-repeat right 12px center;
   appearance: none;
   color: #0F0F0F;
   outline: none;
   cursor: pointer;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .formSelect:focus {
-  border-color: #B91C1C;
-box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+  border-color: #8B0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.12);
 }
 
 .rowSpaced {
@@ -370,7 +356,7 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 
 .formLink {
   font-size: 13px;
-  color: #B91C1C;
+  color: #8B0000;
   cursor: pointer;
   text-decoration: none;
   background: none;
@@ -380,7 +366,7 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 }
 
 .formLink:hover {
-  color: #DC2626;
+  color: #a00000;
 }
 
 .formLink:hover {
@@ -451,11 +437,7 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 .btnGold {
   width: 100%;
   height: 44px;
-  background: linear-gradient(
-    135deg,
-    #B91C1C 0%,
-    #991B1B 100%
-  );
+  background: linear-gradient(135deg, #8B0000 0%, #a00000 100%);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -465,16 +447,12 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
   letter-spacing: 1px;
   text-transform: uppercase;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 16px rgba(185, 28, 28, 0.25);
+  box-shadow: 0 4px 16px rgba(139, 0, 0, 0.18);
 }
 
 .btnGold:hover {
-  background: linear-gradient(
-    135deg,
-    #DC2626 0%,
-    #B91C1C 100%
-  );
-  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.35);
+  background: linear-gradient(135deg, #a00000 0%, #8B0000 100%);
+  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.24);
   transform: translateY(-2px);
 }
 
@@ -483,12 +461,12 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 }
 
 .errorBox {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #fff5f5;
+  border: 1px solid #f2caca;
   border-radius: var(--radius-sm);
   padding: 8px 12px;
   font-size: 12px;
-  color: #b91c1c;
+  color: #8B0000;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -509,14 +487,14 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 .fvHeading {
   font-family: "Playfair Display", serif;
   font-size: 24px;
-  color: var(--ink);
+  color: #8B0000;
   margin-bottom: 4px;
   font-weight: 700;
 }
 
 .fvSub {
   font-size: 13px;
-  color: var(--sand);
+  color: #777;
   margin-bottom: 24px;
 }
 
@@ -537,22 +515,20 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 .fInput {
   width: 100%;
   height: 40px;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border: 1.5px solid #e7c9c9;
   border-radius: var(--radius-sm);
   padding: 0 14px;
   font-size: 13px;
   font-family: "Inter", sans-serif;
-  background: var(--white);
-  color: var(--ink);
+  background: #fff;
+  color: #333;
   outline: none;
-  transition:
-    border-color 0.16s,
-    box-shadow 0.16s;
+  transition: border-color 0.16s, box-shadow 0.16s;
 }
 
 .fInput:focus {
-  border-color: #6b0019;
-  box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.14);
+  border-color: #8B0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.12);
 }
 
 .fInputWrap {
@@ -607,7 +583,7 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 
 .fLink {
   font-size: 12px;
-  color: #4a0012;
+  color: #8B0000;
   cursor: pointer;
   text-decoration: none;
   background: none;
@@ -622,11 +598,11 @@ box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
   text-align: center;
   margin-top: 14px;
   font-size: 12px;
-  color: var(--sand);
+  color: #777;
 }
 
 .signupLink {
-  color: #4a0012;
+  color: #8B0000;
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;

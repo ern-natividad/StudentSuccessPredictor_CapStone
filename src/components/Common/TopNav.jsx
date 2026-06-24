@@ -30,9 +30,11 @@ const TopNav = ({ onLogout }) => {
       <nav className={styles.topNav}>
         <div className={styles.navLogo}>
           <BrandHelmet className={styles.navLogoIcon} />
-          <span className={styles.navLogoText}>Engineering Hawks</span>
+          <div>
+            <div className={styles.navLogoText}>HawkPredict</div>
+            <div className={styles.navLogoSub}>WMSU — College of Engineering</div>
+          </div>
         </div>
-        <div className={styles.navDivider}></div>
         <div className={styles.navRight}>
           <button className={styles.navBell} onClick={toggleNotificationsPanel}>
             <svg
