@@ -5,6 +5,7 @@ import SignupForm from "./SignupForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getAuthRole } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
+import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,8 +26,8 @@ const AuthPage = () => {
         <div className={styles.brandPanel}>
           <div className={styles.logoContainer}>
             <img 
-              src="image_89056a.png" 
-              alt="College of Engineering and Technology Logo" 
+              src={engineeringLogo} 
+              alt="WMSU College of Engineering and Technology Seal" 
               className={styles.brandLogoImage} 
             />
           </div>
