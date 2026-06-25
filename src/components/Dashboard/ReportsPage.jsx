@@ -7,6 +7,21 @@ const ReportsPage = () => {
   const { students } = useDashboard();
   const [reportType, setReportType] = useState("overview");
 
+  const Icon = ({ children, ...props }) => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 16, height: 16, flexShrink: 0 }}
+      {...props}
+    >
+      {children}
+    </svg>
+  );
+
   const generateReport = () => {
     const low = students.filter((s) => s.risk === "Low").length;
     const medium = students.filter((s) => s.risk === "Medium").length;
@@ -215,9 +230,19 @@ const ReportsPage = () => {
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              📊 Export as PDF
+              <Icon>
+                <path d="M7 3h6l4 4v14H7z" />
+                <path d="M13 3v5h5" />
+                <path d="M9 13h6" />
+                <path d="M9 17h6" />
+              </Icon>
+              Export as PDF
             </button>
             <button
               style={{
@@ -227,9 +252,19 @@ const ReportsPage = () => {
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              📋 Export as CSV
+              <Icon>
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h5" />
+              </Icon>
+              Export as CSV
             </button>
             <button
               style={{
@@ -239,9 +274,20 @@ const ReportsPage = () => {
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
               }}
             >
-              📈 Export as Excel
+              <Icon>
+                <path d="M5 3h14v18H5z" />
+                <path d="M8 7h8" />
+                <path d="M8 11h8" />
+                <path d="M8 15h5" />
+                <path d="M15 15l2 2 2-2" />
+              </Icon>
+              Export as Excel
             </button>
           </div>
           <p style={{ fontSize: "12px", color: "#a89870", marginTop: "12px" }}>
