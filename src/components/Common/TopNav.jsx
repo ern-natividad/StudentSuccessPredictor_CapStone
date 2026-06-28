@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useDashboard } from "../../hooks/useDashboard";
 import { generateInitials } from "../../utils/authUtils";
-import BrandHelmet from "./BrandHelmet";
 import ConfirmModal from "./ConfirmModal";
+import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 import styles from "../../styles/Dashboard.module.css";
 
 const TopNav = ({ onLogout }) => {
@@ -29,7 +29,19 @@ const TopNav = ({ onLogout }) => {
     <>
       <nav className={styles.topNav}>
         <div className={styles.navLogo}>
-          <BrandHelmet className={styles.navLogoIcon} />
+          <img 
+            src={engineeringLogo} 
+            alt="WMSU College of Engineering Logo" 
+            className={styles.navLogoIcon}
+            style={{ 
+              width: "28px", 
+              height: "28px", 
+              objectFit: "contain",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              padding: "2px"
+            }}
+          />
           <div>
             <div className={styles.navLogoText}>HawkPredict</div>
             <div className={styles.navLogoSub}>WMSU — College of Engineering</div>
