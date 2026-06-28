@@ -41,6 +41,13 @@ const AdminDashboardContent = () => {
     { id: "audit", label: "Audit Logs", icon: "fas fa-history" },
   ];
 
+  const moduleLinks = [
+    { id: "pre-enrollment", label: "Degree Recommendation", path: "/modules/pre-enrollment" },
+    { id: "academic-performance", label: "Performance Forecasting", path: "/modules/academic-performance" },
+    { id: "what-if-simulator", label: "What-If Simulator", path: "/modules/what-if-simulator" },
+    { id: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
+  ];
+
   const renderAdminPage = () => {
     switch (currentPage) {
       case "dashboard":
@@ -173,6 +180,18 @@ const AdminDashboardContent = () => {
                 <i className={page.icon}></i>
               </span>
               {page.label}
+            </button>
+          ))}
+
+          <div className={styles.sidebarSectionLabel}>Modules</div>
+          {moduleLinks.map((link) => (
+            <button
+              key={link.id}
+              className={styles.sidebarItem}
+              onClick={() => navigate(link.path)}
+            >
+              <span className={styles.siIcon}>📌</span>
+              {link.label}
             </button>
           ))}
         </aside>

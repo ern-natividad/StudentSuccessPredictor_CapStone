@@ -8,6 +8,11 @@ import AuthPage from "./components/Auth/AuthPage";
 import DashboardLayout from "./components/Dashboard/DashboardLayout";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import StaffDashboard from "./components/Dashboard/StaffDashboard";
+import PreEnrollmentModule from "./pages/PreEnrollmentModule";
+import AcademicPerformanceModule from "./pages/AcademicPerformanceModule";
+import WhatIfSimulator from "./pages/WhatIfSimulator";
+import AIAcademicAdvisingModule from "./pages/AIAcademicAdvisingModule";
+import UnauthorizedPage from "./pages/Unauthorized";
 
 function App() {
   return (
@@ -43,6 +48,39 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/modules/pre-enrollment"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                <PreEnrollmentModule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/modules/academic-performance"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                <AcademicPerformanceModule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/modules/what-if-simulator"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                <WhatIfSimulator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/modules/ai-advising"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                <AIAcademicAdvisingModule />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Routes>
       </AuthProvider>
     </Router>
