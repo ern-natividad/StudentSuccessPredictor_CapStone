@@ -19,9 +19,13 @@ Visit: `http://localhost:5173/`
 
 ## 📚 Documentation
 
-- **[Setup Guide](./SETUP_GUIDE.md)** - Installation and quick start
-- **[React Migration Guide](./REACT_MIGRATION_GUIDE.md)** - Complete conversion details
-- **[Original Docs](./src/StudentSuccessPredictor_CapStone-main/)** - Legacy HTML/JS documentation
+For comprehensive documentation, see [docs/INDEX.md](./docs/INDEX.md)
+
+Key Resources:
+- **[System Documentation](./docs/SYSTEM_DOCUMENTATION.md)** - Architecture and design
+- **[Testing Guide](./docs/TESTING_GUIDE.md)** - Testing procedures
+- **[Quick Reference](./docs/QUICK_REFERENCE.md)** - Common tasks
+- **[Implementation Status](./docs/IMPLEMENTATION_COMPLETE.md)** - Completion notes
 
 ## 🎯 What's New
 
