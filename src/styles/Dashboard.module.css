@@ -263,6 +263,7 @@
   overflow-y: auto;
   flex-shrink: 0;
   gap: 2px;
+  transition: width 0.2s ease-in-out;
 }
 
 .sidebarSectionLabel {
@@ -667,3 +668,115 @@
   background: #ffe0e0;
   color: #ff4444;
 }
+
+/* Retractable Sidebar states */
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar.collapsed .sidebarSectionLabel {
+  display: none;
+}
+
+.sidebar.collapsed .sidebarDivider {
+  display: none;
+}
+
+.sidebar.collapsed .sidebarText {
+  display: none;
+}
+
+.sidebar.collapsed .siBadge {
+  display: none;
+}
+
+.sidebar.collapsed .sidebarItem {
+  padding: 10px 0;
+  justify-content: center;
+  border-left-width: 0px;
+}
+
+.sidebar.collapsed .sidebarItem.active {
+  background: #fff5f5;
+  border-left: 3px solid #8B0000;
+}
+
+.darkSidebar.collapsed .sidebarItem.active {
+  background: rgba(185, 28, 28, 0.18) !important;
+  border-left: 3px solid #b91c1c !important;
+}
+
+/* Dark theme global sidebar */
+.darkSidebar {
+  background: #111827 !important;
+  border-right: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+.darkSidebar .sidebarSectionLabel {
+  color: #94a3b8 !important;
+}
+
+.darkSidebar .sidebarItem {
+  color: #cbd5e1 !important;
+}
+
+.darkSidebar .sidebarItem:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #fff !important;
+}
+
+.darkSidebar .sidebarItem.active {
+  background: rgba(185, 28, 28, 0.18) !important;
+  color: #fff !important;
+  border-left-color: #b91c1c !important;
+}
+
+.darkSidebar .sidebarDivider {
+  background: rgba(148, 163, 184, 0.16) !important;
+}
+
+/* Toggle Container & Button */
+.sidebarToggleContainer {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+  border-top: 1px solid #e0e0e0;
+}
+
+.darkSidebar .sidebarToggleContainer {
+  border-top-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.sidebarToggleButton {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.sidebarToggleButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.darkSidebar .sidebarToggleButton {
+  color: #cbd5e1;
+}
+
+.darkSidebar .sidebarToggleButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* Module Screen overrides */
+.dashboardScreen.modulePageBg {
+  background: #0f172a;
+}

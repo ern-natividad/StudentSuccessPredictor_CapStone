@@ -1,58 +1,152 @@
-import React from "react";
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import { useDashboard } from "../../hooks/useDashboard";
+import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Dashboard.module.css";
 
-const Sidebar = ({ pages: customPages }) => {
-  const { currentPage, showPage } = useDashboard();
+const Sidebar = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentPage, showPage, alerts } = useDashboard();
 
-  const defaultPages = [
-    { id: "dashboard", icon: "fas fa-chart-bar", label: "Dashboard" },
-    { id: "students", icon: "fas fa-users", label: "All Students" },
-    { id: "simulator", icon: "🔬", label: "What-If Simulator" },
-    {
-      id: "alerts",
-      icon: "fas fa-exclamation-triangle",
-      label: "Early Alerts",
-      badge: 5,
-    },
-    { id: "screening", icon: "fas fa-check-square", label: "Screening" },
-    { id: "reports", icon: "fas fa-file-alt", label: "Reports" },
-  ];
+  // Collapsed state persisted in localStorage
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    return saved === "true";
+  });
 
-  const pages = customPages || defaultPages;
-  const primaryPages = pages.slice(0, 2);
-  const secondaryPages = pages.slice(2);
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("sidebarCollapsed", String(next));
+      return next;
+    });
+  };
 
-  const renderPageButton = (page) => (
-    <button
-      key={page.id}
-      className={`${styles.sidebarItem} ${currentPage === page.id ? styles.active : ""}`}
-      onClick={() => showPage(page.id)}
-    >
-      <span className={styles.siIcon}>
-        {page.icon.includes("fas") ? <i className={page.icon}></i> : page.icon}
-      </span>
-      {page.label}
-      {page.badge && <span className={styles.siBadge}>{page.badge}</span>}
-    </button>
-  );
+  const isModulePage = location.pathname.startsWith("/modules");
+  
+  // Resolve items based on role
+  const getSidebarConfig = () => {
+    if (user.role === "student") {
+      return {
+        sectionLabel: "Student Panel",
+        items: [
+          { id: "prediction", icon: "fas fa-chart-line", label: "Prediction Result" },
+          { id: "simulator", icon: "🔬", label: "What-If Simulator" },
+        ],
+        modules: []
+      };
+    }
+    
+    if (user.role === "staff") {
+      return {
+        sectionLabel: "Staff Panel",
+        items: [
+          { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
+          { id: "students", icon: "fas fa-users", label: "Students" },
+          { id: "alerts", icon: "fas fa-exclamation-triangle", label: "Early Alerts", badge: alerts.length },
+          { id: "screening", icon: "fas fa-check-square", label: "Screening" },
+        ],
+        modules: [
+          { id: "pre-enrollment", label: "Degree Recommendation", icon: "📌", path: "/modules/pre-enrollment" },
+          { id: "academic-performance", label: "Performance Forecasting", icon: "📌", path: "/modules/academic-performance" },
+          { id: "what-if-simulator", label: "What-If Simulator", icon: "🔬", path: "/modules/what-if-simulator" },
+          { id: "ai-advising", label: "AI Advising", icon: "📌", path: "/modules/ai-advising" },
+        ]
+      };
+    }
+    
+    // admin
+    return {
+      sectionLabel: "Admin Panel",
+      items: [
+        { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
+        { id: "students", icon: "fas fa-users", label: "Students" },
+        { id: "alerts", icon: "fas fa-exclamation-triangle", label: "Alerts", badge: alerts.length },
+        { id: "models", icon: "fas fa-cogs", label: "Model Management" },
+        { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
+      ],
+      modules: [
+        { id: "pre-enrollment", label: "Degree Recommendation", icon: "📌", path: "/modules/pre-enrollment" },
+        { id: "academic-performance", label: "Performance Forecasting", icon: "📌", path: "/modules/academic-performance" },
+        { id: "what-if-simulator", label: "What-If Simulator", icon: "🔬", path: "/modules/what-if-simulator" },
+        { id: "ai-advising", label: "AI Advising", icon: "📌", path: "/modules/ai-advising" },
+      ]
+    };
+  };
+
+  const config = getSidebarConfig();
+
+  const handleTabClick = (pageId) => {
+    const basePath = getDashboardPath(user.role);
+    if (location.pathname !== basePath) {
+      navigate(`${basePath}?tab=${pageId}`);
+    } else {
+      showPage(pageId);
+    }
+  };
+
+  const handleModuleClick = (path) => {
+    navigate(path);
+  };
+
+  const renderItemButton = (item) => {
+    const isActive = !isModulePage && currentPage === item.id;
+    return (
+      <button
+        key={item.id}
+        className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
+        onClick={() => handleTabClick(item.id)}
+        title={isCollapsed ? item.label : ""}
+      >
+        <span className={styles.siIcon}>
+          {item.icon.includes("fas") ? <i className={item.icon}></i> : item.icon}
+        </span>
+        <span className={styles.sidebarText}>{item.label}</span>
+        {item.badge ? <span className={styles.siBadge}>{item.badge}</span> : null}
+      </button>
+    );
+  };
+
+  const renderModuleButton = (item) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <button
+        key={item.id}
+        className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
+        onClick={() => handleModuleClick(item.path)}
+        title={isCollapsed ? item.label : ""}
+      >
+        <span className={styles.siIcon}>
+          {item.icon.includes("fas") ? <i className={item.icon}></i> : item.icon}
+        </span>
+        <span className={styles.sidebarText}>{item.label}</span>
+      </button>
+    );
+  };
 
   return (
-    <aside className={styles.sidebar}>
-      {primaryPages.length > 0 && (
+    <aside 
+      className={`${styles.sidebar} ${isModulePage ? styles.darkSidebar : ""} ${isCollapsed ? styles.collapsed : ""}`}
+    >
+      <div className={styles.sidebarSectionLabel}>{config.sectionLabel}</div>
+      {config.items.map(renderItemButton)}
+
+      {config.modules.length > 0 && (
         <>
-          <div className={styles.sidebarSectionLabel}>Overview</div>
-          {primaryPages.map(renderPageButton)}
+          <div className={styles.sidebarDivider}></div>
+          <div className={styles.sidebarSectionLabel}>Modules</div>
+          {config.modules.map(renderModuleButton)}
         </>
       )}
 
-      {secondaryPages.length > 0 && (
-        <>
-          <div className={styles.sidebarDivider}></div>
-          <div className={styles.sidebarSectionLabel}>Academic</div>
-          {secondaryPages.map(renderPageButton)}
-        </>
-      )}
+      <div className={styles.sidebarToggleContainer}>
+        <button className={styles.sidebarToggleButton} onClick={toggleCollapse}>
+          <i className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`}></i>
+        </button>
+      </div>
     </aside>
   );
 };

@@ -1,26 +1,27 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useDashboard } from "../../hooks/useDashboard";
 import styles from "../../styles/Dashboard.module.css";
 import commonStyles from "../../styles/Common.module.css";
 
+// Extracted to module scope to prevent recreation on every render
+const SvgIcon = ({ children, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ width: 16, height: 16, flexShrink: 0 }}
+    {...props}
+  >
+    {children}
+  </svg>
+);
+
 const ReportsPage = () => {
   const { students } = useDashboard();
   const [reportType, setReportType] = useState("overview");
-
-  const Icon = ({ children, ...props }) => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: 16, height: 16, flexShrink: 0 }}
-      {...props}
-    >
-      {children}
-    </svg>
-  );
 
   const generateReport = () => {
     const low = students.filter((s) => s.risk === "Low").length;
@@ -236,12 +237,12 @@ const ReportsPage = () => {
                 gap: "8px",
               }}
             >
-              <Icon>
+              <SvgIcon>
                 <path d="M7 3h6l4 4v14H7z" />
                 <path d="M13 3v5h5" />
                 <path d="M9 13h6" />
                 <path d="M9 17h6" />
-              </Icon>
+              </SvgIcon>
               Export as PDF
             </button>
             <button
@@ -258,12 +259,12 @@ const ReportsPage = () => {
                 gap: "8px",
               }}
             >
-              <Icon>
+              <SvgIcon>
                 <path d="M4 4h16v16H4z" />
                 <path d="M8 8h8" />
                 <path d="M8 12h8" />
                 <path d="M8 16h5" />
-              </Icon>
+              </SvgIcon>
               Export as CSV
             </button>
             <button
@@ -280,13 +281,13 @@ const ReportsPage = () => {
                 gap: "8px",
               }}
             >
-              <Icon>
+              <SvgIcon>
                 <path d="M5 3h14v18H5z" />
                 <path d="M8 7h8" />
                 <path d="M8 11h8" />
                 <path d="M8 15h5" />
                 <path d="M15 15l2 2 2-2" />
-              </Icon>
+              </SvgIcon>
               Export as Excel
             </button>
           </div>

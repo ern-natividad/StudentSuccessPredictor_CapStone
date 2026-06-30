@@ -1,19 +1,29 @@
-import React, { createContext, useState, useCallback } from "react";
+import { createContext, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { STUDENTS, ALERTS_DATA } from "../utils/constants";
 
 export const DashboardContext = createContext();
 
 export const DashboardProvider = ({ children }) => {
-  const [currentPage, setCurrentPage] = useState("dashboard");
-  const [students, setStudents] = useState(STUDENTS);
-  const [alerts, setAlerts] = useState(ALERTS_DATA);
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab = user.role === "student" ? "prediction" : "dashboard";
+  const currentPage = searchParams.get("tab") || defaultTab;
+
+  const [students] = useState(STUDENTS);
+  const [alerts] = useState(ALERTS_DATA);
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [studentFilter, setStudentFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
 
   const showPage = useCallback((pageId) => {
-    setCurrentPage(pageId);
-  }, []);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", pageId);
+      return next;
+    });
+  }, [setSearchParams]);
 
   const toggleNotificationsPanel = useCallback(() => {
     setNotificationsPanelOpen((prev) => !prev);

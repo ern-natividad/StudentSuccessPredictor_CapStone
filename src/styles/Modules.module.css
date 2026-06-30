@@ -1,6 +1,5 @@
 .moduleLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: block;
   min-height: 100vh;
   background: var(--bg-main);
   color: var(--text-primary);
@@ -51,7 +50,7 @@
 }
 
 .moduleContent {
-  padding: 2rem;
+  padding: 0;
 }
 
 .moduleHeader {

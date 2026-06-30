@@ -11,12 +11,12 @@ const TopNav = ({ onLogout }) => {
   const { toggleNotificationsPanel, alerts } = useDashboard();
   const [showConfirm, setShowConfirm] = useState(false);
   const initials = generateInitials(user.name);
-  const roleLabel =
-    user.role === "admin"
-      ? "System Administrator"
-      : user.role === "staff"
-        ? "Academic Staff"
-        : "Engineering Student - 3rd Year";
+  const ROLE_LABELS = {
+    admin: "System Administrator",
+    staff: "Academic Staff",
+    student: "Engineering Student - 3rd Year",
+  };
+  const roleLabel = ROLE_LABELS[user.role] ?? "User";
 
   const handleLogoutClick = () => setShowConfirm(true);
   const handleConfirmLogout = () => {
