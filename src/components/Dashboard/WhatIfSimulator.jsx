@@ -12,6 +12,7 @@ import {
 import { Line } from "react-chartjs-2";
 import styles from "../../styles/Dashboard.module.css";
 import commonStyles from "../../styles/Common.module.css";
+import { normalizeWhatIfPayload } from "../../utils/dataNormalization";
 
 ChartJS.register(
   CategoryScale,
@@ -49,12 +50,17 @@ const WhatIfSimulator = () => {
     return Math.min(Math.max(predicted, 1.0), 4.0);
   };
 
+  const normalizedScenario = normalizeWhatIfPayload(inputs);
+
   const predictionData = {
     labels: ["SHS GPA", "Predicted"],
     datasets: [
       {
         label: "GPA",
-        data: [inputs.shsGpa, predictGPA()],
+        data: [
+          normalizedScenario.senior_high_school_gpa,
+          normalizedScenario.predicted_gpa,
+        ],
         backgroundColor: ["rgba(201, 162, 0, 0.3)", "rgba(45, 122, 79, 0.3)"],
         borderColor: ["#C9A200", "#2d7a4f"],
         borderWidth: 2,
@@ -83,7 +89,9 @@ const WhatIfSimulator = () => {
               min="0"
               max="100"
               value={inputs.hsGpa}
-              onChange={(e) => handleInputChange("hsGpa", parseInt(e.target.value))}
+              onChange={(e) =>
+                handleInputChange("hsGpa", parseInt(e.target.value))
+              }
               className={commonStyles.sliderInput}
             />
           </div>
@@ -91,7 +99,9 @@ const WhatIfSimulator = () => {
           <div className={commonStyles.sliderContainer}>
             <div className={commonStyles.sliderLabel}>
               <span>Senior High School GPA</span>
-              <span className={commonStyles.sliderValue}>{inputs.shsGpa.toFixed(2)}</span>
+              <span className={commonStyles.sliderValue}>
+                {inputs.shsGpa.toFixed(2)}
+              </span>
             </div>
             <input
               type="range"
@@ -99,7 +109,9 @@ const WhatIfSimulator = () => {
               max="4"
               step="0.1"
               value={inputs.shsGpa}
-              onChange={(e) => handleInputChange("shsGpa", parseFloat(e.target.value))}
+              onChange={(e) =>
+                handleInputChange("shsGpa", parseFloat(e.target.value))
+              }
               className={commonStyles.sliderInput}
             />
           </div>
@@ -107,14 +119,18 @@ const WhatIfSimulator = () => {
           <div className={commonStyles.sliderContainer}>
             <div className={commonStyles.sliderLabel}>
               <span>WMSU CET Scores</span>
-              <span className={commonStyles.sliderValue}>{inputs.cetScore}</span>
+              <span className={commonStyles.sliderValue}>
+                {inputs.cetScore}
+              </span>
             </div>
             <input
               type="range"
               min="0"
               max="100"
               value={inputs.cetScore}
-              onChange={(e) => handleInputChange("cetScore", parseInt(e.target.value))}
+              onChange={(e) =>
+                handleInputChange("cetScore", parseInt(e.target.value))
+              }
               className={commonStyles.sliderInput}
             />
           </div>
@@ -122,14 +138,18 @@ const WhatIfSimulator = () => {
           <div className={commonStyles.sliderContainer}>
             <div className={commonStyles.sliderLabel}>
               <span>Screening Result</span>
-              <span className={commonStyles.sliderValue}>{inputs.screening}%</span>
+              <span className={commonStyles.sliderValue}>
+                {inputs.screening}%
+              </span>
             </div>
             <input
               type="range"
               min="0"
               max="100"
               value={inputs.screening}
-              onChange={(e) => handleInputChange("screening", parseInt(e.target.value))}
+              onChange={(e) =>
+                handleInputChange("screening", parseInt(e.target.value))
+              }
               className={commonStyles.sliderInput}
             />
           </div>
@@ -144,8 +164,12 @@ const WhatIfSimulator = () => {
           </div>
 
           <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Senior High School GPA</div>
-            <div className={commonStyles.metricValue}>{inputs.shsGpa.toFixed(2)}</div>
+            <div className={commonStyles.metricLabel}>
+              Senior High School GPA
+            </div>
+            <div className={commonStyles.metricValue}>
+              {inputs.shsGpa.toFixed(2)}
+            </div>
           </div>
 
           <div className={commonStyles.metric}>
@@ -160,16 +184,23 @@ const WhatIfSimulator = () => {
 
           <div className={commonStyles.metric}>
             <div className={commonStyles.metricLabel}>Predicted GPA</div>
-            <div className={commonStyles.metricValue} style={{ color: "#2d7a4f" }}>
+            <div
+              className={commonStyles.metricValue}
+              style={{ color: "#2d7a4f" }}
+            >
               {predictGPA().toFixed(2)}
             </div>
           </div>
 
           <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Projected Change (vs SHS GPA)</div>
+            <div className={commonStyles.metricLabel}>
+              Projected Change (vs SHS GPA)
+            </div>
             <div
               className={commonStyles.metricValue}
-              style={{ color: predictGPA() > inputs.shsGpa ? "#2d7a4f" : "#c0392b" }}
+              style={{
+                color: predictGPA() > inputs.shsGpa ? "#2d7a4f" : "#c0392b",
+              }}
             >
               {predictGPA() > inputs.shsGpa ? "+" : ""}
               {(predictGPA() - inputs.shsGpa).toFixed(2)}
@@ -207,14 +238,24 @@ const WhatIfSimulator = () => {
       <div className={styles.card} style={{ marginTop: "20px" }}>
         <div className={styles.cardTitle}>Insights & Recommendations</div>
         <ul style={{ fontSize: "13px", lineHeight: "2", color: "#5a5240" }}>
-          <li>• Strong Senior High School GPA is a key indicator of college performance</li>
+          <li>
+            • Strong Senior High School GPA is a key indicator of college
+            performance
+          </li>
           <li>• Higher WMSU CET scores correlate with better predicted GPA</li>
-          <li>• Screening results reflect non-academic factors that affect risk</li>
+          <li>
+            • Screening results reflect non-academic factors that affect risk
+          </li>
           {predictGPA() > inputs.shsGpa && (
-            <li style={{ color: "#2d7a4f" }}>✓ Your predicted improvements suggest a positive trajectory</li>
+            <li style={{ color: "#2d7a4f" }}>
+              ✓ Your predicted improvements suggest a positive trajectory
+            </li>
           )}
           {predictGPA() <= inputs.shsGpa && inputs.hsGpa < 80 && (
-            <li style={{ color: "#c0392b" }}>⚠ Consider improving foundational metrics (HS GPA/CET) or review screening factors</li>
+            <li style={{ color: "#c0392b" }}>
+              ⚠ Consider improving foundational metrics (HS GPA/CET) or review
+              screening factors
+            </li>
           )}
         </ul>
       </div>

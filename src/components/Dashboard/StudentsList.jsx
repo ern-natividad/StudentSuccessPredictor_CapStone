@@ -77,18 +77,18 @@ const StudentsList = () => {
           </thead>
           <tbody>
             {filteredStudents.map((student) => (
-              <tr key={student.id} className={commonStyles.tableRow}>
-                <td>{student.id}</td>
-                <td>{student.name}</td>
-                <td>{student.year}</td>
-                <td>{student.gpa.toFixed(2)}</td>
-                <td>{student.pred.toFixed(2)}</td>
-                <td>{student.conf}%</td>
+              <tr key={student.student_id} className={commonStyles.tableRow}>
+                <td>{student.student_id}</td>
+                <td>{student.full_name}</td>
+                <td>{student.year_level}</td>
+                <td>{student.current_gpa.toFixed(2)}</td>
+                <td>{student.predicted_gpa.toFixed(2)}</td>
+                <td>{student.confidence_score}%</td>
                 <td>
                   <span
-                    className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + student.risk.toLowerCase()]}`}
+                    className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + student.risk_level.toLowerCase()]}`}
                   >
-                    {student.risk}
+                    {student.risk_level}
                   </span>
                 </td>
               </tr>
@@ -120,25 +120,25 @@ const StudentsList = () => {
         >
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk === "Low").length}
+              {students.filter((s) => s.risk_level === "Low").length}
             </div>
             <div className={commonStyles.statLabel}>Low Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk === "Medium").length}
+              {students.filter((s) => s.risk_level === "Medium").length}
             </div>
             <div className={commonStyles.statLabel}>Medium Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk === "High").length}
+              {students.filter((s) => s.risk_level === "High").length}
             </div>
             <div className={commonStyles.statLabel}>High Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk === "Critical").length}
+              {students.filter((s) => s.risk_level === "Critical").length}
             </div>
             <div className={commonStyles.statLabel}>Critical</div>
           </div>

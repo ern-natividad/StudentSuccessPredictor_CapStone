@@ -26,54 +26,120 @@ const Sidebar = () => {
   };
 
   const isModulePage = location.pathname.startsWith("/modules");
-  
+
   // Resolve items based on role
   const getSidebarConfig = () => {
     if (user.role === "student") {
       return {
         sectionLabel: "Student Panel",
         items: [
-          { id: "prediction", icon: "fas fa-chart-line", label: "Prediction Result" },
+          {
+            id: "prediction",
+            icon: "fas fa-chart-line",
+            label: "Prediction Result",
+          },
           { id: "simulator", icon: "🔬", label: "What-If Simulator" },
         ],
-        modules: []
+        modules: [],
       };
     }
-    
+
     if (user.role === "staff") {
       return {
         sectionLabel: "Staff Panel",
         items: [
           { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
           { id: "students", icon: "fas fa-users", label: "Students" },
-          { id: "alerts", icon: "fas fa-exclamation-triangle", label: "Early Alerts", badge: alerts.length },
+          {
+            id: "alerts",
+            icon: "fas fa-exclamation-triangle",
+            label: "Early Alerts",
+            badge: alerts.length,
+          },
           { id: "screening", icon: "fas fa-check-square", label: "Screening" },
         ],
         modules: [
-          { id: "pre-enrollment", label: "Degree Recommendation", icon: "📌", path: "/modules/pre-enrollment" },
-          { id: "academic-performance", label: "Performance Forecasting", icon: "📌", path: "/modules/academic-performance" },
-          { id: "what-if-simulator", label: "What-If Simulator", icon: "🔬", path: "/modules/what-if-simulator" },
-          { id: "ai-advising", label: "AI Advising", icon: "📌", path: "/modules/ai-advising" },
-        ]
+          {
+            id: "pre-enrollment",
+            label: "Degree Recommendation",
+            icon: "📌",
+            path: "/modules/pre-enrollment",
+          },
+          {
+            id: "curriculum",
+            label: "Curriculum",
+            icon: "📚",
+            path: "/modules/curriculum",
+          },
+          {
+            id: "academic-performance",
+            label: "Performance Forecasting",
+            icon: "📌",
+            path: "/modules/academic-performance",
+          },
+          {
+            id: "what-if-simulator",
+            label: "What-If Simulator",
+            icon: "🔬",
+            path: "/modules/what-if-simulator",
+          },
+          {
+            id: "ai-advising",
+            label: "AI Advising",
+            icon: "📌",
+            path: "/modules/ai-advising",
+          },
+        ],
       };
     }
-    
+
     // admin
     return {
       sectionLabel: "Admin Panel",
       items: [
         { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
         { id: "students", icon: "fas fa-users", label: "Students" },
-        { id: "alerts", icon: "fas fa-exclamation-triangle", label: "Alerts", badge: alerts.length },
+        {
+          id: "alerts",
+          icon: "fas fa-exclamation-triangle",
+          label: "Alerts",
+          badge: alerts.length,
+        },
         { id: "models", icon: "fas fa-cogs", label: "Model Management" },
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
       ],
       modules: [
-        { id: "pre-enrollment", label: "Degree Recommendation", icon: "📌", path: "/modules/pre-enrollment" },
-        { id: "academic-performance", label: "Performance Forecasting", icon: "📌", path: "/modules/academic-performance" },
-        { id: "what-if-simulator", label: "What-If Simulator", icon: "🔬", path: "/modules/what-if-simulator" },
-        { id: "ai-advising", label: "AI Advising", icon: "📌", path: "/modules/ai-advising" },
-      ]
+        {
+          id: "pre-enrollment",
+          label: "Degree Recommendation",
+          icon: "📌",
+          path: "/modules/pre-enrollment",
+        },
+        {
+          id: "curriculum-manager",
+          label: "Curriculum Manager",
+          icon: "📚",
+          path: "/modules/curriculum-manager",
+        },
+        {
+          id: "academic-performance",
+          label: "Performance Forecasting",
+          icon: "📌",
+          path: "/modules/academic-performance",
+        },
+        {
+          id: "what-if-simulator",
+          label: "What-If Simulator",
+          icon: "🔬",
+          path: "/modules/what-if-simulator",
+        },
+        {
+          id: "ai-advising",
+          label: "AI Advising",
+          icon: "📌",
+          path: "/modules/ai-advising",
+        },
+      ],
     };
   };
 
@@ -102,10 +168,16 @@ const Sidebar = () => {
         title={isCollapsed ? item.label : ""}
       >
         <span className={styles.siIcon}>
-          {item.icon.includes("fas") ? <i className={item.icon}></i> : item.icon}
+          {item.icon.includes("fas") ? (
+            <i className={item.icon}></i>
+          ) : (
+            item.icon
+          )}
         </span>
         <span className={styles.sidebarText}>{item.label}</span>
-        {item.badge ? <span className={styles.siBadge}>{item.badge}</span> : null}
+        {item.badge ? (
+          <span className={styles.siBadge}>{item.badge}</span>
+        ) : null}
       </button>
     );
   };
@@ -120,7 +192,11 @@ const Sidebar = () => {
         title={isCollapsed ? item.label : ""}
       >
         <span className={styles.siIcon}>
-          {item.icon.includes("fas") ? <i className={item.icon}></i> : item.icon}
+          {item.icon.includes("fas") ? (
+            <i className={item.icon}></i>
+          ) : (
+            item.icon
+          )}
         </span>
         <span className={styles.sidebarText}>{item.label}</span>
       </button>
@@ -128,7 +204,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside 
+    <aside
       className={`${styles.sidebar} ${isModulePage ? styles.darkSidebar : ""} ${isCollapsed ? styles.collapsed : ""}`}
     >
       <div className={styles.sidebarSectionLabel}>{config.sectionLabel}</div>
@@ -144,7 +220,9 @@ const Sidebar = () => {
 
       <div className={styles.sidebarToggleContainer}>
         <button className={styles.sidebarToggleButton} onClick={toggleCollapse}>
-          <i className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`}></i>
+          <i
+            className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`}
+          ></i>
         </button>
       </div>
     </aside>

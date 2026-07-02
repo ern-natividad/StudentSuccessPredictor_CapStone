@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styles from "../../styles/Dashboard.module.css";
 import commonStyles from "../../styles/Common.module.css";
+import { normalizeScreeningPayload } from "../../utils/dataNormalization";
 
 const ScreeningPage = () => {
   const [responses, setResponses] = useState({
@@ -43,17 +44,18 @@ const ScreeningPage = () => {
     setResponses((prev) => ({ ...prev, [id]: parseInt(value) }));
   };
 
-  const riskScore =
-    Object.values(responses).reduce((a, b) => a + b, 0) /
-    Object.keys(responses).length;
-  const getRiskLevel = () => {
-    if (riskScore >= 4) return { level: "Low", color: "#2d7a4f" };
-    if (riskScore >= 3) return { level: "Medium", color: "#C9A200" };
-    if (riskScore >= 2) return { level: "High", color: "#d47000" };
-    return { level: "Critical", color: "#c0392b" };
+  const normalizedScreening = normalizeScreeningPayload(responses);
+  const riskScore = normalizedScreening.risk_score;
+  const riskColors = {
+    Low: "#2d7a4f",
+    Medium: "#C9A200",
+    High: "#d47000",
+    Critical: "#c0392b",
   };
-
-  const risk = getRiskLevel();
+  const risk = {
+    level: normalizedScreening.risk_level,
+    color: riskColors[normalizedScreening.risk_level],
+  };
 
   return (
     <div>

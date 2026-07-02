@@ -14,6 +14,8 @@ import AcademicPerformanceModule from "./pages/AcademicPerformanceModule";
 import WhatIfSimulator from "./pages/WhatIfSimulator";
 import AIAcademicAdvisingModule from "./pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
+import CurriculumManager from "./pages/CurriculumManager";
+import CurriculumViewer from "./pages/CurriculumViewer";
 
 function App() {
   return (
@@ -23,7 +25,10 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/:role" element={<AuthPage />} />
-          
+
+          {/* Public access to degree recommendation for prospective students */}
+          <Route path="/pre-enrollment" element={<PreEnrollmentModule />} />
+
           {/* Authenticated route group with unified layout */}
           <Route
             element={
@@ -63,6 +68,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["admin", "staff"]}>
                   <PreEnrollmentModule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/modules/curriculum-manager"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <CurriculumManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/modules/curriculum"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <CurriculumViewer />
                 </ProtectedRoute>
               }
             />

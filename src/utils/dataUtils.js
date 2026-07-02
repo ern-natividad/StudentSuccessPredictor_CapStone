@@ -43,7 +43,7 @@ export const calculatePercentage = (value, total) => {
  * Filter students by risk level
  */
 export const filterStudentsByRisk = (students, riskLevel) => {
-  return students.filter((student) => student.risk === riskLevel);
+  return students.filter((student) => student.risk_level === riskLevel);
 };
 
 /**
@@ -51,7 +51,9 @@ export const filterStudentsByRisk = (students, riskLevel) => {
  */
 export const sortStudentsByGPA = (students, ascending = false) => {
   return [...students].sort((a, b) => {
-    return ascending ? a.gpa - b.gpa : b.gpa - a.gpa;
+    return ascending
+      ? a.current_gpa - b.current_gpa
+      : b.current_gpa - a.current_gpa;
   });
 };
 
@@ -62,7 +64,7 @@ export const searchStudents = (students, query) => {
   const q = query.toLowerCase();
   return students.filter(
     (student) =>
-      student.name.toLowerCase().includes(q) ||
-      student.id.toLowerCase().includes(q),
+      student.full_name.toLowerCase().includes(q) ||
+      student.student_id.toLowerCase().includes(q),
   );
 };

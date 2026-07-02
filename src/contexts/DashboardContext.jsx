@@ -17,13 +17,16 @@ export const DashboardProvider = ({ children }) => {
   const [studentFilter, setStudentFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
 
-  const showPage = useCallback((pageId) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("tab", pageId);
-      return next;
-    });
-  }, [setSearchParams]);
+  const showPage = useCallback(
+    (pageId) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", pageId);
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
 
   const toggleNotificationsPanel = useCallback(() => {
     setNotificationsPanelOpen((prev) => !prev);
@@ -45,14 +48,15 @@ export const DashboardProvider = ({ children }) => {
     let filtered = students;
 
     if (riskFilter) {
-      filtered = filtered.filter((s) => s.risk === riskFilter);
+      filtered = filtered.filter((s) => s.risk_level === riskFilter);
     }
 
     if (studentFilter) {
       const q = studentFilter.toLowerCase();
       filtered = filtered.filter(
         (s) =>
-          s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q),
+          s.full_name.toLowerCase().includes(q) ||
+          s.student_id.toLowerCase().includes(q),
       );
     }
 

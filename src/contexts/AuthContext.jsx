@@ -8,6 +8,7 @@ import {
   clearUserSession,
   getRole,
 } from "../utils/authUtils";
+import { normalizeUserPayload } from "../utils/dataNormalization";
 
 export const AuthProvider = ({ children }) => {
   const session = getUserSession();
@@ -53,69 +54,69 @@ export const AuthProvider = ({ children }) => {
     return true;
   }, []);
 
-  const signup = useCallback(
-    (formData, selectedRole = "student") => {
-      setError("");
+  const signup = useCallback((formData, selectedRole = "student") => {
+    setError("");
 
-      const {
-        firstName,
-        lastName,
-        email,
-        studentId,
-        employeeId,
-        year,
-        department,
-        accessCode,
-        password,
-        confirmPassword,
-        termsAccepted,
-      } = formData;
-      const roleId = selectedRole || "student";
-      const roleSpecificId = roleId === "student" ? studentId : employeeId;
-      const roleSpecificGroup = roleId === "student" ? year : department;
+    const {
+      firstName,
+      lastName,
+      email,
+      studentId,
+      employeeId,
+      year,
+      department,
+      accessCode,
+      password,
+      confirmPassword,
+      termsAccepted,
+    } = formData;
+    const roleId = selectedRole || "student";
+    const roleSpecificId = roleId === "student" ? studentId : employeeId;
+    const roleSpecificGroup = roleId === "student" ? year : department;
 
-      if (
-        !firstName ||
-        !lastName ||
-        !email ||
-        !roleSpecificId ||
-        !roleSpecificGroup ||
-        !password ||
-        !confirmPassword
-      ) {
-        setError("Please complete all fields.");
-        return false;
-      }
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !roleSpecificId ||
+      !roleSpecificGroup ||
+      !password ||
+      !confirmPassword
+    ) {
+      setError("Please complete all fields.");
+      return false;
+    }
 
-      if (roleId !== "student" && !accessCode) {
-        setError("Please enter the role access code.");
-        return false;
-      }
+    if (roleId !== "student" && !accessCode) {
+      setError("Please enter the role access code.");
+      return false;
+    }
 
-      if (password !== confirmPassword) {
-        setError("Passwords do not match.");
-        return false;
-      }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return false;
+    }
 
-      if (!termsAccepted) {
-        setError("Please accept the Terms of Service.");
-        return false;
-      }
+    if (!termsAccepted) {
+      setError("Please accept the Terms of Service.");
+      return false;
+    }
 
-      const name = `${firstName} ${lastName}`;
+    const normalizedUser = normalizeUserPayload(formData, roleId);
+    console.log("Normalized user payload:", normalizedUser);
 
-      storeUserSession(name, roleId);
-      setUser({
-        name,
-        role: roleId,
-        email: email.toLowerCase(),
-        isAuthenticated: true,
-      });
+    const name = `${firstName} ${lastName}`;
 
-      return true;
-    },
-    [],
-  );
+    storeUserSession(name, roleId);
+    setUser({
+      name,
+      role: roleId,
+      email: email.toLowerCase(),
+      isAuthenticated: true,
+    });
+
+    return true;
+  }, []);
 
   const logout = useCallback(() => {
     clearUserSession();

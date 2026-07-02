@@ -89,6 +89,33 @@ const HomePage = () => {
           </div>
         </div>
 
+        {/* Quick CTA: Degree Recommendation */}
+        <div style={{ textAlign: "center", marginBottom: "36px" }}>
+          <button
+            onClick={() => navigate("/pre-enrollment")}
+            style={{
+              background: "#10B981",
+              color: "#FFFFFF",
+              border: "none",
+              padding: "12px 28px",
+              borderRadius: "8px",
+              fontWeight: "700",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#059669";
+              e.currentTarget.style.transform = "translateY(-3px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#10B981";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            Try Degree Recommendation
+          </button>
+        </div>
+
         {/* Role Cards */}
         <div
           style={{

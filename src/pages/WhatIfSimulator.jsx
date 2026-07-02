@@ -26,9 +26,30 @@ const moduleLinks = [
 ];
 
 const students = [
-  { id: "202301-01-001", name: "Maria Santos", program: "Civil Engineering", gwa: 3.72, risk: "Low", status: "On Track" },
-  { id: "202301-01-003", name: "Juan Dela Cruz", program: "Electrical Engineering", gwa: 2.85, risk: "High", status: "Probation" },
-  { id: "202301-01-006", name: "Sofia Garcia", program: "Industrial Engineering", gwa: 3.10, risk: "Medium", status: "Caution" },
+  {
+    student_id: "202301-01-001",
+    full_name: "Maria Santos",
+    program: "Civil Engineering",
+    current_gpa: 3.72,
+    risk_level: "Low",
+    status: "On Track",
+  },
+  {
+    student_id: "202301-01-003",
+    full_name: "Juan Dela Cruz",
+    program: "Electrical Engineering",
+    current_gpa: 2.85,
+    risk_level: "High",
+    status: "Probation",
+  },
+  {
+    student_id: "202301-01-006",
+    full_name: "Sofia Garcia",
+    program: "Industrial Engineering",
+    current_gpa: 3.1,
+    risk_level: "Medium",
+    status: "Caution",
+  },
 ];
 
 const WhatIfSimulator = () => {
@@ -36,13 +57,18 @@ const WhatIfSimulator = () => {
   const [selectedStudent, setSelectedStudent] = useState(students[0]);
   const [futureGwa, setFutureGwa] = useState("3.55");
   const [futureUnits, setFutureUnits] = useState("18");
-  const [currentGrades, setCurrentGrades] = useState({ Math: "2.0", Science: "1.8", Programming: "1.9" });
+  const [currentGrades, setCurrentGrades] = useState({
+    Math: "2.0",
+    Science: "1.8",
+    Programming: "1.9",
+  });
 
   const availableStudents = useMemo(() => {
     const query = search.toLowerCase();
     return students.filter(
       (student) =>
-        student.name.toLowerCase().includes(query) || student.id.toLowerCase().includes(query),
+        student.full_name.toLowerCase().includes(query) ||
+        student.student_id.toLowerCase().includes(query),
     );
   }, [search]);
 
@@ -51,8 +77,18 @@ const WhatIfSimulator = () => {
     setSelectedStudent(nextStudent);
   };
 
-  const currentRiskClass = selectedStudent.risk === "High" ? styles.statusHigh : selectedStudent.risk === "Medium" ? styles.statusMedium : styles.statusLow;
-  const projectedRiskClass = futureGwa < 3.0 ? styles.statusHigh : futureGwa < 3.5 ? styles.statusMedium : styles.statusLow;
+  const currentRiskClass =
+    selectedStudent.risk_level === "High"
+      ? styles.statusHigh
+      : selectedStudent.risk_level === "Medium"
+        ? styles.statusMedium
+        : styles.statusLow;
+  const projectedRiskClass =
+    futureGwa < 3.0
+      ? styles.statusHigh
+      : futureGwa < 3.5
+        ? styles.statusMedium
+        : styles.statusLow;
 
   return (
     <ModuleShell
@@ -82,19 +118,27 @@ const WhatIfSimulator = () => {
           <div className={styles.infoBlock}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Selected Student</span>
-              <span className={styles.infoValue}>{selectedStudent.name}</span>
+              <span className={styles.infoValue}>
+                {selectedStudent.full_name}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Program</span>
-              <span className={styles.infoValue}>{selectedStudent.program}</span>
+              <span className={styles.infoValue}>
+                {selectedStudent.program}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Current GWA</span>
-              <span className={styles.infoValue}>{selectedStudent.gwa.toFixed(2)}</span>
+              <span className={styles.infoValue}>
+                {selectedStudent.current_gpa.toFixed(2)}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Current Risk</span>
-              <span className={`${styles.statusChip} ${currentRiskClass}`}>{selectedStudent.risk}</span>
+              <span className={`${styles.statusChip} ${currentRiskClass}`}>
+                {selectedStudent.risk_level}
+              </span>
             </div>
           </div>
         </div>
@@ -150,23 +194,39 @@ const WhatIfSimulator = () => {
           <div className={styles.infoBlock}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Current GWA</span>
-              <span className={styles.infoValue}>{selectedStudent.gwa.toFixed(2)}</span>
+              <span className={styles.infoValue}>
+                {selectedStudent.current_gpa.toFixed(2)}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Projected GWA</span>
-              <span className={styles.infoValue}>{parseFloat(futureGwa).toFixed(2)}</span>
+              <span className={styles.infoValue}>
+                {parseFloat(futureGwa).toFixed(2)}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Current Risk</span>
-              <span className={`${styles.statusChip} ${currentRiskClass}`}>{selectedStudent.risk}</span>
+              <span className={`${styles.statusChip} ${currentRiskClass}`}>
+                {selectedStudent.risk_level}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Projected Risk</span>
-              <span className={`${styles.statusChip} ${projectedRiskClass}`}>{parseFloat(futureGwa) < 3.0 ? "High" : parseFloat(futureGwa) < 3.5 ? "Medium" : "Low"}</span>
+              <span className={`${styles.statusChip} ${projectedRiskClass}`}>
+                {parseFloat(futureGwa) < 3.0
+                  ? "High"
+                  : parseFloat(futureGwa) < 3.5
+                    ? "Medium"
+                    : "Low"}
+              </span>
             </div>
             <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Expected Graduation Status</span>
-              <span className={styles.infoValue}>{parseFloat(futureGwa) >= 3.5 ? "On Track" : "At Risk"}</span>
+              <span className={styles.infoLabel}>
+                Expected Graduation Status
+              </span>
+              <span className={styles.infoValue}>
+                {parseFloat(futureGwa) >= 3.5 ? "On Track" : "At Risk"}
+              </span>
             </div>
           </div>
         </div>
@@ -176,7 +236,9 @@ const WhatIfSimulator = () => {
           <div className={styles.infoBlock}>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Last Scenario</span>
-              <span className={styles.infoValue}>Draft - {selectedStudent.name}</span>
+              <span className={styles.infoValue}>
+                Draft - {selectedStudent.full_name}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Saved Versions</span>

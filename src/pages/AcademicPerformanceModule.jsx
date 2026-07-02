@@ -27,50 +27,57 @@ const moduleLinks = [
 
 const students = [
   {
-    id: "202301-01-001",
-    name: "Maria Santos",
+    student_id: "202301-01-001",
+    full_name: "Maria Santos",
     program: "Civil Engineering",
-    currentGwa: 3.72,
-    predictedGwa: 3.95,
+    current_gpa: 3.72,
+    predicted_gpa: 3.95,
     outcome: "On Track",
-    risk: "Low",
+    risk_level: "Low",
     recommendation: "Maintain study plan",
   },
   {
-    id: "202301-01-003",
-    name: "Juan Dela Cruz",
+    student_id: "202301-01-003",
+    full_name: "Juan Dela Cruz",
     program: "Electrical Engineering",
-    currentGwa: 2.85,
-    predictedGwa: 2.72,
+    current_gpa: 2.85,
+    predicted_gpa: 2.72,
     outcome: "At Risk",
-    risk: "High",
+    risk_level: "High",
     recommendation: "Enroll in tutoring",
   },
   {
-    id: "202301-01-006",
-    name: "Sofia Garcia",
+    student_id: "202301-01-006",
+    full_name: "Sofia Garcia",
     program: "Industrial Engineering",
-    currentGwa: 3.10,
-    predictedGwa: 3.38,
+    current_gpa: 3.1,
+    predicted_gpa: 3.38,
     outcome: "Caution",
-    risk: "Medium",
+    risk_level: "Medium",
     recommendation: "Review core subjects",
   },
 ];
 
 const AcademicPerformanceModule = () => {
-  const [filters, setFilters] = useState({ course: "All", yearLevel: "All", risk: "All", academicYear: "2025-2026" });
+  const [filters, setFilters] = useState({
+    course: "All",
+    yearLevel: "All",
+    risk: "All",
+    academicYear: "2025-2026",
+  });
   const [search, setSearch] = useState("");
 
   const filteredStudents = useMemo(() => {
     const query = search.toLowerCase();
     return students.filter((student) => {
       const matchesText =
-        student.name.toLowerCase().includes(query) ||
-        student.id.toLowerCase().includes(query) ||
+        student.full_name.toLowerCase().includes(query) ||
+        student.student_id.toLowerCase().includes(query) ||
         student.program.toLowerCase().includes(query);
-      const matchesRisk = filters.risk === "All" || student.risk === filters.risk;
-      const matchesYear = filters.yearLevel === "All" || filters.yearLevel === student.program;
+      const matchesRisk =
+        filters.risk === "All" || student.risk_level === filters.risk;
+      const matchesYear =
+        filters.yearLevel === "All" || filters.yearLevel === student.program;
       return matchesText && matchesRisk && matchesYear;
     });
   }, [filters, search]);
@@ -104,7 +111,9 @@ const AcademicPerformanceModule = () => {
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted Low Risk</div>
           <div className={styles.metricValue}>72%</div>
-          <div className={styles.metricSubtext}>Students on strong trajectory</div>
+          <div className={styles.metricSubtext}>
+            Students on strong trajectory
+          </div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted Moderate Risk</div>
@@ -131,18 +140,25 @@ const AcademicPerformanceModule = () => {
           <select
             className={styles.formSelect}
             value={filters.risk}
-            onChange={(event) => setFilters((prev) => ({ ...prev, risk: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, risk: event.target.value }))
+            }
           >
-            {['All', 'Low', 'Medium', 'High'].map((option) => (
+            {["All", "Low", "Medium", "High"].map((option) => (
               <option key={option}>{option}</option>
             ))}
           </select>
           <select
             className={styles.formSelect}
             value={filters.academicYear}
-            onChange={(event) => setFilters((prev) => ({ ...prev, academicYear: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({
+                ...prev,
+                academicYear: event.target.value,
+              }))
+            }
           >
-            {['2025-2026', '2024-2025', '2023-2024'].map((option) => (
+            {["2025-2026", "2024-2025", "2023-2024"].map((option) => (
               <option key={option}>{option}</option>
             ))}
           </select>
@@ -164,16 +180,18 @@ const AcademicPerformanceModule = () => {
             </thead>
             <tbody className={styles.tableStriped}>
               {filteredStudents.map((student) => (
-                <tr key={student.id}>
-                  <td>{student.id}</td>
-                  <td>{student.name}</td>
+                <tr key={student.student_id}>
+                  <td>{student.student_id}</td>
+                  <td>{student.full_name}</td>
                   <td>{student.program}</td>
-                  <td>{student.currentGwa.toFixed(2)}</td>
-                  <td>{student.predictedGwa.toFixed(2)}</td>
+                  <td>{student.current_gpa.toFixed(2)}</td>
+                  <td>{student.predicted_gpa.toFixed(2)}</td>
                   <td>{student.outcome}</td>
                   <td>
-                    <span className={`${styles.statusChip} ${riskClass(student.risk)}`}>
-                      {student.risk}
+                    <span
+                      className={`${styles.statusChip} ${riskClass(student.risk_level)}`}
+                    >
+                      {student.risk_level}
                     </span>
                   </td>
                   <td>{student.recommendation}</td>
@@ -189,14 +207,18 @@ const AcademicPerformanceModule = () => {
           <div className={styles.moduleTitleSmall}>Feature Importance</div>
           <div className={styles.placeholderChart}>
             <div>Feature Importance Chart</div>
-            <span>Review the top factors that influence risk and predicted GWA.</span>
+            <span>
+              Review the top factors that influence risk and predicted GWA.
+            </span>
           </div>
         </div>
         <div className={styles.moduleCard}>
           <div className={styles.moduleTitleSmall}>Risk Distribution</div>
           <div className={styles.placeholderChart}>
             <div>Risk Distribution</div>
-            <span>Visualize how students are segmented by predicted risk level.</span>
+            <span>
+              Visualize how students are segmented by predicted risk level.
+            </span>
           </div>
         </div>
       </div>
@@ -210,7 +232,9 @@ const AcademicPerformanceModule = () => {
               <span className={styles.infoValue}>91.4%</span>
             </div>
             <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Gradient Boosting Accuracy</span>
+              <span className={styles.infoLabel}>
+                Gradient Boosting Accuracy
+              </span>
               <span className={styles.infoValue}>93.2%</span>
             </div>
             <div className={styles.infoRow}>
@@ -236,7 +260,10 @@ const AcademicPerformanceModule = () => {
           <div className={styles.placeholderChart}>
             <div>Random Forest Confusion Matrix</div>
           </div>
-          <div className={styles.placeholderChart} style={{ minHeight: "150px" }}>
+          <div
+            className={styles.placeholderChart}
+            style={{ minHeight: "150px" }}
+          >
             <div>Gradient Boosting Confusion Matrix</div>
           </div>
         </div>

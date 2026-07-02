@@ -31,10 +31,10 @@ const DashboardOverview = () => {
 
   // Risk distribution data
   const riskCounts = {
-    Low: students.filter((s) => s.risk === "Low").length,
-    Medium: students.filter((s) => s.risk === "Medium").length,
-    High: students.filter((s) => s.risk === "High").length,
-    Critical: students.filter((s) => s.risk === "Critical").length,
+    Low: students.filter((s) => s.risk_level === "Low").length,
+    Medium: students.filter((s) => s.risk_level === "Medium").length,
+    High: students.filter((s) => s.risk_level === "High").length,
+    Critical: students.filter((s) => s.risk_level === "Critical").length,
   };
 
   const riskChartData = {

@@ -24,12 +24,12 @@ const ReportsPage = () => {
   const [reportType, setReportType] = useState("overview");
 
   const generateReport = () => {
-    const low = students.filter((s) => s.risk === "Low").length;
-    const medium = students.filter((s) => s.risk === "Medium").length;
-    const high = students.filter((s) => s.risk === "High").length;
-    const critical = students.filter((s) => s.risk === "Critical").length;
+    const low = students.filter((s) => s.risk_level === "Low").length;
+    const medium = students.filter((s) => s.risk_level === "Medium").length;
+    const high = students.filter((s) => s.risk_level === "High").length;
+    const critical = students.filter((s) => s.risk_level === "Critical").length;
     const avgGPA = (
-      students.reduce((sum, s) => sum + s.gpa, 0) / students.length
+      students.reduce((sum, s) => sum + s.current_gpa, 0) / students.length
     ).toFixed(2);
 
     return { low, medium, high, critical, avgGPA };
@@ -194,16 +194,16 @@ const ReportsPage = () => {
             </thead>
             <tbody>
               {students.map((student) => (
-                <tr key={student.id} className={commonStyles.tableRow}>
-                  <td>{student.name}</td>
-                  <td>{student.gpa.toFixed(2)}</td>
-                  <td>{student.pred.toFixed(2)}</td>
-                  <td>{student.conf}%</td>
+                <tr key={student.student_id} className={commonStyles.tableRow}>
+                  <td>{student.full_name}</td>
+                  <td>{student.current_gpa.toFixed(2)}</td>
+                  <td>{student.predicted_gpa.toFixed(2)}</td>
+                  <td>{student.confidence_score}%</td>
                   <td>
                     <span
-                      className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + student.risk.toLowerCase()]}`}
+                      className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + student.risk_level.toLowerCase()]}`}
                     >
-                      {student.risk}
+                      {student.risk_level}
                     </span>
                   </td>
                 </tr>
