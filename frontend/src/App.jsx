@@ -14,6 +14,9 @@ import AcademicPerformanceModule from "./features/student/pages/AcademicPerforma
 import WhatIfSimulator from "./features/student/pages/WhatIfSimulator";
 import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
+import ForgotPassword from "./pages/ForgotPassword";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
 import CurriculumViewer from "./features/student/pages/CurriculumViewer";
 
@@ -25,6 +28,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/:role" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* Public access to degree recommendation for prospective students */}
           <Route path="/pre-enrollment" element={<PreEnrollmentModule />} />

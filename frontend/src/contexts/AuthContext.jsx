@@ -9,6 +9,7 @@ import {
   getRole,
 } from "../utils/authUtils";
 import { normalizeUserPayload } from "../utils/dataNormalization";
+import { loginWithBackend } from "../services/authApi";
 
 export const AuthProvider = ({ children }) => {
   const session = getUserSession();
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const [error, setError] = useState("");
 
-  const login = useCallback((email, password, selectedRole = "student") => {
+  const login = useCallback(async (email, password, selectedRole = "student") => {
     setError("");
 
     if (!email || !password) {
@@ -29,12 +30,18 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    if (!validateCredentials(email, password)) {
-      setError("Invalid email or password.");
-      return false;
-    }
+    let role;
 
-    const role = getRole(email);
+    try {
+      const result = await loginWithBackend(email, password);
+      role = result.role;
+    } catch {
+      if (!validateCredentials(email, password)) {
+        setError("Invalid email or password.");
+        return false;
+      }
+      role = getRole(email);
+    }
 
     if (role !== selectedRole) {
       setError(`This account is not registered as ${selectedRole}.`);

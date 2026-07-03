@@ -1,208 +1,70 @@
-# WMSU Student Success Predictor - React Application
+# WMSU Student Success Predictor
 
-> **Status**: ✅ Successfully converted from Vanilla HTML/CSS/JS to React Framework
+Monorepo with a React frontend and Express backend for authentication and password recovery.
 
-## 📋 Quick Start
+## Project Structure
+
+```
+├── frontend/          # React + Vite application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── backend/           # Express API server
+│   ├── src/
+│   ├── data/users.json
+│   └── package.json
+└── package.json       # Root scripts to run both apps
+```
+
+## Quick Start
 
 ```bash
-# Install dependencies
-npm install
+# Install all dependencies (root, frontend, backend)
+npm run install:all
 
-# Start development server
+# Start frontend + backend together
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-Visit: `http://localhost:5173/`
+- Frontend: http://localhost:5173/
+- Backend API: http://localhost:3001/api/auth
 
-## 📚 Documentation
+Or run separately:
 
-For comprehensive documentation, see [docs/INDEX.md](./docs/INDEX.md)
-
-Key Resources:
-- **[System Documentation](./docs/SYSTEM_DOCUMENTATION.md)** - Architecture and design
-- **[Testing Guide](./docs/TESTING_GUIDE.md)** - Testing procedures
-- **[Quick Reference](./docs/QUICK_REFERENCE.md)** - Common tasks
-- **[Implementation Status](./docs/IMPLEMENTATION_COMPLETE.md)** - Completion notes
-
-## 🎯 What's New
-
-### From Vanilla JS to React ✨
-
-- ✅ Component-based architecture
-- ✅ Client-side routing with React Router
-- ✅ State management with Context API
-- ✅ CSS Modules for scoped styling
-- ✅ Modern React hooks and functional components
-- ✅ Protected routes for authentication
-- ✅ Responsive design system
-
-## 🏗️ Project Structure
-
-```
-src/
-├── components/          # React components
-│   ├── Auth/           # Authentication pages
-│   ├── Dashboard/      # Dashboard pages
-│   ├── AdminDashboard/ # Admin features
-│   ├── Common/         # Shared components
-│   └── ProtectedRoute.jsx
-├── contexts/           # State management (Auth, Dashboard)
-├── hooks/              # Custom React hooks
-├── pages/              # Page components
-├── styles/             # CSS Modules
-├── utils/              # Helper functions
-├── App.jsx             # Main app with routing
-└── main.jsx            # React entry point
+```bash
+npm run dev:frontend
+npm run dev:backend
 ```
 
-## 🔐 Test Credentials
+## Test Credentials
 
-| Role    | Email                        | Password   |
+| Role    | Email / Username             | Password   |
 | ------- | ---------------------------- | ---------- |
 | Admin   | admin@wmsu.edu.ph or `admin` | admin123   |
 | Staff   | staff@wmsu.edu.ph or `staff` | staff123   |
-| Student | student                      | student123 |
+| Student | student@wmsu.edu.ph or `student` | student123 |
 
-## 📱 Features
+## Features
 
-### Authentication
+### Password Recovery (Backend)
+- `POST /api/auth/forgot-password/request` — send verification code
+- `POST /api/auth/forgot-password/verify` — verify 6-digit code
+- `POST /api/auth/forgot-password/reset` — set new password
+- In development, the verification code is returned in the API response and logged to the backend console
 
-- Login/Signup with validation
-- Session management
-- Role-based access control
+### Legal Pages
+- `/terms-of-service` — linked from signup Terms of Service
+- `/privacy-policy` — linked from signup Privacy Policy
 
-### Dashboard Pages
-
-- **Overview** - Key metrics and charts
-- **Students** - Searchable student list with filters
-- **Alerts** - Risk alerts management
-- **Screening** - Academic assessment rubric
-- **What-If Simulator** - GPA prediction simulator
-- **Reports** - Data export options
-
-### Admin Features
-
-- Model management
-- Audit logs
-- System overview
-
-## 🛠️ Technologies Used
-
-- **React 19** - UI framework
-- **React Router 6** - Client-side routing
-- **Vite** - Fast build tool
-- **Chart.js** - Data visualization
-- **CSS Modules** - Scoped styling
-- **Font Awesome** - Icons
-
-## 📖 Development
-
-### Adding New Components
-
-1. Create component in `src/components/[Category]/`
-2. Create corresponding CSS module
-3. Use hooks for state management
-4. Export and use in pages
-
-### Using Context
-
-```jsx
-// Authentication
-const { user, login, logout } = useAuth();
-
-// Dashboard State
-const { students, alerts, currentPage } = useDashboard();
-```
-
-### Creating New Routes
-
-Add to `src/App.jsx`:
-
-```jsx
-<Route
-  path="/new-page"
-  element={
-    <ProtectedRoute>
-      <YourComponent />
-    </ProtectedRoute>
-  }
-/>
-```
-
-## 🎨 Design System
-
-- **Colors**: Gold (#F5C200), Charcoal (#1c1a13), Cream (#faf6ec)
-- **Typography**: Inter (body), Playfair Display (headings)
-- **Components**: Cards, buttons, tables, badges, alerts
-- **Design Tokens**: Defined in `src/styles/globals.css`
-
-## 📦 Build & Deploy
-
-### Development Build
-
-```bash
-npm run dev
-```
-
-### Production Build
+## Build
 
 ```bash
 npm run build
 ```
 
-Output in `dist/` folder ready for deployment.
-
-## 🔍 Linting
-
-```bash
-npm run lint
-```
-
-## 📝 Key Improvements
-
-| Aspect      | Before           | After              |
-| ----------- | ---------------- | ------------------ |
-| Structure   | Flat HTML files  | Modular components |
-| Navigation  | Page reloads     | SPA routing        |
-| State       | DOM manipulation | Context API        |
-| Styling     | Global CSS       | CSS Modules        |
-| Development | Manual updates   | HMR (hot reload)   |
-| Maintenance | Hard to scale    | Easy to extend     |
-
-## 🚀 Performance
-
-- **Code Splitting**: Routes are auto-split
-- **Lazy Loading**: Components load on demand
-- **Efficient Re-renders**: React optimization
-- **Fast Build**: Vite provides instant HMR
-
-## 📚 Learn More
-
-- [React Documentation](https://react.dev)
-- [React Router Guide](https://reactrouter.com)
-- [Vite Documentation](https://vite.dev)
-- [CSS Modules Spec](https://github.com/css-modules/css-modules)
-
-## 🤝 Contributing
-
-Follow these patterns when adding code:
-
-- Use functional components with hooks
-- Use Context API for shared state
-- Use CSS Modules for styling
-- Follow existing component structure
-- Document complex logic with comments
-
-## 📄 License
-
-This is an academic project for WMSU.
+Output is written to `frontend/dist/`.
 
 ---
 
-**Architecture Titans** — WMSU Student Success Predictor
-**Version**: 1.3.0 (React Edition)
-
-Successfully migrated from Vanilla JS to React Framework! 🎉
+**Architecture Titans** — WMSU Student Success Predictor  
+**Version**: 1.3.0 (React + Express)
