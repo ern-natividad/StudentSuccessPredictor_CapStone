@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { AUTH_ROLES } from "../utils/constants";
+import engineeringLogo from "../assets/EngineeringLogo.jpg";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -47,15 +48,15 @@ const HomePage = () => {
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       }}
     >
-      {/* 1. Header Navigation Bar */}
+      {/* 2. Header Navigation Bar (Kept background color #8B0000) */}
       <header
         style={{
-          borderBottom: "1px solid var(--color-border-neutral)",
-          padding: "var(--space-lg) var(--space-2xl)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          padding: "var(--space-md) var(--space-2xl)", 
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "var(--color-bg-main)",
+          backgroundColor: "#8B0000",
           position: "sticky",
           top: 0,
           zIndex: 50,
@@ -63,29 +64,26 @@ const HomePage = () => {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
-          <div
+          {/* 3. Replaced logo styling with a perfectly bounded circle aspect layout */}
+          <img 
+            src={engineeringLogo} 
+            alt="Engineering Hawks Logo" 
             style={{
-              background: "var(--color-brand-primary)",
-              color: "var(--color-text-inverse)",
-              width: "40px",
-              height: "40px",
-              borderRadius: "var(--radius-md)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "var(--font-weight-bold)",
-              fontSize: "var(--font-size-lg)",
+              height: "45px", 
+              width: "45px",       // Equal width and height sets a square container
+              borderRadius: "50%", // 50% radius turns the square into a perfect circle
+              objectFit: "cover",  // Ensures the image centers and cuts off gracefully without squeezing
+              display: "block",
+              border: "1px solid rgba(255, 255, 255, 0.2)" // Optional subtle border accent
             }}
-          >
-            EH
-          </div>
+          />
           <div>
-            <h1 style={{ fontSize: "var(--font-size-lg)", fontWeight: "var(--font-weight-bold)", margin: 0, letterSpacing: "-0.01em" }}>
+            <h1 style={{ fontSize: "var(--font-size-lg)", fontWeight: "var(--font-weight-bold)", margin: 0, letterSpacing: "-0.01em", color: "#fff" }}>
               Engineering Hawks
             </h1>
           </div>
         </div>
-        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", fontWeight: "var(--font-weight-medium)" }}>
+        <div style={{ fontSize: "var(--font-size-sm)", color: "rgba(255, 255, 255, 0.85)", fontWeight: "var(--font-weight-medium)" }}>
           Student Success Predictor
         </div>
       </header>
@@ -93,7 +91,7 @@ const HomePage = () => {
       {/* Main Content Wrap */}
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 var(--space-2xl)" }}>
         
-        {/* 2. Hero Section */}
+        {/* Hero Section */}
         <section
           style={{
             display: "grid",
@@ -109,7 +107,7 @@ const HomePage = () => {
               style={{
                 display: "inline-block",
                 background: "var(--color-brand-primary-light)",
-                color: "var(--color-brand-primary)",
+                color: "#8B0000",
                 padding: "var(--space-xs) var(--space-md)",
                 borderRadius: "20px",
                 fontSize: "var(--font-size-sm)",
@@ -149,6 +147,8 @@ const HomePage = () => {
               style={{
                 fontSize: "var(--font-size-base)",
                 fontWeight: "var(--font-weight-semibold)",
+                backgroundColor: "#8B0000",
+                borderColor: "#8B0000",
               }}
             >
               <i className="fas fa-rocket" style={{ marginRight: "var(--space-sm)" }}></i>
@@ -197,7 +197,7 @@ const HomePage = () => {
                     transition: "all var(--transition-fast)",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--color-brand-primary)";
+                    e.currentTarget.style.borderColor = "#8B0000";
                     e.currentTarget.style.boxShadow = "var(--shadow-md)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                     e.currentTarget.style.backgroundColor = "var(--color-brand-primary-light)";
@@ -213,7 +213,7 @@ const HomePage = () => {
                     <div
                       style={{
                         background: "var(--color-brand-primary-light)",
-                        color: "var(--color-brand-primary)",
+                        color: "#8B0000",
                         width: "48px",
                         height: "48px",
                         borderRadius: "var(--radius-md)",
@@ -234,7 +234,7 @@ const HomePage = () => {
                       </div>
                     </div>
                   </div>
-                  <div style={{ color: "var(--color-brand-primary)", fontSize: "var(--font-size-base)" }}>
+                  <div style={{ color: "#8B0000", fontSize: "var(--font-size-base)" }}>
                     <i className="fas fa-chevron-right"></i>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* 3. Feature Showcase Section */}
+        {/* Feature Showcase Section */}
         <section style={{ padding: "var(--space-3xl) 0", borderTop: "1px solid var(--color-border-neutral)" }}>
           <div style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
             <h2 style={{ fontSize: "var(--font-size-3xl)", fontWeight: "var(--font-weight-bold)", margin: "0 0 var(--space-lg) 0", color: "var(--color-text-primary)" }}>
@@ -275,7 +275,7 @@ const HomePage = () => {
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "var(--shadow-lg)";
                   e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.borderColor = "var(--color-brand-primary)";
+                  e.currentTarget.style.borderColor = "#8B0000";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = "var(--shadow-sm)";
@@ -286,7 +286,7 @@ const HomePage = () => {
                 <div
                   style={{
                     fontSize: "var(--font-size-2xl)",
-                    color: "var(--color-brand-primary)",
+                    color: "#8B0000",
                     marginBottom: "var(--space-lg)",
                     background: "var(--color-brand-primary-light)",
                     width: "48px",
@@ -318,7 +318,7 @@ const HomePage = () => {
         </section>
       </main>
 
-      {/* 4. Footer */}
+      {/* Footer */}
       <footer
         style={{
           borderTop: "1px solid var(--color-border-neutral)",
