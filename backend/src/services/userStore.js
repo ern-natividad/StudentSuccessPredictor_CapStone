@@ -1,30 +1,55 @@
 import { supabase } from '../config/supabaseClient.js';
 
 class AuthService {
-  // 1. Create Account
   async signUp(email, password, name) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: name || '' } // Stores extra user profile info
-      }
+      options: { data: { full_name: name || '' } }
     });
     if (error) throw error;
     return data;
   }
 
-  // 2. Sign In (Existing functionality fallback)
   async signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!email || !password) {
+      throw new Error("Email and password are required.");
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email: email.trim(), 
+      password: password 
+    });
     if (error) throw error;
     return data;
   }
 
-  // 3. Forgot Password (Triggers Supabase's real email service)
+  // Handle forgot password initiation
   async forgotPassword(email, redirectToUrl) {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectToUrl || 'http://localhost:3000/update-password',
+    if (!email) throw new Error("Email identifier is required.");
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: redirectToUrl || 'http://localhost:5174/update-password',
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // Handle OTP token verification 
+  async verifyResetCode(email, token) {
+    if (!email || !token) throw new Error("Email and verification code are required.");
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: token.trim(),
+      type: 'recovery'
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // Handle updating to a brand new password
+  async updatePassword(newPassword) {
+    if (!newPassword) throw new Error("New password is required.");
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
     });
     if (error) throw error;
     return data;
