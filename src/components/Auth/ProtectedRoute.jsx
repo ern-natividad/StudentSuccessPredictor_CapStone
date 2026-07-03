@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { getDashboardPath } from "../utils/authUtils";
+import { useAuth } from "../../hooks/useAuth";
+import { getDashboardPath } from "../../utils/authUtils";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();

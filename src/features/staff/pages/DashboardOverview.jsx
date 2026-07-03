@@ -11,9 +11,9 @@ import {
   Legend,
 } from "chart.js";
 import { Doughnut, Line } from "react-chartjs-2";
-import { useDashboard } from "../../hooks/useDashboard";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import { useDashboard } from "../../../hooks/useDashboard";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 ChartJS.register(
   ArcElement,

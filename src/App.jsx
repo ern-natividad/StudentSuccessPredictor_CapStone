@@ -1,21 +1,21 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DashboardProvider } from "./contexts/DashboardContext";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import MainLayout from "./components/Common/MainLayout";
 import "./styles/globals.css";
 import HomePage from "./pages/Home";
 import AuthPage from "./components/Auth/AuthPage";
-import DashboardLayout from "./components/Dashboard/DashboardLayout";
-import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
-import StaffDashboard from "./components/Dashboard/StaffDashboard";
-import PreEnrollmentModule from "./pages/PreEnrollmentModule";
-import AcademicPerformanceModule from "./pages/AcademicPerformanceModule";
-import WhatIfSimulator from "./pages/WhatIfSimulator";
-import AIAcademicAdvisingModule from "./pages/AIAcademicAdvisingModule";
+import DashboardLayout from "./components/Common/DashboardLayout";
+import AdminDashboard from "./features/admin/components/AdminDashboard";
+import StaffDashboard from "./features/staff/pages/StaffDashboard";
+import PreEnrollmentModule from "./features/student/pages/PreEnrollmentModule";
+import AcademicPerformanceModule from "./features/student/pages/AcademicPerformanceModule";
+import WhatIfSimulator from "./features/student/pages/WhatIfSimulator";
+import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
-import CurriculumManager from "./pages/CurriculumManager";
-import CurriculumViewer from "./pages/CurriculumViewer";
+import CurriculumManager from "./features/admin/pages/CurriculumManager";
+import CurriculumViewer from "./features/student/pages/CurriculumViewer";
 
 function App() {
   return (

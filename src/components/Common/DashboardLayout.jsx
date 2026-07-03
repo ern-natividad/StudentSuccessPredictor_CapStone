@@ -1,6 +1,6 @@
 import { useDashboard } from "../../hooks/useDashboard";
-import StudentPrediction from "./StudentPrediction";
-import WhatIfSimulator from "./WhatIfSimulator";
+import StudentPrediction from "../../features/staff/pages/StudentPrediction";
+import WhatIfSimulator from "../../features/student/pages/WhatIfSimulator";
 
 const DashboardLayout = () => {
   const { currentPage } = useDashboard();

@@ -1,8 +1,8 @@
-import { useDashboard } from "../../hooks/useDashboard";
-import DashboardOverview from "../Dashboard/DashboardOverview";
-import StudentsList from "../Dashboard/StudentsList";
-import AlertsList from "../Dashboard/AlertsList";
-import ScreeningPage from "./ScreeningPage";
+import { useDashboard } from "../../../hooks/useDashboard";
+import DashboardOverview from "./DashboardOverview";
+import StudentsList from "./StudentsList";
+import AlertsList from "../components/AlertsList";
+import ScreeningPage from "../../admin/pages/ScreeningPage";
 
 const StaffDashboard = () => {
   const { currentPage } = useDashboard();

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useDashboard } from "../../hooks/useDashboard";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import { useDashboard } from "../../../hooks/useDashboard";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 const StudentsList = () => {
   const {

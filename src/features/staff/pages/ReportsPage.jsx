@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useDashboard } from "../../hooks/useDashboard";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import { useDashboard } from "../../../hooks/useDashboard";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 // Extracted to module scope to prevent recreation on every render
 const SvgIcon = ({ children, ...props }) => (

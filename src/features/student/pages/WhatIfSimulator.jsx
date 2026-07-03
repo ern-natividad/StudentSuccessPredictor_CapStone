@@ -10,9 +10,9 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
-import { normalizeWhatIfPayload } from "../../utils/dataNormalization";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
+import { normalizeWhatIfPayload } from "../../../utils/dataNormalization";
 
 ChartJS.register(
   CategoryScale,

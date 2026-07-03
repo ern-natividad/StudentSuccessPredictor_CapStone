@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
-import { normalizeScreeningPayload } from "../../utils/dataNormalization";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
+import { normalizeScreeningPayload } from "../../../utils/dataNormalization";
 
 const ScreeningPage = () => {
   const [responses, setResponses] = useState({

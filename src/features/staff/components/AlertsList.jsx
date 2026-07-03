@@ -1,7 +1,7 @@
 import React from "react";
-import { useDashboard } from "../../hooks/useDashboard";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import { useDashboard } from "../../../hooks/useDashboard";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 const AlertsList = () => {
   const { alerts } = useDashboard();

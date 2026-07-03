@@ -1,6 +1,6 @@
 import { useState } from "react";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 const ModelUploadArea = () => {
   const [showUpload, setShowUpload] = useState(false);

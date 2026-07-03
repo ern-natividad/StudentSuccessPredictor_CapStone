@@ -1,8 +1,8 @@
 import React from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { useDashboard } from "../../hooks/useDashboard";
-import styles from "../../styles/Dashboard.module.css";
-import commonStyles from "../../styles/Common.module.css";
+import { useAuth } from "../../../hooks/useAuth";
+import { useDashboard } from "../../../hooks/useDashboard";
+import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 
 const StudentPrediction = () => {
   const { user } = useAuth();
