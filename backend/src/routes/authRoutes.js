@@ -3,7 +3,7 @@ import authService from '../services/userStore.js';
 
 const router = express.Router();
 
-// Route: Create Account
+// 1. Route: Create Account
 router.post('/signup', async (req, res) => {
   const { email, password, name } = req.body;
   try {
@@ -17,8 +17,8 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// Route: Sign In
-router.post('/signin', async (req, res) => {
+// 2. Route: Login 
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const data = await authService.signIn(email, password);
@@ -32,8 +32,8 @@ router.post('/signin', async (req, res) => {
   }
 });
 
-// Route: Forgot Password
-router.post('/forgot-password', async (req, res) => {
+// 3. Route: Forgot Password Request 
+router.post('/forgot-password/request', async (req, res) => {
   const { email, redirectTo } = req.body;
   try {
     await authService.forgotPassword(email, redirectTo);
