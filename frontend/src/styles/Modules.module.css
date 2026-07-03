@@ -97,13 +97,13 @@
 }
 
 .primaryButton {
-  background: var(--color-brand-primary);
+  background: #8B0000; /* Theme dark red color */
   color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
 }
 
 .primaryButton:hover {
-  background: var(--color-brand-primary-hover);
+  background: #a30000; /* Adjusted hover state for dark red */
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -120,8 +120,8 @@
 
 .secondaryButton:hover {
   background: var(--color-bg-main);
-  border-color: var(--color-brand-primary);
-  color: var(--color-brand-primary);
+  border-color: #8B0000; /* Theme dark red color border */
+  color: #8B0000;        /* Theme dark red text color */
 }
 
 .sectionGrid {
@@ -248,7 +248,7 @@
 .formInput:focus,
 .formSelect:focus,
 .formTextarea:focus {
-  border-color: var(--color-brand-primary);
+  border-color: #8B0000; /* Theme dark red focus border */
   box-shadow: 0 0 0 3px var(--color-brand-primary-light);
 }
 
@@ -258,7 +258,8 @@
 
 .formSelect {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A30021' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  /* Updated down arrow SVG fill color to matching #8B0000 (%238B0000 URL encoded) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B0000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--space-lg) center;
   padding-right: var(--space-2xl);
@@ -498,7 +499,7 @@
 
 .chatInput:focus {
   outline: none;
-  border-color: var(--color-brand-primary);
+  border-color: #8B0000; /* Theme dark red chat input focus */
   box-shadow: 0 0 0 3px var(--color-brand-primary-light);
 }
 
@@ -520,8 +521,8 @@
 
 .secondaryButtonCompact:hover {
   background: var(--color-bg-main);
-  border-color: var(--color-brand-primary);
-  color: var(--color-brand-primary);
+  border-color: #8B0000; /* Theme dark red color border */
+  color: #8B0000;        /* Theme dark red text color */
 }
 
 .alertBanner {

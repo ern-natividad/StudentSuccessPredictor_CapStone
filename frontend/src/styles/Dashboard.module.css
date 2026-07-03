@@ -14,8 +14,8 @@
 /* TOP NAV */
 .topNav {
   height: 56px;
-  background: #B91C1C;   
-  border-bottom: 0.5px solid #e0e0e0;
+  background: #8B0000;   /* Updated to match Home.jsx deep dark red */
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   padding: 0 2rem;
@@ -152,7 +152,7 @@
   justify-content: center;
   color: white;
   font-weight: 600;
-  border: 2px solid #8B0000;
+  border: 2px solid #8B0000; /* Match dark red theme border */
 }
 
 .navUserName {
@@ -367,7 +367,7 @@
 .pageTitle {
   font-size: 22px;
   font-weight: 500;
-  color: #8B0000;
+  color: #8B0000; /* Theme dark red color */
   margin-bottom: 4px;
 }
 
@@ -388,7 +388,7 @@
 }
 
 .resultBanner {
-  background: #8B0000;
+  background: #8B0000; /* Theme dark red color */
   border-radius: 12px;
   padding: 1.5rem;
   color: #fff;
@@ -443,14 +443,14 @@
 }
 
 .programCardActive {
-  border-color: #8B0000;
+  border-color: #8B0000; /* Theme dark red color */
   box-shadow: 0 0 0 1px rgba(139, 0, 0, 0.08);
 }
 
 .programPercent {
   font-size: 22px;
   font-weight: 500;
-  color: #8B0000;
+  color: #8B0000; /* Theme dark red color */
   margin-bottom: 4px;
 }
 
@@ -470,7 +470,7 @@
 }
 
 .programBar {
-  background: #8B0000;
+  background: #8B0000; /* Theme dark red color */
   border-radius: 4px;
   height: 6px;
 }
@@ -478,7 +478,7 @@
 .programBadge {
   display: inline-block;
   background: #fff5f5;
-  color: #8B0000;
+  color: #8B0000; /* Theme dark red color */
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 20px;
@@ -510,7 +510,7 @@
 .scoreValue {
   font-size: 24px;
   font-weight: 500;
-  color: #8B0000;
+  color: #8B0000; /* Theme dark red color */
 }
 
 .scoreNote {
@@ -538,7 +538,7 @@
 .cardTitle {
   font-size: 15px;
   font-weight: 500;
-  color: #8B0000;
+  color: #8B0000; /* Theme dark red color */
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -696,12 +696,12 @@
 
 .sidebar.collapsed .sidebarItem.active {
   background: #fff5f5;
-  border-left: 3px solid #8B0000;
+  border-left: 3px solid #8B0000; /* Theme dark red color */
 }
 
 .darkSidebar.collapsed .sidebarItem.active {
-  background: rgba(185, 28, 28, 0.18) !important;
-  border-left: 3px solid #b91c1c !important;
+  background: rgba(139, 0, 0, 0.18) !important; /* Updated from #b91c1c to #8B0000 */
+  border-left: 3px solid #8B0000 !important;   /* Updated from #b91c1c to #8B0000 */
 }
 
 /* Dark theme global sidebar */
@@ -724,9 +724,9 @@
 }
 
 .darkSidebar .sidebarItem.active {
-  background: rgba(185, 28, 28, 0.18) !important;
+  background: rgba(139, 0, 0, 0.18) !important; /* Updated from #b91c1c to #8B0000 */
   color: #fff !important;
-  border-left-color: #b91c1c !important;
+  border-left-color: #8B0000 !important;       /* Updated from #b91c1c to #8B0000 */
 }
 
 .darkSidebar .sidebarDivider {
