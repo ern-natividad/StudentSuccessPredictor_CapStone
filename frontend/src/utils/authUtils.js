@@ -1,11 +1,4 @@
-import { AUTH_ROLES, ROLE_DASHBOARD_PATHS, ROLE_MAP, VALID_CREDS } from "./constants";
-
-/**
- * Get the role for a given email
- */
-export const getRole = (email) => {
-  return ROLE_MAP[email.toLowerCase()] || "student";
-};
+import { AUTH_ROLES, ROLE_DASHBOARD_PATHS } from "./constants";
 
 /**
  * Get supported role content for auth screens
@@ -22,29 +15,10 @@ export const getDashboardPath = (role) => {
 };
 
 /**
- * Validate user credentials
- */
-export const validateCredentials = (email, password) => {
-  const emailLower = email.toLowerCase();
-  return VALID_CREDS[emailLower] && VALID_CREDS[emailLower] === password;
-};
-
-/**
- * Generate user name from email
- */
-export const generateNameFromEmail = (email) => {
-  return email
-    .split("@")[0]
-    .replace(/\./g, " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
-
-/**
  * Generate initials from name
  */
 export const generateInitials = (name) => {
+  if (!name) return "";
   return name
     .split(" ")
     .map((word) => word[0])
@@ -60,27 +34,11 @@ export const capitalize = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-/**
- * Store user in session
+/*
+ * NOTE:
+ * getRole(), validateCredentials(), generateNameFromEmail(),
+ * storeUserSession(), getUserSession(), and clearUserSession() have all
+ * been removed. Supabase Auth now owns the session (persisted in
+ * localStorage by the Supabase client itself) and role/name are read from
+ * the authenticated user's metadata — see src/contexts/AuthContext.jsx.
  */
-export const storeUserSession = (name, role) => {
-  sessionStorage.setItem("userName", name);
-  sessionStorage.setItem("userRole", role);
-};
-
-/**
- * Get user from session
- */
-export const getUserSession = () => {
-  return {
-    userName: sessionStorage.getItem("userName") || "",
-    userRole: sessionStorage.getItem("userRole") || "student",
-  };
-};
-
-/**
- * Clear user session
- */
-export const clearUserSession = () => {
-  sessionStorage.clear();
-};

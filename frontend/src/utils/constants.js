@@ -1,4 +1,6 @@
-// Authentication credentials and role mapping
+// Role configuration used to render the auth screens.
+// NOTE: VALID_CREDS and ROLE_MAP (hardcoded mock credentials) have been
+// removed — authentication is now handled entirely by Supabase Auth.
 export const AUTH_ROLES = {
   admin: {
     id: "admin",
@@ -83,23 +85,6 @@ export const ROLE_DASHBOARD_PATHS = {
   admin: "/admin",
   staff: "/staff",
   student: "/dashboard",
-};
-
-export const ROLE_MAP = {
-  "admin@wmsu.edu.ph": "admin",
-  "staff@wmsu.edu.ph": "staff",
-  "student@wmsu.edu.ph": "student",
-  admin: "admin",
-  staff: "staff",
-};
-
-export const VALID_CREDS = {
-  admin: "admin123",
-  staff: "staff123",
-  "admin@wmsu.edu.ph": "admin123",
-  "staff@wmsu.edu.ph": "staff123",
-  "student@wmsu.edu.ph": "student123",
-  student: "student123",
 };
 
 // Alert data

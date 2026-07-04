@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
-const LoginForm = ({ roleConfig, onSwitch }) => {
+const LoginForm = ({ roleConfig, onSwitch, onForgotPassword }) => {
   const { login, error, setError } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (await login(email, password, roleConfig.id)) {
+    if (submitting) return;
+    setSubmitting(true);
+    const success = await login(email, password, roleConfig.id);
+    setSubmitting(false);
+    if (success) {
       navigate(getDashboardPath(roleConfig.id));
     }
   };
@@ -89,13 +94,20 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
               Keep me signed in
             </span>
           </label>
-          <Link to="/forgot-password" className={styles.fLink}>
+          <a
+            href="#"
+            className={styles.fLink}
+            onClick={(e) => {
+              e.preventDefault();
+              onForgotPassword();
+            }}
+          >
             Forgot password?
-          </Link>
+          </a>
         </div>
 
-        <button type="submit" className={styles.btnGold}>
-          Login as {roleConfig.shortTitle}
+        <button type="submit" className={styles.btnGold} disabled={submitting}>
+          {submitting ? "Signing in..." : `Login as ${roleConfig.shortTitle}`}
         </button>
       </form>
 

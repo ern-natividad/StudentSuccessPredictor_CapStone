@@ -1,9 +1,18 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { getDashboardPath } from "../../utils/authUtils";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Supabase's getSession() is async — avoid a flash-redirect to "/" while
+  // we're still checking whether a session exists.
+  if (loading) {
+    return (
+      <div style={{ padding: "60px 24px", textAlign: "center", color: "#777" }}>
+        Loading...
+      </div>
+    );
+  }
 
   if (!user.isAuthenticated) {
     return <Navigate to="/" replace />;

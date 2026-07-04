@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
@@ -22,6 +22,8 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
   const [passwordReqs, setPasswordReqs] = useState({
     length: false,
     uppercase: false,
@@ -45,13 +47,38 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    const result = await signup(formData, roleConfig.id);
+    setSubmitting(false);
 
-    if (signup(formData, roleConfig.id)) {
+    if (result === "confirm-email") {
+      setConfirmationSent(true);
+    } else if (result === true) {
       navigate(getDashboardPath(roleConfig.id));
     }
   };
+
+  if (confirmationSent) {
+    return (
+      <div className={styles.formView}>
+        <div className={styles.fvHeading}>Check your email</div>
+        <div className={styles.fvSub}>
+          We sent a confirmation link to <strong>{formData.email}</strong>.
+          Click it to activate your account, then come back and sign in.
+        </div>
+        <button
+          type="button"
+          className={styles.btnGold}
+          onClick={onSwitch}
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.formView}>
@@ -226,18 +253,20 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
           />
           <label htmlFor="terms">
             I agree to the{" "}
-            <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer">
+            <a href="#" onClick={(e) => e.preventDefault()}>
               Terms of Service
-            </Link>{" "}
+            </a>{" "}
             and{" "}
-            <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer">
+            <a href="#" onClick={(e) => e.preventDefault()}>
               Privacy Policy
-            </Link>
+            </a>
           </label>
         </div>
 
-        <button type="submit" className={styles.btnGold}>
-          Create {roleConfig.shortTitle} Account
+        <button type="submit" className={styles.btnGold} disabled={submitting}>
+          {submitting
+            ? "Creating account..."
+            : `Create ${roleConfig.shortTitle} Account`}
         </button>
       </form>
 

@@ -6,6 +6,7 @@ import MainLayout from "./components/Common/MainLayout";
 import "./styles/globals.css";
 import HomePage from "./pages/Home";
 import AuthPage from "./components/Auth/AuthPage";
+import ResetPasswordPage from "./components/Auth/ResetPasswordPage";
 import DashboardLayout from "./components/Common/DashboardLayout";
 import AdminDashboard from "./features/admin/components/AdminDashboard";
 import StaffDashboard from "./features/staff/pages/StaffDashboard";
@@ -14,9 +15,6 @@ import AcademicPerformanceModule from "./features/student/pages/AcademicPerforma
 import WhatIfSimulator from "./features/student/pages/WhatIfSimulator";
 import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
-import ForgotPassword from "./pages/ForgotPassword";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
 import CurriculumViewer from "./features/student/pages/CurriculumViewer";
 
@@ -28,9 +26,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/:role" element={<AuthPage />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+          {/* Landing target for Supabase password-reset emails */}
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
           {/* Public access to degree recommendation for prospective students */}
           <Route path="/pre-enrollment" element={<PreEnrollmentModule />} />

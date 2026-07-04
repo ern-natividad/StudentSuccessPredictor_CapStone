@@ -13,8 +13,8 @@ const MainLayout = () => {
   const location = useLocation();
   const { closeNotificationsPanel } = useDashboard();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
@@ -29,8 +29,8 @@ const MainLayout = () => {
   const isModulePage = location.pathname.startsWith("/modules");
 
   return (
-    <div 
-      className={`${styles.dashboardScreen} ${isModulePage ? styles.modulePageBg : ""}`} 
+    <div
+      className={`${styles.dashboardScreen} ${isModulePage ? styles.modulePageBg : ""}`}
       onClick={closeNotificationsPanel}
     >
       <TopNav onLogout={handleLogout} />

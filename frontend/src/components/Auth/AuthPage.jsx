@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getAuthRole } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState("login"); // "login" | "signup" | "forgot"
   const { role = "student" } = useParams();
   const navigate = useNavigate();
   const { setError } = useAuth();
@@ -19,16 +20,21 @@ const AuthPage = () => {
     navigate("/");
   };
 
+  const switchView = (next) => {
+    setError("");
+    setView(next);
+  };
+
   return (
     <div className={styles.authScreen}>
       <div className={styles.authCard}>
         {/* Brand Panel */}
         <div className={styles.brandPanel}>
           <div className={styles.logoContainer}>
-            <img 
-              src={engineeringLogo} 
-              alt="WMSU College of Engineering and Technology Seal" 
-              className={styles.brandLogoImage} 
+            <img
+              src={engineeringLogo}
+              alt="WMSU College of Engineering and Technology Seal"
+              className={styles.brandLogoImage}
             />
           </div>
           <div className={styles.brandWordmark}>
@@ -53,15 +59,23 @@ const AuthPage = () => {
             Back to roles
           </button>
           <div className={styles.roleBadge}>{roleConfig.title}</div>
-          {isLogin ? (
+          {view === "login" && (
             <LoginForm
               roleConfig={roleConfig}
-              onSwitch={() => setIsLogin(false)}
+              onSwitch={() => switchView("signup")}
+              onForgotPassword={() => switchView("forgot")}
             />
-          ) : (
+          )}
+          {view === "signup" && (
             <SignupForm
               roleConfig={roleConfig}
-              onSwitch={() => setIsLogin(true)}
+              onSwitch={() => switchView("login")}
+            />
+          )}
+          {view === "forgot" && (
+            <ForgotPasswordForm
+              roleConfig={roleConfig}
+              onBackToLogin={() => switchView("login")}
             />
           )}
         </div>
