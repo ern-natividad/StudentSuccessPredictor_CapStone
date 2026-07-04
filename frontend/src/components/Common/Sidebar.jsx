@@ -11,7 +11,6 @@ const Sidebar = () => {
   const location = useLocation();
   const { currentPage, showPage, alerts } = useDashboard();
 
-  // Collapsed state persisted in localStorage
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved === "true";
@@ -21,6 +20,7 @@ const Sidebar = () => {
     setIsCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem("sidebarCollapsed", String(next));
+      window.dispatchEvent(new Event("sidebar-toggle"));
       return next;
     });
   };
@@ -205,7 +205,11 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`${styles.sidebar} ${isModulePage ? styles.darkSidebar : ""} ${isCollapsed ? styles.collapsed : ""}`}
+      className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}
+      style={{
+        whiteSpace: "nowrap",
+        overflowX: "hidden"
+      }}
     >
       <div className={styles.sidebarSectionLabel}>{config.sectionLabel}</div>
       {config.items.map(renderItemButton)}
