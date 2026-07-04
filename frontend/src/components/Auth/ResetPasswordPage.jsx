@@ -4,11 +4,6 @@ import { useAuth } from "../../hooks/useAuth";
 import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
-// Supabase redirects here (see redirectTo in requestPasswordReset) after the
-// user clicks the reset link in their email. detectSessionInUrl on the
-// Supabase client picks up the recovery token from the URL automatically,
-// so by the time this renders the user has a temporary authenticated
-// session that only allows setting a new password.
 const ResetPasswordPage = () => {
   const { updatePassword, error, setError } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +11,9 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,32 +82,79 @@ const ResetPasswordPage = () => {
                   <label className={styles.fLabel} htmlFor="new-password">
                     New Password
                   </label>
-                  <input
-                    id="new-password"
-                    type="password"
-                    className={styles.fInput}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError("");
-                    }}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      className={styles.fInput}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
+                    />
+                    <button
+                      type="button"
+                      tabIndex="-1"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        color: "#666",
+                        userSelect: "none"
+                      }}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <small style={{ display: "block", marginTop: "4px", color: password.length >= 8 ? "#2e7d32" : "#666" }}>
+                    ● At least 8 characters
+                  </small>
                 </div>
+
                 <div className={styles.fGroup}>
                   <label className={styles.fLabel} htmlFor="confirm-new-password">
                     Confirm Password
                   </label>
-                  <input
-                    id="confirm-new-password"
-                    type="password"
-                    className={styles.fInput}
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setError("");
-                    }}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="confirm-new-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      className={styles.fInput}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setError("");
+                      }}
+                    />
+                    <button
+                      type="button"
+                      tabIndex="-1"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        color: "#666",
+                        userSelect: "none"
+                      }}
+                    >
+                      {showConfirmPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
+
                 <button
                   type="submit"
                   className={styles.btnGold}
