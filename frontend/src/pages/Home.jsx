@@ -374,11 +374,9 @@ const HomePage = () => {
                   borderRadius: "var(--radius-lg)",
                   border: "1px solid var(--color-border-neutral)",
                   backgroundColor: "var(--color-bg-surface)",
-                  transition: "all var(--transition-base)",
-                  cursor: "pointer",
+                  transition: "all var(--transition-base)"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.cursor = "pointer";
                   e.currentTarget.style.boxShadow = "var(--shadow-md)";
                   e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.borderColor =
