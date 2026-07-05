@@ -17,6 +17,7 @@ import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisin
 import UnauthorizedPage from "./pages/Unauthorized";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
 import CurriculumViewer from "./features/student/pages/CurriculumViewer";
+import AccountSettingsPage from "./features/common/pages/AccountSettingsPage";
 
 function App() {
   return (

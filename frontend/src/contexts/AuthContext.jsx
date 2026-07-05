@@ -1,88 +1,111 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { AuthContext } from "./AuthContextBase";
-import { supabase } from "../lib/supabaseClient";
-
-// Build the shape the rest of the app expects (`user.role`, `user.name`, ...)
-// from a Supabase session. Role/name/IDs are stored in user_metadata at
-// signup time (see `signup` below).
-const buildUserState = (session) => {
-  if (!session?.user) {
-    return { name: "", role: "student", email: "", isAuthenticated: false };
-  }
-
-  const meta = session.user.user_metadata || {};
-
-  return {
-    id: session.user.id,
-    name: meta.full_name || session.user.email,
-    role: meta.role || "student",
-    email: session.user.email,
-    isAuthenticated: true,
-  };
-};
+import {
+  validateCredentials,
+  generateNameFromEmail,
+  storeUserSession,
+  getUserSession,
+  clearUserSession,
+  getRole,
+} from "../utils/authUtils";
+import { normalizeUserPayload } from "../utils/dataNormalization";
+import { api, isBackendAuthEnabled } from "../services/api";
 
 export const AuthProvider = ({ children }) => {
+  const session = getUserSession();
   const [user, setUser] = useState({
-    name: "",
-    role: "student",
+    name: session.userName,
+    role: session.userRole,
     email: "",
-    isAuthenticated: false,
+    isAuthenticated: Boolean(session.userName),
+    twoFactorEnabled: false,
   });
-  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
+  const [pendingMfa, setPendingMfa] = useState(null);
 
-  useEffect(() => {
-    let mounted = true;
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      setUser(buildUserState(session));
-      setLoading(false);
+  const applyBackendSession = ({ token, user: backendUser }) => {
+    sessionStorage.setItem("authToken", token);
+    storeUserSession(backendUser.fullName || backendUser.email, backendUser.role);
+    setUser({
+      name: backendUser.fullName || backendUser.email,
+      role: backendUser.role,
+      email: backendUser.email,
+      isAuthenticated: true,
+      twoFactorEnabled: backendUser.twoFactorEnabled,
     });
+  };
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(buildUserState(session));
-      },
-    );
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  const login = useCallback(async (email, password, selectedRole = "student") => {
-    setError("");
-
+  const loginLocal = (email, password, selectedRole) => {
     if (!email || !password) {
       setError("Please fill in all fields.");
       return false;
     }
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message || "Invalid email or password.");
+    if (!validateCredentials(email, password)) {
+      setError("Invalid email or password.");
       return false;
     }
 
-    const role = data.user?.user_metadata?.role || "student";
+    const role = getRole(email);
     if (role !== selectedRole) {
       setError(`This account is not registered as ${selectedRole}.`);
-      await supabase.auth.signOut();
       return false;
     }
 
+    const name = generateNameFromEmail(email);
+    storeUserSession(name, role);
+    setUser({
+      name,
+      role,
+      email: email.toLowerCase(),
+      isAuthenticated: true,
+      twoFactorEnabled: false,
+    });
     return true;
+  };
+
+  const loginBackend = async (email, password) => {
+    try {
+      const result = await api.login(email, password);
+
+      if (result.requiresMfa) {
+        setPendingMfa({ userId: result.userId });
+        return "mfa-required";
+      }
+
+      applyBackendSession(result);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      return false;
+    }
+  };
+
+  const login = useCallback(async (email, password, selectedRole = "student") => {
+    setError("");
+    if (isBackendAuthEnabled()) {
+      return loginBackend(email, password);
+    }
+    return loginLocal(email, password, selectedRole);
   }, []);
+
+  const completeMfaLogin = useCallback(async (userId, code) => {
+    try {
+      const result = await api.verifyMfaLogin(userId, code);
+      applyBackendSession(result);
+      setPendingMfa(null);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      return false;
+    }
+  }, []);
+
+  const cancelMfa = useCallback(() => setPendingMfa(null), []);
 
   const signup = useCallback(async (formData, selectedRole = "student") => {
     setError("");
-
     const {
       firstName,
       lastName,
@@ -96,7 +119,6 @@ export const AuthProvider = ({ children }) => {
       confirmPassword,
       termsAccepted,
     } = formData;
-
     const roleId = selectedRole || "student";
     const roleSpecificId = roleId === "student" ? studentId : employeeId;
     const roleSpecificGroup = roleId === "student" ? year : department;
@@ -114,10 +136,6 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    // NOTE: this only checks the code was typed in. If you want the access
-    // code to actually gate who can register as staff/admin, verify it
-    // server-side (e.g. in a Supabase Edge Function or a DB check) instead
-    // of trusting the client.
     if (roleId !== "student" && !accessCode) {
       setError("Please enter the role access code.");
       return false;
@@ -133,88 +151,71 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    const fullName = `${firstName} ${lastName}`;
+    const normalizedUser = normalizeUserPayload(formData, roleId);
+    console.log("Normalized user payload:", normalizedUser);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          role: roleId,
-          student_id: roleId === "student" ? studentId : undefined,
-          employee_id: roleId !== "student" ? employeeId : undefined,
-          year_level: roleId === "student" ? year : undefined,
-          department: roleId !== "student" ? department : undefined,
-        },
-      },
+    if (isBackendAuthEnabled()) {
+      try {
+        const result = await api.signup(normalizedUser);
+        if (result && result.token) {
+          applyBackendSession(result);
+          return true;
+        }
+      } catch (err) {
+        setError(err.message || "Registration failed. Please try again.");
+        return false;
+      }
+    }
+
+    const name = `${firstName} ${lastName}`;
+    storeUserSession(name, roleId);
+    setUser({
+      name,
+      role: roleId,
+      email: email.toLowerCase(),
+      isAuthenticated: true,
+      twoFactorEnabled: false,
     });
-
-    if (signUpError) {
-      setError(signUpError.message || "Could not create account.");
-      return false;
-    }
-
-    // If "Confirm email" is enabled in Supabase, signUp succeeds but there
-    // is no session yet — the account isn't usable until the user clicks
-    // the confirmation link in their email.
-    if (!data.session) {
-      return "confirm-email";
-    }
-
-    return true;
-  }, []);
-
-  const requestPasswordReset = useCallback(async (email) => {
-    setError("");
-
-    if (!email) {
-      setError("Please enter your email address.");
-      return false;
-    }
-
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email,
-      { redirectTo: `${window.location.origin}/auth/reset-password` },
-    );
-
-    if (resetError) {
-      setError(resetError.message || "Could not send reset email.");
-      return false;
-    }
-
-    return true;
-  }, []);
-
-  const updatePassword = useCallback(async (newPassword) => {
-    setError("");
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (updateError) {
-      setError(updateError.message || "Could not update password.");
-      return false;
-    }
-
     return true;
   }, []);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (isBackendAuthEnabled() && sessionStorage.getItem("authToken")) {
+      try {
+        await api.logout();
+      } catch {
+        // Never block client logout
+      }
+    }
+    sessionStorage.removeItem("authToken");
+    clearUserSession();
+    setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false });
+  }, []);
+
+  const expireSessionDueToInactivity = useCallback(async () => {
+    if (isBackendAuthEnabled() && sessionStorage.getItem("authToken")) {
+      try {
+        await api.reportSessionTimeout();
+      } catch {
+        // Fallback
+      }
+    }
+    sessionStorage.removeItem("authToken");
+    clearUserSession();
+    setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false });
   }, []);
 
   const value = {
     user,
-    loading,
     login,
     signup,
     logout,
-    requestPasswordReset,
-    updatePassword,
     error,
     setError,
+    pendingMfa,
+    completeMfaLogin,
+    cancelMfa,
+    expireSessionDueToInactivity,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

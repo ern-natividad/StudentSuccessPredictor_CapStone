@@ -1,14 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-import path from 'path';
+import { createClient } from "@supabase/supabase-js";
+import { env } from "./env.js";
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ CRITICAL: Supabase keys are missing! Check your backend/.env file.");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Service-role client — used only on the backend. The service-role key must
+// never be sent to, or embedded in, the frontend bundle.
+export const supabase = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});

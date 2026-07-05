@@ -1,16 +1,23 @@
 {
-  "name": "hawkspredict-backend",
-  "private": true,
+  "name": "hawkpredict-security-backend",
   "version": "1.0.0",
   "type": "module",
+  "private": true,
+  "description": "Express + Supabase backend adding account lockout, Google Authenticator MFA, and audit logging to HawkPredict.",
   "scripts": {
-    "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^4.21.2"
+    "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.5.1",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-simple": "^0.5.6",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0"
   }
 }
