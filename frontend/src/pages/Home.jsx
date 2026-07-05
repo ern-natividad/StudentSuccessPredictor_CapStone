@@ -62,7 +62,7 @@ const HomePage = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "#B91C1C",
+          backgroundColor: "#800000",
           position: "sticky",
           top: 0,
           zIndex: 50,
