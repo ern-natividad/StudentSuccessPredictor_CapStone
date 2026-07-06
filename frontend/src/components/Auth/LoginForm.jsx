@@ -21,8 +21,6 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
     if (result === true) {
       navigate(getDashboardPath(roleConfig.id));
     }
-    // result === "mfa-required" -> MfaVerify renders below.
-    // result === false -> `error` state already holds the message.
   };
 
   if (pendingMfa) {
@@ -33,7 +31,7 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
         onCancel={cancelMfa}
         onSubmit={async (code) => {
           setSubmitting(true);
-          const ok = await completeMfaLogin(pendingMfa.userId, code);
+          const ok = await completeMfaLogin(pendingMfa.pendingToken, code);
           setSubmitting(false);
           if (ok) navigate(getDashboardPath(roleConfig.id));
         }}

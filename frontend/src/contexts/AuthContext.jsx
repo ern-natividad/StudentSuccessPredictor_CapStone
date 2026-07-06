@@ -70,7 +70,8 @@ export const AuthProvider = ({ children }) => {
       const result = await api.login(email, password);
 
       if (result.requiresMfa) {
-        setPendingMfa({ userId: result.userId });
+        // FIXED: Capture pendingToken instead of looking for non-existent userId
+        setPendingMfa({ pendingToken: result.pendingToken });
         return "mfa-required";
       }
 
@@ -90,9 +91,11 @@ export const AuthProvider = ({ children }) => {
     return loginLocal(email, password, selectedRole);
   }, []);
 
-  const completeMfaLogin = useCallback(async (userId, code) => {
+  // FIXED: Changed parameter from userId to pendingToken
+  const completeMfaLogin = useCallback(async (pendingToken, code) => {
     try {
-      const result = await api.verifyMfaLogin(userId, code);
+      // FIXED: Forward pendingToken directly to the api client wrapper
+      const result = await api.verifyMfaLogin(pendingToken, code);
       applyBackendSession(result);
       setPendingMfa(null);
       return true;
@@ -119,13 +122,11 @@ export const AuthProvider = ({ children }) => {
     
     const roleId = selectedRole || "student";
 
-    // 1. Validate global fields required by all roles
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       setError("Please complete all fields.");
       return false;
     }
 
-    // 2. Only validate Student ID and Year Level if the user is a Student
     if (roleId === "student") {
       if (!studentId || !year) {
         setError("Please complete all fields.");
