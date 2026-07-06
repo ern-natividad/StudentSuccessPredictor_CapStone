@@ -1,6 +1,3 @@
-// Role configuration used to render the auth screens.
-// NOTE: VALID_CREDS and ROLE_MAP (hardcoded mock credentials) have been
-// removed — authentication is now handled entirely by Supabase Auth.
 export const AUTH_ROLES = {
   admin: {
     id: "admin",
@@ -16,19 +13,6 @@ export const AUTH_ROLES = {
     signupSubtitle: "Register an account for system-level access",
     emailLabel: "Administrator Email",
     emailPlaceholder: "admin@wmsu.edu.ph",
-    idLabel: "Administrator ID",
-    idName: "employeeId",
-    idPlaceholder: "ADM-2026-001",
-    groupLabel: "Administrative Office",
-    groupName: "department",
-    groupOptions: [
-      "System Office",
-      "College Dean",
-      "Registrar",
-      "Program Chair",
-    ],
-    accessCodeLabel: "Admin Access Code",
-    accessCodePlaceholder: "Enter admin access code",
   },
   staff: {
     id: "staff",
@@ -44,19 +28,6 @@ export const AUTH_ROLES = {
     signupSubtitle: "Register an account for academic support access",
     emailLabel: "Staff Email",
     emailPlaceholder: "staff@wmsu.edu.ph",
-    idLabel: "Staff ID",
-    idName: "employeeId",
-    idPlaceholder: "STF-2026-001",
-    groupLabel: "Assigned Unit",
-    groupName: "department",
-    groupOptions: [
-      "Engineering Department",
-      "Guidance Office",
-      "Student Affairs",
-      "Academic Advising",
-    ],
-    accessCodeLabel: "Staff Access Code",
-    accessCodePlaceholder: "Enter staff access code",
   },
   student: {
     id: "student",

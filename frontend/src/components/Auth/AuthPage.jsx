@@ -9,7 +9,7 @@ import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const AuthPage = () => {
-  const [view, setView] = useState("login"); // "login" | "signup" | "forgot"
+  const [view, setView] = useState("login");
   const { role = "student" } = useParams();
   const navigate = useNavigate();
   const { setError } = useAuth();

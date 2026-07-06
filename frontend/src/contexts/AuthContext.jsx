@@ -111,34 +111,26 @@ export const AuthProvider = ({ children }) => {
       lastName,
       email,
       studentId,
-      employeeId,
       year,
-      department,
-      accessCode,
       password,
       confirmPassword,
       termsAccepted,
     } = formData;
+    
     const roleId = selectedRole || "student";
-    const roleSpecificId = roleId === "student" ? studentId : employeeId;
-    const roleSpecificGroup = roleId === "student" ? year : department;
 
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !roleSpecificId ||
-      !roleSpecificGroup ||
-      !password ||
-      !confirmPassword
-    ) {
+    // 1. Validate global fields required by all roles
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       setError("Please complete all fields.");
       return false;
     }
 
-    if (roleId !== "student" && !accessCode) {
-      setError("Please enter the role access code.");
-      return false;
+    // 2. Only validate Student ID and Year Level if the user is a Student
+    if (roleId === "student") {
+      if (!studentId || !year) {
+        setError("Please complete all fields.");
+        return false;
+      }
     }
 
     if (password !== confirmPassword) {

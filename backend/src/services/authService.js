@@ -16,7 +16,7 @@ import { HttpError } from "../middleware/errorHandler.js";
 // Generic message returned for any credential failure — never reveals
 // whether the email exists, which field was wrong, or the lock state
 // before we've confirmed the password (see below for the one exception:
-// once locked, a "temporarily locked" message is expected UX per spec).
+// once locked, a \"temporarily locked\" message is expected UX per spec).
 const GENERIC_AUTH_ERROR = "Invalid email or password.";
 
 const findUserByEmail = async (email) => {
@@ -235,18 +235,6 @@ const assertValidPassword = (password) => {
   }
 };
 
-const assertValidAccessCode = (role, accessCode) => {
-  if (role === "student") return;
-
-  const expectedCode = role === "admin" ? env.adminAccessCode : env.staffAccessCode;
-  if (!expectedCode) {
-    throw new HttpError(503, "Registration is not available for this role right now.");
-  }
-  if (accessCode !== expectedCode) {
-    throw new HttpError(403, "Invalid access code.");
-  }
-};
-
 export const registerUser = async (payload, meta = {}) => {
   const {
     first_name: firstName,
@@ -254,7 +242,6 @@ export const registerUser = async (payload, meta = {}) => {
     email,
     role = "student",
     password,
-    access_code: accessCode,
     terms_accepted: termsAccepted,
   } = payload;
 
@@ -271,7 +258,6 @@ export const registerUser = async (payload, meta = {}) => {
   }
 
   assertValidPassword(password);
-  assertValidAccessCode(role, accessCode);
 
   const normalizedEmail = email.toLowerCase();
   const existingUser = await findUserByEmail(normalizedEmail);

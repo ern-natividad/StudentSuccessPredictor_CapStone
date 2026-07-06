@@ -1,11 +1,3 @@
-// REPLACES: src/components/Auth/LoginForm.jsx
-//
-// Visual markup is unchanged. The only functional changes:
-//   1. login() is now awaited (needed for the backend path).
-//   2. When login() resolves to "mfa-required", the MfaVerify step renders
-//      in place of the form (same card, same styles.formView wrapper).
-//   3. Account-locked / invalid-code messages surface through the existing
-//      `error` banner — no new error UI.
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";

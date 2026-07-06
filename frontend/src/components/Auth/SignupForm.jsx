@@ -13,8 +13,8 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     email: "",
     studentId: "",
     employeeId: "",
-    year: roleConfig.id === "student" ? roleConfig.groupOptions[0] : "",
-    department: roleConfig.id !== "student" ? roleConfig.groupOptions[0] : "",
+    year: roleConfig.id === "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "",
+    department: roleConfig.id !== "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "",
     accessCode: "",
     password: "",
     confirmPassword: "",
@@ -130,36 +130,40 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
               onChange={handleInputChange}
             />
           </div>
+          {roleConfig.idLabel && roleConfig.idName && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>{roleConfig.idLabel}</label>
+              <input
+                type="text"
+                name={roleConfig.idName}
+                className={styles.formInput}
+                placeholder={roleConfig.idPlaceholder}
+                value={formData[roleConfig.idName] || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+          )}
+        </div>
+
+        {roleConfig.groupLabel && roleConfig.groupName && roleConfig.groupOptions && (
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>{roleConfig.idLabel}</label>
-            <input
-              type="text"
-              name={roleConfig.idName}
-              className={styles.formInput}
-              placeholder={roleConfig.idPlaceholder}
-              value={formData[roleConfig.idName]}
+            <label className={styles.formLabel}>{roleConfig.groupLabel}</label>
+            <select
+              name={roleConfig.groupName}
+              className={styles.formSelect}
+              value={formData[roleConfig.groupName]}
               onChange={handleInputChange}
-            />
+            >
+              {roleConfig.groupOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+        )}
 
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>{roleConfig.groupLabel}</label>
-          <select
-            name={roleConfig.groupName}
-            className={styles.formSelect}
-            value={formData[roleConfig.groupName]}
-            onChange={handleInputChange}
-          >
-            {roleConfig.groupOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {roleConfig.id !== "student" && (
+        {roleConfig.id !== "student" && roleConfig.accessCodeLabel && (
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>
               {roleConfig.accessCodeLabel}
