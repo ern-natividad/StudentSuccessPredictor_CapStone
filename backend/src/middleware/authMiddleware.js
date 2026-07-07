@@ -1,10 +1,6 @@
 import { verifyToken } from "../utils/jwt.js";
 import { HttpError } from "./errorHandler.js";
 
-/**
- * Protects an endpoint: requires a valid Bearer JWT. Populates
- * req.user = { sub, email, role } on success.
- */
 export const requireAuth = (req, res, next) => {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;

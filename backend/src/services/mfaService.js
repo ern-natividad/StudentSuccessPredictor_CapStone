@@ -5,12 +5,6 @@ import { recordAuditLog, AUDIT_ACTIONS, AUDIT_MODULES } from "./auditService.js"
 
 const ISSUER = "HawkPredict";
 
-/**
- * Generates a new TOTP secret and QR code for Google Authenticator.
- * The secret is persisted immediately, but two_factor_enabled stays false
- * until the user verifies a generated code (see confirmMfaSetup) — this is
- * the only point at which the raw secret is ever sent to the frontend.
- */
 export const beginMfaSetup = async (user) => {
   const secret = speakeasy.generateSecret({
     name: `${ISSUER} (${user.email})`,
@@ -77,4 +71,6 @@ export const disableMfa = async (user, token) => {
     module: AUDIT_MODULES.AUTH,
     description: "Two-factor authentication disabled.",
   });
+
+  return true; 
 };

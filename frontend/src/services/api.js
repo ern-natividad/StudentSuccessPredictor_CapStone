@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
 
 const request = async (path, options = {}) => {
@@ -43,8 +45,19 @@ export const api = {
     request("/mfa/setup/confirm", { method: "POST", body: JSON.stringify({ code }) }),
 
   disableMfa: async (code, token) => {
-  const authToken = token || sessionStorage.getItem("authToken");
-  const response = await axios.post("/api/mfa/disable", 
+  console.log("Session Storage Keys:", Object.keys(sessionStorage));
+  console.log("Local Storage Keys:", Object.keys(localStorage));
+
+  const authToken = token || 
+                    sessionStorage.getItem("authToken") || 
+                    localStorage.getItem("authToken") ||
+                    localStorage.getItem("token");
+
+  console.log("Resolved Auth Token:", authToken);
+
+  const targetUrl = `${BASE_URL.replace(/\/$/, '')}/mfa/disable`;
+
+  const response = await axios.post(targetUrl, 
     { code }, 
     { headers: { Authorization: `Bearer ${authToken}` } }
   );

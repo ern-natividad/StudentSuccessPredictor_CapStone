@@ -20,7 +20,11 @@ export const login = asyncHandler(async (req, res) => {
   const result = await loginWithPassword(email, password, meta);
 
   if (result.requiresMfa) {
-    return res.status(200).json({ requiresMfa: true, pendingToken: result.pendingToken });
+    return res.status(200).json({ 
+      requiresMfa: true, 
+      pendingToken: result.pendingToken,
+      userId: result.pendingToken 
+    });
   }
 
   return res.status(200).json(result);
