@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AuthContext } from "./AuthContextBase";
 import {
   validateCredentials,
@@ -68,10 +68,33 @@ export const AuthProvider = ({ children }) => {
   const loginBackend = async (email, password) => {
     try {
       const result = await api.login(email, password);
+      
+      console.log("Backend API login raw response:", result);
 
-      if (result.requiresMfa) {
-        // FIXED: Capture pendingToken instead of looking for non-existent userId
-        setPendingMfa({ pendingToken: result.pendingToken });
+      const dataPayload = result?.data || result;
+      const requiresMfa = dataPayload?.requiresMfa || result?.requiresMfa;
+
+      if (requiresMfa) {
+        // Look up user ID across every potential naming convention
+        const actualUserId = 
+          dataPayload?.userId || 
+          dataPayload?.user_id || 
+          dataPayload?.id || 
+          dataPayload?.user?.id ||
+          result?.userId ||
+          result?.id;
+
+        console.log("Extracted MFA User ID Reference:", actualUserId);
+
+        // Populate all property permutations to satisfy validation inside your form manager files
+        setPendingMfa({ 
+          userId: actualUserId,
+          user_id: actualUserId,
+          id: actualUserId,
+          _id: actualUserId,
+          ...dataPayload
+        });
+        
         return "mfa-required";
       }
 
@@ -91,11 +114,9 @@ export const AuthProvider = ({ children }) => {
     return loginLocal(email, password, selectedRole);
   }, []);
 
-  // FIXED: Changed parameter from userId to pendingToken
-  const completeMfaLogin = useCallback(async (pendingToken, code) => {
+  const completeMfaLogin = useCallback(async (userId, code) => {
     try {
-      // FIXED: Forward pendingToken directly to the api client wrapper
-      const result = await api.verifyMfaLogin(pendingToken, code);
+      const result = await api.verifyMfaLogin(userId, code);
       applyBackendSession(result);
       setPendingMfa(null);
       return true;
@@ -114,24 +135,34 @@ export const AuthProvider = ({ children }) => {
       lastName,
       email,
       studentId,
+      employeeId,
       year,
+      department,
+      accessCode,
       password,
       confirmPassword,
       termsAccepted,
     } = formData;
-    
     const roleId = selectedRole || "student";
+    const roleSpecificId = roleId === "student" ? studentId : employeeId;
+    const roleSpecificGroup = roleId === "student" ? year : department;
 
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !roleSpecificId ||
+      !roleSpecificGroup ||
+      !password ||
+      !confirmPassword
+    ) {
       setError("Please complete all fields.");
       return false;
     }
 
-    if (roleId === "student") {
-      if (!studentId || !year) {
-        setError("Please complete all fields.");
-        return false;
-      }
+    if (roleId !== "student" && !accessCode) {
+      setError("Please enter the role access code.");
+      return false;
     }
 
     if (password !== confirmPassword) {
@@ -198,8 +229,19 @@ export const AuthProvider = ({ children }) => {
     setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false });
   }, []);
 
+  const updateUserFields = useCallback((fields) => {
+    setUser((prevUser) => {
+      if (!prevUser) return null;
+      return {
+        ...prevUser,
+        ...fields,
+      };
+    });
+  }, []);
+
   const value = {
     user,
+    setUser,
     login,
     signup,
     logout,
@@ -209,6 +251,7 @@ export const AuthProvider = ({ children }) => {
     completeMfaLogin,
     cancelMfa,
     expireSessionDueToInactivity,
+    updateUserFields,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -39,6 +39,7 @@ const Sidebar = () => {
             label: "Prediction Result",
           },
           { id: "simulator", icon: "🔬", label: "What-If Simulator" },
+          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
         ],
         modules: [],
       };
@@ -57,6 +58,7 @@ const Sidebar = () => {
             badge: alerts.length,
           },
           { id: "screening", icon: "fas fa-check-square", label: "Screening" },
+          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
         ],
         modules: [
           {
@@ -107,6 +109,7 @@ const Sidebar = () => {
         },
         { id: "models", icon: "fas fa-cogs", label: "Model Management" },
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
+        { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
       ],
       modules: [
         {

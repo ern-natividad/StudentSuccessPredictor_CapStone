@@ -42,7 +42,7 @@ export const api = {
   confirmMfaSetup: (code) =>
     request("/mfa/setup/confirm", { method: "POST", body: JSON.stringify({ code }) }),
 
-  disableMfa: () => request("/mfa/disable", { method: "POST" }),
+  disableMfa: (code) => request("/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
 
   getAuditLogs: (limit = 100, offset = 0) =>
     request(`/audit-logs?limit=${limit}&offset=${offset}`),
