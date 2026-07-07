@@ -42,7 +42,14 @@ export const api = {
   confirmMfaSetup: (code) =>
     request("/mfa/setup/confirm", { method: "POST", body: JSON.stringify({ code }) }),
 
-  disableMfa: (code) => request("/mfa/disable", { method: "POST", body: JSON.stringify({ code }) }),
+  disableMfa: async (code, token) => {
+  const authToken = token || sessionStorage.getItem("authToken");
+  const response = await axios.post("/api/mfa/disable", 
+    { code }, 
+    { headers: { Authorization: `Bearer ${authToken}` } }
+  );
+  return response.data;
+},
 
   getAuditLogs: (limit = 100, offset = 0) =>
     request(`/audit-logs?limit=${limit}&offset=${offset}`),
