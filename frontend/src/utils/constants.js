@@ -102,6 +102,16 @@ export const STUDENTS = [
     predicted_gpa: 3.95,
     confidence_score: 92,
     risk_level: "Low",
+    assignedSectionId: "BSIT-3A",
+    assignedStaffId: "staff-1",
+    grade_records: [
+      {
+        subject: "Data Structures",
+        semester: "1S",
+        grade: 1,
+        remarks: "Good",
+      },
+    ],
   },
   {
     student_id: "202301-01-002",
@@ -111,6 +121,16 @@ export const STUDENTS = [
     predicted_gpa: 3.88,
     confidence_score: 89,
     risk_level: "Low",
+    assignedSectionId: "BSIT-3A",
+    assignedStaffId: "staff-1",
+    grade_records: [
+      {
+        subject: "Computer Networks",
+        semester: "1S",
+        grade: 2,
+        remarks: "Satisfactory",
+      },
+    ],
   },
   {
     student_id: "202301-01-003",
@@ -120,6 +140,16 @@ export const STUDENTS = [
     predicted_gpa: 2.72,
     confidence_score: 84,
     risk_level: "High",
+    assignedSectionId: "BECE-4B",
+    assignedStaffId: "staff-2",
+    grade_records: [
+      {
+        subject: "Thermodynamics",
+        semester: "1S",
+        grade: 4,
+        remarks: "Needs improvement",
+      },
+    ],
   },
   {
     student_id: "202301-01-004",
@@ -129,6 +159,16 @@ export const STUDENTS = [
     predicted_gpa: 3.82,
     confidence_score: 91,
     risk_level: "Low",
+    assignedSectionId: "BSIT-2A",
+    assignedStaffId: "staff-3",
+    grade_records: [
+      {
+        subject: "Programming Logic",
+        semester: "1S",
+        grade: 1,
+        remarks: "Solid work",
+      },
+    ],
   },
   {
     student_id: "202301-01-005",
@@ -138,6 +178,16 @@ export const STUDENTS = [
     predicted_gpa: 3.74,
     confidence_score: 88,
     risk_level: "Low",
+    assignedSectionId: "BECE-4B",
+    assignedStaffId: "staff-2",
+    grade_records: [
+      {
+        subject: "Electronics I",
+        semester: "1S",
+        grade: 2,
+        remarks: "On target",
+      },
+    ],
   },
   {
     student_id: "202301-01-006",
@@ -183,6 +233,53 @@ export const STUDENTS = [
     predicted_gpa: 3.05,
     confidence_score: 85,
     risk_level: "Medium",
+  },
+];
+
+export const SECTIONS = [
+  {
+    id: "BSIT-3A",
+    name: "BSIT 3A",
+    adviserId: "staff-1",
+    description:
+      "Bachelor of Science in Information Technology, 3rd year section A",
+  },
+  {
+    id: "BECE-4B",
+    name: "BECE 4B",
+    adviserId: "staff-2",
+    description: "Bachelor of Elementary Education, 4th year section B",
+  },
+  {
+    id: "BSIT-2A",
+    name: "BSIT 2A",
+    adviserId: "staff-3",
+    description:
+      "Bachelor of Science in Information Technology, 2nd year section A",
+  },
+];
+
+export const STAFF_MEMBERS = [
+  {
+    id: "staff-1",
+    full_name: "Rhea Navarro",
+    email: "rhea.navarro@wmsu.edu.ph",
+    role: "staff",
+    title: "Academic Adviser",
+  },
+  {
+    id: "staff-2",
+    full_name: "Mark Villanueva",
+    email: "mark.villanueva@wmsu.edu.ph",
+    role: "staff",
+    title: "Department Coordinator",
+  },
+  {
+    id: "staff-3",
+    full_name: "Aileen Cruz",
+    email: "aileen.cruz@wmsu.edu.ph",
+    role: "staff",
+    title: "Student Support Officer",
   },
 ];
 

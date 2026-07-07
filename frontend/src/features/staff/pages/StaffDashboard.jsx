@@ -4,6 +4,7 @@ import StudentsList from "./StudentsList";
 import AlertsList from "../components/AlertsList";
 import ScreeningPage from "../../admin/pages/ScreeningPage";
 import AccountSettingsPage from "../../common/pages/AccountSettingsPage";
+import StudentManagementPage from "./StudentManagementPage";
 
 const StaffDashboard = () => {
   const { currentPage } = useDashboard();
@@ -14,6 +15,8 @@ const StaffDashboard = () => {
         return <DashboardOverview />;
       case "students":
         return <StudentsList />;
+      case "student-management":
+        return <StudentManagementPage />;
       case "alerts":
         return <AlertsList />;
       case "screening":

@@ -14,11 +14,6 @@ const moduleLinks = [
     label: "Performance Forecasting",
     path: "/modules/academic-performance",
   },
-  {
-    key: "what-if-simulator",
-    label: "What-If Simulator",
-    path: "/modules/what-if-simulator",
-  },
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
 ];
 

@@ -38,10 +38,25 @@ const Sidebar = () => {
             icon: "fas fa-chart-line",
             label: "Prediction Result",
           },
-          { id: "simulator", icon: "🔬", label: "What-If Simulator" },
-          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
+          {
+            id: "grades",
+            icon: "fas fa-book",
+            label: "My Grades",
+          },
+          {
+            id: "settings",
+            icon: "fas fa-user-cog",
+            label: "Account Settings",
+          },
         ],
-        modules: [],
+        modules: [
+          {
+            id: "ai-advising",
+            label: "AI Advising",
+            icon: "fas fa-lightbulb",
+            path: "/modules/ai-advising",
+          },
+        ],
       };
     }
 
@@ -52,13 +67,22 @@ const Sidebar = () => {
           { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
           { id: "students", icon: "fas fa-users", label: "Students" },
           {
+            id: "student-management",
+            icon: "fas fa-user-edit",
+            label: "Student Management",
+          },
+          {
             id: "alerts",
             icon: "fas fa-exclamation-triangle",
             label: "Early Alerts",
             badge: alerts.length,
           },
           { id: "screening", icon: "fas fa-check-square", label: "Screening" },
-          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
+          {
+            id: "settings",
+            icon: "fas fa-user-cog",
+            label: "Account Settings",
+          },
         ],
         modules: [
           {
@@ -80,12 +104,6 @@ const Sidebar = () => {
             path: "/modules/academic-performance",
           },
           {
-            id: "what-if-simulator",
-            label: "What-If Simulator",
-            icon: "fas fa-flask",
-            path: "/modules/what-if-simulator",
-          },
-          {
             id: "ai-advising",
             label: "AI Advising",
             icon: "fas fa-lightbulb",
@@ -102,6 +120,11 @@ const Sidebar = () => {
         { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
         { id: "students", icon: "fas fa-users", label: "Students" },
         {
+          id: "adviser-manager",
+          icon: "fas fa-user-tie",
+          label: "Adviser Manager",
+        },
+        {
           id: "alerts",
           icon: "fas fa-exclamation-triangle",
           label: "Alerts",
@@ -109,7 +132,7 @@ const Sidebar = () => {
         },
         { id: "models", icon: "fas fa-cogs", label: "Model Management" },
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
-        { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" }, 
+        { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },
       ],
       modules: [
         {
@@ -129,12 +152,6 @@ const Sidebar = () => {
           label: "Performance Forecasting",
           icon: "fas fa-chart-line",
           path: "/modules/academic-performance",
-        },
-        {
-          id: "what-if-simulator",
-          label: "What-If Simulator",
-          icon: "fas fa-flask",
-          path: "/modules/what-if-simulator",
         },
         {
           id: "ai-advising",
@@ -211,7 +228,7 @@ const Sidebar = () => {
       className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}
       style={{
         whiteSpace: "nowrap",
-        overflowX: "hidden"
+        overflowX: "hidden",
       }}
     >
       <div className={styles.sidebarSectionLabel}>{config.sectionLabel}</div>

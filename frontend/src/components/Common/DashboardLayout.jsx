@@ -1,7 +1,7 @@
 import { useDashboard } from "../../hooks/useDashboard";
 import StudentPrediction from "../../features/staff/pages/StudentPrediction";
-import WhatIfSimulator from "../../features/student/pages/WhatIfSimulator";
-import AccountSettingsPage from "../../features/common/pages/AccountSettingsPage"; 
+import MyGradesPage from "../../features/student/pages/MyGradesPage";
+import AccountSettingsPage from "../../features/common/pages/AccountSettingsPage";
 
 const DashboardLayout = () => {
   const { currentPage } = useDashboard();
@@ -10,10 +10,10 @@ const DashboardLayout = () => {
     switch (currentPage) {
       case "prediction":
         return <StudentPrediction />;
-      case "simulator":
-        return <WhatIfSimulator />;
+      case "grades":
+        return <MyGradesPage />;
       case "settings":
-        return <AccountSettingsPage />; 
+        return <AccountSettingsPage />;
       default:
         return <StudentPrediction />;
     }

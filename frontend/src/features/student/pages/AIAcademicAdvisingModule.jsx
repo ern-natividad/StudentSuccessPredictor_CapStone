@@ -14,11 +14,6 @@ const moduleLinks = [
     path: "/modules/academic-performance",
   },
   {
-    key: "what-if-simulator",
-    label: "What-If Simulator",
-    path: "/modules/what-if-simulator",
-  },
-  {
     key: "ai-advising",
     label: "AI Advising",
     path: "/modules/ai-advising",
@@ -26,7 +21,11 @@ const moduleLinks = [
 ];
 
 const initialMessages = [
-  { id: 1, sender: "bot", text: "Welcome to AI Academic Advising. How can I help you improve a student's performance today?" },
+  {
+    id: 1,
+    sender: "bot",
+    text: "Welcome to AI Academic Advising. How can I help you improve a student's performance today?",
+  },
 ];
 
 const AIAcademicAdvisingModule = () => {
@@ -36,7 +35,11 @@ const AIAcademicAdvisingModule = () => {
   const handleAsk = () => {
     if (!query.trim()) return;
 
-    const newMessage = { id: messages.length + 1, sender: "user", text: query.trim() };
+    const newMessage = {
+      id: messages.length + 1,
+      sender: "user",
+      text: query.trim(),
+    };
     const botMessage = {
       id: messages.length + 2,
       sender: "bot",
@@ -48,8 +51,18 @@ const AIAcademicAdvisingModule = () => {
   };
 
   const aiNotes = [
-    { id: 1, title: "Time Management Plan", content: "Suggest weekly study blocks and review time for core technical subjects." },
-    { id: 2, title: "Course Recommendations", content: "Recommend tutoring for Calculus and Physics for students with GWA below 3.0." },
+    {
+      id: 1,
+      title: "Time Management Plan",
+      content:
+        "Suggest weekly study blocks and review time for core technical subjects.",
+    },
+    {
+      id: 2,
+      title: "Course Recommendations",
+      content:
+        "Recommend tutoring for Calculus and Physics for students with GWA below 3.0.",
+    },
   ];
 
   const previousSessions = [
@@ -66,50 +79,33 @@ const AIAcademicAdvisingModule = () => {
       activeKey="ai-advising"
       menuItems={moduleLinks}
     >
-      <div className={styles.sectionGrid}>
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Student Profile Summary</div>
-          <div className={styles.infoBlock}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Academic Performance</span>
-              <span className={styles.infoValue}>3.18 GWA</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Risk Level</span>
-              <span className={`${styles.statusChip} ${styles.statusHigh}`}>High</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Attendance Summary</span>
-              <span className={styles.infoValue}>88%</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Strengths</span>
-              <span className={styles.infoValue}>Analytical thinking, lab work</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Weaknesses</span>
-              <span className={styles.infoValue}>Time management, math fundamentals</span>
-            </div>
-          </div>
+      <div style={{ marginBottom: "var(--space-xl)" }}>
+        <div
+          className={styles.moduleTitleSmall}
+          style={{ marginBottom: "var(--space-lg)" }}
+        >
+          AI Chat Interface
         </div>
-
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Personalized Recommendations</div>
-          <div className={styles.infoBlock}>
-            {aiNotes.map((note) => (
-              <div key={note.id} className={styles.infoRow}>
-                <span className={styles.infoLabel}>{note.title}</span>
-                <span className={styles.infoValue}>{note.content}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.sectionGrid}>
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>AI Chat Interface</div>
-          <div className={styles.chatWindow}>
+        <div
+          className={styles.moduleCard}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "600px",
+            padding: 0,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            className={styles.chatWindow}
+            style={{
+              flex: 1,
+              marginBottom: 0,
+              borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+              border: "none",
+              borderBottom: "1px solid var(--color-border-neutral)",
+            }}
+          >
             {chatMessages.map((message) => (
               <div
                 key={message.id}
@@ -121,59 +117,28 @@ const AIAcademicAdvisingModule = () => {
               </div>
             ))}
           </div>
-          <div className={styles.chatInputRow}>
+          <div
+            className={styles.chatInputRow}
+            style={{
+              marginTop: 0,
+              padding: "var(--space-lg)",
+              gap: "var(--space-md)",
+            }}
+          >
             <input
               className={styles.chatInput}
               value={query}
               placeholder="Ask how the student can improve..."
               onChange={(event) => setQuery(event.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleAsk();
+                }
+              }}
             />
             <button className={styles.primaryButton} onClick={handleAsk}>
               Send
             </button>
-          </div>
-        </div>
-
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Advising Notes</div>
-          <div className={styles.infoBlock}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Latest Note</span>
-              <span className={styles.infoValue}>Review classes weekly and assign weekly check-ins.</span>
-            </div>
-            <div className={styles.buttonGroup}>
-              <button className={styles.secondaryButtonCompact}>Edit Notes</button>
-              <button className={styles.secondaryButtonCompact}>Archive Notes</button>
-            </div>
-          </div>
-
-          <div className={styles.moduleTitleSmall}>Prediction Explanation</div>
-          <div className={styles.placeholderChart} style={{ minHeight: "160px" }}>
-            <div>Feature Importance / SHAP Explanation</div>
-            <span>Placeholder for AI explanation of prediction drivers.</span>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.cardRow}>
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Activity History</div>
-          <div className={styles.infoBlock}>
-            {previousSessions.map((session) => (
-              <div key={session.id} className={styles.infoRow}>
-                <span className={styles.infoLabel}>{session.title}</span>
-                <span className={styles.infoValue}>{session.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Export Advising Report</div>
-          <p className={styles.moduleSubtitle}>
-            Export a student advising summary for record-keeping and intervention planning.
-          </p>
-          <div className={styles.buttonGroup}>
-            <button className={styles.primaryButton}>Export PDF</button>
           </div>
         </div>
       </div>

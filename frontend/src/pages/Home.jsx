@@ -19,11 +19,6 @@ const HomePage = () => {
       desc: "Automated notification triggers enabling fast administrative interventions.",
     },
     {
-      icon: "fas fa-microscope",
-      title: "What-If Simulator",
-      desc: "Interactive testing sandbox to explore diverse academic outcome scenarios.",
-    },
-    {
       icon: "fas fa-clipboard-check",
       title: "Screening Tools",
       desc: "Comprehensive diagnostic assessment modules built for engineering tracks.",
@@ -166,7 +161,8 @@ const HomePage = () => {
               style={{
                 fontSize: "var(--font-size-lg)",
                 color: "#FFFFFF",
-                textShadow: "0 1px 3px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.4)",
+                textShadow:
+                  "0 1px 3px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.4)",
                 lineHeight: "var(--line-height-relaxed)",
                 margin: "0 0 var(--space-2xl) 0",
                 maxWidth: "420px",
@@ -374,7 +370,7 @@ const HomePage = () => {
                   borderRadius: "var(--radius-lg)",
                   border: "1px solid var(--color-border-neutral)",
                   backgroundColor: "var(--color-bg-surface)",
-                  transition: "all var(--transition-base)"
+                  transition: "all var(--transition-base)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "var(--shadow-md)";

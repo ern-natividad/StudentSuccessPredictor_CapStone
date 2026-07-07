@@ -12,7 +12,6 @@ import AdminDashboard from "./features/admin/components/AdminDashboard";
 import StaffDashboard from "./features/staff/pages/StaffDashboard";
 import PreEnrollmentModule from "./features/student/pages/PreEnrollmentModule";
 import AcademicPerformanceModule from "./features/student/pages/AcademicPerformanceModule";
-import WhatIfSimulator from "./features/student/pages/WhatIfSimulator";
 import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
@@ -101,17 +100,9 @@ function App() {
               }
             />
             <Route
-              path="/modules/what-if-simulator"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "staff"]}>
-                  <WhatIfSimulator />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/modules/ai-advising"
               element={
-                <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                <ProtectedRoute allowedRoles={["student", "admin", "staff"]}>
                   <AIAcademicAdvisingModule />
                 </ProtectedRoute>
               }

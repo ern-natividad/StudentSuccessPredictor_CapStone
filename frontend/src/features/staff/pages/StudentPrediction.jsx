@@ -1,10 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const StudentPrediction = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { students, showPage } = useDashboard();
   const currentStudent = students.find((student) =>
@@ -49,26 +51,39 @@ const StudentPrediction = () => {
     },
   ];
 
-  const scoreCards = [
+  // Semester prediction data
+  const semesterPredictions = [
     {
-      label: "Current GPA",
-      value: `${studentData.current_gpa.toFixed(2)}`,
-      note: "Above target",
+      year: "S.Y. 2025 - 2026",
+      semester: "1st Semester",
+      gwa: 3.72,
+      predictedNextGrade: 3.7,
+      confidence: 92,
+      graduationGrade: 2.0,
     },
     {
-      label: "Predicted GPA",
-      value: `${studentData.predicted_gpa.toFixed(2)}`,
-      note: "Projected",
+      year: "S.Y. 2025 - 2026",
+      semester: "2nd Semester",
+      gwa: 3.72,
+      predictedNextGrade: 3.95,
+      confidence: 92,
+      graduationGrade: 2.0,
     },
     {
-      label: "Risk Level",
-      value: studentData.risk_level,
-      note: studentData.risk_level === "Low" ? "Stable" : "Needs support",
+      year: "S.Y. 2026 - 2027",
+      semester: "1st Semester",
+      gwa: 3.72,
+      predictedNextGrade: 3.8,
+      confidence: 87,
+      graduationGrade: 2.0,
     },
     {
-      label: "Confidence",
-      value: `${studentData.confidence_score}%`,
-      note: "Model confidence",
+      year: "S.Y. 2026 - 2027",
+      semester: "2nd Semester",
+      gwa: 3.72,
+      predictedNextGrade: 3.9,
+      confidence: 84,
+      graduationGrade: 2.0,
     },
   ];
 
@@ -82,70 +97,210 @@ const StudentPrediction = () => {
         </p>
       </div>
 
-      <div className={styles.resultBanner}>
-        <div>
-          <div className={styles.resultPct}>{successPercent}%</div>
-          <div className={styles.resultPctLabel}>Success probability</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "2rem",
+          marginBottom: "2rem",
+        }}
+      >
+        {/* Left side - Prediction Summary */}
+        <div
+          style={{
+            background: "#8b0000",
+            borderRadius: "16px",
+            padding: "2rem",
+            color: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "200px",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "2rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "48px", fontWeight: "700" }}>
+                  {studentData.current_gpa.toFixed(2)}
+                </div>
+                <div
+                  style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
+                >
+                  GRADUATION GRADE
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "48px", fontWeight: "700" }}>
+                  {successPercent}%
+                </div>
+                <div
+                  style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
+                >
+                  SUCCESS PROBABILITY
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              Best fit: {bestProgram}
+            </div>
+            <div style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.5" }}>
+              Strong match based on your GPA trend, confidence score, and
+              academic performance.
+            </div>
+          </div>
         </div>
-        <div className={styles.resultDivider} />
-        <div>
-          <div className={styles.resultProgram}>Best fit: {bestProgram}</div>
-          <div className={styles.resultSub}>
-            Strong match based on your GPA trend, confidence score, and academic
-            performance.
+
+        {/* Right side - All Program Predictions */}
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>All program predictions</div>
+          <div className={styles.programGrid}>
+            {programCards.map((program) => (
+              <div
+                key={program.name}
+                className={`${styles.programCard} ${program.active ? styles.programCardActive : ""}`}
+              >
+                <div className={styles.programPercent}>{program.percent}%</div>
+                <div className={styles.programName}>{program.name}</div>
+                <div className={styles.programBarBg}>
+                  <div
+                    className={styles.programBar}
+                    style={{ width: `${program.percent}%` }}
+                  />
+                </div>
+                <div className={styles.programBadge}>{program.badge}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>All program predictions</div>
-        <div className={styles.programGrid}>
-          {programCards.map((program) => (
+      {/* School year predicted score */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ color: "#8b0000", fontWeight: "600", margin: 0 }}>
+            School year predicted score
+          </h3>
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "1.5rem",
+          }}
+        >
+          {semesterPredictions.map((prediction, idx) => (
             <div
-              key={program.name}
-              className={`${styles.programCard} ${program.active ? styles.programCardActive : ""}`}
+              key={idx}
+              style={{
+                background: "#5a5a5a",
+                borderRadius: "12px",
+                padding: "1.5rem",
+                color: "#fff",
+              }}
             >
-              <div className={styles.programPercent}>{program.percent}%</div>
-              <div className={styles.programName}>{program.name}</div>
-              <div className={styles.programBarBg}>
-                <div
-                  className={styles.programBar}
-                  style={{ width: `${program.percent}%` }}
-                />
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  marginBottom: "0.5rem",
+                  opacity: 0.9,
+                }}
+              >
+                {prediction.year}
               </div>
-              <div className={styles.programBadge}>{program.badge}</div>
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  marginBottom: "1rem",
+                }}
+              >
+                {prediction.semester}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                  fontSize: "13px",
+                }}
+              >
+                <div>
+                  <span style={{ opacity: 0.8 }}>GWA:</span>{" "}
+                  <span style={{ fontWeight: "600" }}>{prediction.gwa}</span>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.8 }}>Predicted Next Grade:</span>{" "}
+                  <span style={{ fontWeight: "600" }}>
+                    {prediction.predictedNextGrade}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.8 }}>Confidence:</span>{" "}
+                  <span style={{ fontWeight: "600" }}>
+                    {prediction.confidence}%
+                  </span>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.8 }}>Graduation Grade:</span>{" "}
+                  <span style={{ fontWeight: "600" }}>
+                    {prediction.graduationGrade}
+                  </span>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Score breakdown</div>
-        <div className={styles.scoreGrid}>
-          {scoreCards.map((item) => (
-            <div key={item.label} className={styles.scoreTile}>
-              <div className={styles.scoreLabel}>{item.label}</div>
-              <div className={styles.scoreValue}>{item.value}</div>
-              <div className={styles.scoreNote}>{item.note}</div>
-            </div>
-          ))}
+      {/* AI Advising Card */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #8b0000 0%, #6b0000 100%)",
+          borderRadius: "16px",
+          padding: "2rem",
+          color: "#fff",
+          textAlign: "center",
+          marginTop: "2rem",
+          cursor: "pointer",
+          transition: "transform 0.2s, box-shadow 0.2s",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+        }}
+        onClick={() => navigate("/modules/ai-advising")}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-4px)";
+          e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.25)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+        }}
+      >
+        <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "0.5rem", opacity: 0.9 }}>
+          <i className="fas fa-lightbulb" style={{ marginRight: "8px" }}></i>
+          Need Academic Guidance?
         </div>
-      </div>
-
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Guidance note</div>
-        <p className={styles.cardText}>
-          Your profile shows a strong academic trajectory. Continue monitoring
-          your grades, review the simulator, and focus on the programs that best
-          match your current strengths.
-        </p>
-        <div className={styles.buttonRow}>
-          <button
-            className={commonStyles.btnSmallOutline}
-            onClick={() => showPage("simulator")}
-          >
-            Open What-If Simulator
-          </button>
+        <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "0.5rem" }}>
+          Access AI Academic Advising
+        </div>
+        <div style={{ fontSize: "13px", opacity: 0.9 }}>
+          Get personalized recommendations to improve your academic performance
         </div>
       </div>
     </div>
