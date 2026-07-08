@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 import MfaVerify from "./MfaVerify";
@@ -110,13 +110,12 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
               Keep me signed in
             </span>
           </label>
-          <a
-            href="#"
+          <Link
+            to="/forgot-password"
             className={styles.fLink}
-            onClick={(e) => e.preventDefault()}
           >
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <button type="submit" className={styles.btnGold} disabled={submitting}>

@@ -14,6 +14,9 @@ import PreEnrollmentModule from "./features/student/pages/PreEnrollmentModule";
 import AcademicPerformanceModule from "./features/student/pages/AcademicPerformanceModule";
 import AIAcademicAdvisingModule from "./features/student/pages/AIAcademicAdvisingModule";
 import UnauthorizedPage from "./pages/Unauthorized";
+import ForgotPassword from "./pages/ForgotPassword";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
 import CurriculumViewer from "./features/student/pages/CurriculumViewer";
 import AccountSettingsPage from "./features/common/pages/AccountSettingsPage";
@@ -29,6 +32,11 @@ function App() {
 
           {/* Landing target for Supabase password-reset emails */}
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+
+          {/* Public legal & utility pages */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* Public access to degree recommendation for prospective students */}
           <Route path="/pre-enrollment" element={<PreEnrollmentModule />} />

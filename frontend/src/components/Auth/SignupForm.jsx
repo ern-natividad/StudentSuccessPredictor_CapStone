@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
@@ -257,13 +257,13 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
           />
           <label htmlFor="terms">
             I agree to the{" "}
-            <a href="#" onClick={(e) => e.preventDefault()}>
+            <Link to="/terms-of-service">
               Terms of Service
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a href="#" onClick={(e) => e.preventDefault()}>
+            <Link to="/privacy-policy">
               Privacy Policy
-            </a>
+            </Link>
           </label>
         </div>
 
