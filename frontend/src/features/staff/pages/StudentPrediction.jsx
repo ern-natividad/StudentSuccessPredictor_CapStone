@@ -192,8 +192,8 @@ const StudentPrediction = () => {
 
       {/* School year predicted score */}
       <div style={{ marginBottom: "2rem" }}>
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ color: "#8b0000", fontWeight: "600", margin: 0 }}>
+        <div style={{ marginBottom: "1rem" }}>
+          <h3 style={{ color: "#8b0000", fontWeight: "700", margin: 0 }}>
             School year predicted score
           </h3>
         </div>
@@ -201,25 +201,28 @@ const StudentPrediction = () => {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "1.5rem",
+            gap: "1rem",
           }}
         >
           {semesterPredictions.map((prediction, idx) => (
             <div
               key={idx}
               style={{
-                background: "#5a5a5a",
-                borderRadius: "12px",
-                padding: "1.5rem",
-                color: "#fff",
+                background: "linear-gradient(135deg, #ffffff 0%, #fff7f7 100%)",
+                border: "1px solid #f5d0d0",
+                borderRadius: "14px",
+                padding: "1.25rem 1.2rem",
+                boxShadow: "0 8px 24px rgba(139, 0, 0, 0.06)",
               }}
             >
               <div
                 style={{
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  marginBottom: "0.5rem",
-                  opacity: 0.9,
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#b91c1c",
+                  marginBottom: "0.35rem",
                 }}
               >
                 {prediction.year}
@@ -228,7 +231,8 @@ const StudentPrediction = () => {
                 style={{
                   fontSize: "15px",
                   fontWeight: "700",
-                  marginBottom: "1rem",
+                  marginBottom: "0.9rem",
+                  color: "#111827",
                 }}
               >
                 {prediction.semester}
@@ -237,29 +241,56 @@ const StudentPrediction = () => {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "0.75rem",
+                  gap: "0.65rem",
                   fontSize: "13px",
+                  color: "#334155",
                 }}
               >
-                <div>
-                  <span style={{ opacity: 0.8 }}>GWA:</span>{" "}
-                  <span style={{ fontWeight: "600" }}>{prediction.gwa}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ color: "#64748b" }}>GWA</span>
+                  <span style={{ fontWeight: "700", color: "#111827" }}>
+                    {prediction.gwa}
+                  </span>
                 </div>
-                <div>
-                  <span style={{ opacity: 0.8 }}>Predicted Next Grade:</span>{" "}
-                  <span style={{ fontWeight: "600" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ color: "#64748b" }}>Predicted Next Grade</span>
+                  <span style={{ fontWeight: "700", color: "#111827" }}>
                     {prediction.predictedNextGrade}
                   </span>
                 </div>
-                <div>
-                  <span style={{ opacity: 0.8 }}>Confidence:</span>{" "}
-                  <span style={{ fontWeight: "600" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ color: "#64748b" }}>Confidence</span>
+                  <span style={{ fontWeight: "700", color: "#111827" }}>
                     {prediction.confidence}%
                   </span>
                 </div>
-                <div>
-                  <span style={{ opacity: 0.8 }}>Graduation Grade:</span>{" "}
-                  <span style={{ fontWeight: "600" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                  }}
+                >
+                  <span style={{ color: "#64748b" }}>Graduation Grade</span>
+                  <span style={{ fontWeight: "700", color: "#111827" }}>
                     {prediction.graduationGrade}
                   </span>
                 </div>
@@ -292,11 +323,24 @@ const StudentPrediction = () => {
           e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
         }}
       >
-        <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "0.5rem", opacity: 0.9 }}>
+        <div
+          style={{
+            fontSize: "14px",
+            fontWeight: "600",
+            marginBottom: "0.5rem",
+            opacity: 0.9,
+          }}
+        >
           <i className="fas fa-lightbulb" style={{ marginRight: "8px" }}></i>
           Need Academic Guidance?
         </div>
-        <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "0.5rem" }}>
+        <div
+          style={{
+            fontSize: "16px",
+            fontWeight: "700",
+            marginBottom: "0.5rem",
+          }}
+        >
           Access AI Academic Advising
         </div>
         <div style={{ fontSize: "13px", opacity: 0.9 }}>

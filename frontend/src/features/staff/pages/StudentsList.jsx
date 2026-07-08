@@ -30,6 +30,42 @@ const StudentsList = () => {
       <h1 className={styles.pageTitle}>All Students</h1>
 
       <div className={styles.card} style={{ marginBottom: "20px" }}>
+        <div className={styles.cardTitle}>Statistics</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "12px",
+          }}
+        >
+          <div className={commonStyles.statBlock}>
+            <div className={commonStyles.statValue}>
+              {students.filter((s) => s.risk_level === "Low").length}
+            </div>
+            <div className={commonStyles.statLabel}>Low Risk</div>
+          </div>
+          <div className={commonStyles.statBlock}>
+            <div className={commonStyles.statValue}>
+              {students.filter((s) => s.risk_level === "Medium").length}
+            </div>
+            <div className={commonStyles.statLabel}>Medium Risk</div>
+          </div>
+          <div className={commonStyles.statBlock}>
+            <div className={commonStyles.statValue}>
+              {students.filter((s) => s.risk_level === "High").length}
+            </div>
+            <div className={commonStyles.statLabel}>High Risk</div>
+          </div>
+          <div className={commonStyles.statBlock}>
+            <div className={commonStyles.statValue}>
+              {students.filter((s) => s.risk_level === "Critical").length}
+            </div>
+            <div className={commonStyles.statLabel}>Critical</div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.card} style={{ marginBottom: "20px" }}>
         <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
           <input
             type="text"
@@ -107,42 +143,6 @@ const StudentsList = () => {
             </div>
           </div>
         )}
-      </div>
-
-      <div className={styles.card}>
-        <div className={styles.cardTitle}>Statistics</div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "12px",
-          }}
-        >
-          <div className={commonStyles.statBlock}>
-            <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Low").length}
-            </div>
-            <div className={commonStyles.statLabel}>Low Risk</div>
-          </div>
-          <div className={commonStyles.statBlock}>
-            <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Medium").length}
-            </div>
-            <div className={commonStyles.statLabel}>Medium Risk</div>
-          </div>
-          <div className={commonStyles.statBlock}>
-            <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "High").length}
-            </div>
-            <div className={commonStyles.statLabel}>High Risk</div>
-          </div>
-          <div className={commonStyles.statBlock}>
-            <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Critical").length}
-            </div>
-            <div className={commonStyles.statLabel}>Critical</div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 .dashboardScreen {
   display: flex;
   min-height: 100vh;
-  background: var(--color-bg-surface);   
+  background: var(--color-bg-surface);
   flex-direction: column;
 }
 
@@ -11,10 +11,169 @@
   overflow: hidden;
 }
 
+/* PAGE SHELL */
+.pageShell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pageHeaderCard {
+  background: linear-gradient(135deg, #ffffff 0%, #fff7f7 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pageSubtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 760px;
+}
+
+.pageHeaderBadge {
+  background: rgba(185, 28, 28, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.16);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.summaryCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #b91c1c;
+  line-height: 1.2;
+}
+
+.summaryLabel {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.selectedStudentCard {
+  background: linear-gradient(135deg, #fff8f8 0%, #ffffff 100%);
+  border: 1px solid #f5d0d0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.06);
+}
+
+.contentCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.contentCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.contentCardEyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #b91c1c;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.contentCardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.contentCardMeta {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.contentCardHint {
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+
+.selectedStudentTag {
+  background: #fff1f2;
+  color: #b91c1c;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tableActionButton {
+  background: #8b0000;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.tableActionButton:hover {
+  background: #6f0000;
+}
+
 /* TOP NAV */
 .topNav {
   height: 56px;
-  background: #8B0000;   /* Updated to match Home.jsx deep dark red */
+  background: #8b0000; /* Updated to match Home.jsx deep dark red */
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
@@ -44,7 +203,7 @@
 .navLogoText {
   font-family: var(--heading);
   font-size: 16px;
-  color: var(--color-nav-text);             
+  color: var(--color-nav-text);
   letter-spacing: 0px;
   font-weight: 500;
   display: flex;
@@ -152,7 +311,7 @@
   justify-content: center;
   color: white;
   font-weight: 600;
-  border: 2px solid #8B0000; /* Match dark red theme border */
+  border: 2px solid #8b0000; /* Match dark red theme border */
 }
 
 .navUserName {
@@ -255,7 +414,7 @@
 /* SIDEBAR */
 .sidebar {
   width: 220px;
-  background: var(--color-brand-primary);   
+  background: var(--color-brand-primary);
   border-right: 0.5px solid rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
@@ -318,7 +477,7 @@
 .siBadge {
   margin-left: auto;
   background: #fff5f5;
-  color: #8B0000;
+  color: #8b0000;
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
@@ -367,7 +526,7 @@
 .pageTitle {
   font-size: 22px;
   font-weight: 500;
-  color: #8B0000; /* Theme dark red color */
+  color: #8b0000; /* Theme dark red color */
   margin-bottom: 4px;
 }
 
@@ -388,7 +547,7 @@
 }
 
 .resultBanner {
-  background: #8B0000; /* Theme dark red color */
+  background: #8b0000; /* Theme dark red color */
   border-radius: 12px;
   padding: 1.5rem;
   color: #fff;
@@ -413,7 +572,7 @@
 .resultDivider {
   width: 1px;
   height: 60px;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .resultProgram {
@@ -443,14 +602,14 @@
 }
 
 .programCardActive {
-  border-color: #8B0000; /* Theme dark red color */
+  border-color: #8b0000; /* Theme dark red color */
   box-shadow: 0 0 0 1px rgba(139, 0, 0, 0.08);
 }
 
 .programPercent {
   font-size: 22px;
   font-weight: 500;
-  color: #8B0000; /* Theme dark red color */
+  color: #8b0000; /* Theme dark red color */
   margin-bottom: 4px;
 }
 
@@ -470,7 +629,7 @@
 }
 
 .programBar {
-  background: #8B0000; /* Theme dark red color */
+  background: #8b0000; /* Theme dark red color */
   border-radius: 4px;
   height: 6px;
 }
@@ -478,7 +637,7 @@
 .programBadge {
   display: inline-block;
   background: #fff5f5;
-  color: #8B0000; /* Theme dark red color */
+  color: #8b0000; /* Theme dark red color */
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 20px;
@@ -510,7 +669,7 @@
 .scoreValue {
   font-size: 24px;
   font-weight: 500;
-  color: #8B0000; /* Theme dark red color */
+  color: #8b0000; /* Theme dark red color */
 }
 
 .scoreNote {
@@ -538,7 +697,7 @@
 .cardTitle {
   font-size: 15px;
   font-weight: 500;
-  color: #8B0000; /* Theme dark red color */
+  color: #8b0000; /* Theme dark red color */
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -696,12 +855,17 @@
 
 .sidebar.collapsed .sidebarItem.active {
   background: #fff5f5;
-  border-left: 3px solid #8B0000; /* Theme dark red color */
+  border-left: 3px solid #8b0000; /* Theme dark red color */
 }
 
 .darkSidebar.collapsed .sidebarItem.active {
-  background: rgba(139, 0, 0, 0.18) !important; /* Updated from #b91c1c to #8B0000 */
-  border-left: 3px solid #8B0000 !important;   /* Updated from #b91c1c to #8B0000 */
+  background: rgba(
+    139,
+    0,
+    0,
+    0.18
+  ) !important; /* Updated from #b91c1c to #8B0000 */
+  border-left: 3px solid #8b0000 !important; /* Updated from #b91c1c to #8B0000 */
 }
 
 /* Dark theme global sidebar */
@@ -724,9 +888,14 @@
 }
 
 .darkSidebar .sidebarItem.active {
-  background: rgba(139, 0, 0, 0.18) !important; /* Updated from #b91c1c to #8B0000 */
+  background: rgba(
+    139,
+    0,
+    0,
+    0.18
+  ) !important; /* Updated from #b91c1c to #8B0000 */
   color: #fff !important;
-  border-left-color: #8B0000 !important;       /* Updated from #b91c1c to #8B0000 */
+  border-left-color: #8b0000 !important; /* Updated from #b91c1c to #8B0000 */
 }
 
 .darkSidebar .sidebarDivider {

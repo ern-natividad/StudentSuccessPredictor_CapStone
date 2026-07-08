@@ -131,74 +131,140 @@ const StudentManagementPage = () => {
     updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
   };
 
-  return (
-    <div>
-      <h1 className={styles.pageTitle}>Student Management</h1>
+  const summaryStats = useMemo(() => {
+    const sectionNames = new Set(
+      displayStudentList
+        .map((student) => getSectionById(student.assignedSectionId)?.name)
+        .filter(Boolean),
+    );
 
-      <div>
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Assigned Students</div>
-          <div className={commonStyles.tableWrapper} style={{ marginTop: 12 }}>
-            <table className={commonStyles.table}>
-              <thead className={commonStyles.tableHead}>
-                <tr>
-                  <th>#</th>
-                  <th>Student ID</th>
-                  <th>Name</th>
-                  <th>Section</th>
-                  <th>Year Level</th>
-                  <th>Subject Code</th>
-                  <th>Schedule</th>
-                  <th>Grade</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentTableRows.map((row) => (
-                  <tr
-                    key={row.student_id}
-                    className={commonStyles.tableRow}
-                    style={{
-                      background:
-                        row.student_id === selectedStudentId
-                          ? "#f8e7e7"
-                          : "transparent",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => setSelectedStudentId(row.student_id)}
-                  >
-                    <td>{row.rowIndex}</td>
-                    <td>{row.student_id}</td>
-                    <td>{row.full_name}</td>
-                    <td>{row.sectionName}</td>
-                    <td>{row.year_level}</td>
-                    <td>{row.subjectCode}</td>
-                    <td>{row.schedule}</td>
-                    <td>{row.displayGrade}</td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGradeModal(row.student_id);
-                        }}
-                        style={{
-                          background: "#8b0000",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 8,
-                          padding: "6px 10px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Manage Grades
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    const averageGrade =
+      displayStudentList.length > 0
+        ? (
+            displayStudentList.reduce((sum, student) => {
+              const grade = student.grade_records?.[0]?.grade;
+              return sum + (typeof grade === "number" ? grade : 0);
+            }, 0) / displayStudentList.length
+          ).toFixed(1)
+        : "0.0";
+
+    return [
+      { label: "Assigned students", value: displayStudentList.length },
+      { label: "Sections covered", value: sectionNames.size },
+      { label: "Average grade", value: averageGrade },
+      {
+        label: "Current focus",
+        value: selectedStudent ? "Selected" : "None",
+      },
+    ];
+  }, [displayStudentList, getSectionById, selectedStudent]);
+
+  return (
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Student Management</h1>
+          <p className={styles.pageSubtitle}>
+            Review assigned learners, manage grade entries, and keep student
+            support tasks organized in one space.
+          </p>
+        </div>
+        <div className={styles.pageHeaderBadge}>
+          {currentStaff?.full_name || "Staff overview"}
+        </div>
+      </div>
+
+      <div className={styles.summaryGrid}>
+        {summaryStats.map((item) => (
+          <div key={item.label} className={styles.summaryCard}>
+            <div className={styles.summaryValue}>{item.value}</div>
+            <div className={styles.summaryLabel}>{item.label}</div>
           </div>
+        ))}
+      </div>
+
+      {selectedStudent && (
+        <div className={styles.selectedStudentCard}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Current focus</div>
+            <div className={styles.contentCardTitle}>
+              {selectedStudent.full_name}
+            </div>
+            <div className={styles.contentCardMeta}>
+              {selectedStudent.student_id} • {selectedStudent.year_level} •{" "}
+              {selectedStudent.program || "Program pending"}
+            </div>
+          </div>
+          <div className={styles.selectedStudentTag}>
+            Latest grade: {selectedStudent.displayGrade}
+          </div>
+        </div>
+      )}
+
+      <div className={styles.contentCard}>
+        <div className={styles.contentCardHeader}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Assigned learners</div>
+            <div className={styles.contentCardTitle}>Assigned Students</div>
+          </div>
+          <div className={styles.contentCardHint}>
+            {displayStudentList.length} students visible
+          </div>
+        </div>
+
+        <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
+          <table className={commonStyles.table}>
+            <thead className={commonStyles.tableHead}>
+              <tr>
+                <th>#</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Section</th>
+                <th>Year Level</th>
+                <th>Subject Code</th>
+                <th>Schedule</th>
+                <th>Grade</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentTableRows.map((row) => (
+                <tr
+                  key={row.student_id}
+                  className={commonStyles.tableRow}
+                  style={{
+                    background:
+                      row.student_id === selectedStudentId
+                        ? "#fef2f2"
+                        : "transparent",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedStudentId(row.student_id)}
+                >
+                  <td>{row.rowIndex}</td>
+                  <td>{row.student_id}</td>
+                  <td>{row.full_name}</td>
+                  <td>{row.sectionName}</td>
+                  <td>{row.year_level}</td>
+                  <td>{row.subjectCode}</td>
+                  <td>{row.schedule}</td>
+                  <td>{row.displayGrade}</td>
+                  <td style={{ minWidth: 150, whiteSpace: "nowrap" }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openGradeModal(row.student_id);
+                      }}
+                      className={styles.tableActionButton}
+                    >
+                      Manage Grades
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

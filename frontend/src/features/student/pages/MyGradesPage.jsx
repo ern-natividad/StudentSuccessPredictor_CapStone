@@ -138,29 +138,47 @@ const MyGradesPage = () => {
   ];
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>My Grades</h1>
-      <p className={styles.pageDesc}>
-        View your academic record and grades across all semesters
-      </p>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>My Grades</h1>
+          <p className={styles.pageSubtitle}>
+            Track your academic progress and review your grade history across
+            each semester.
+          </p>
+        </div>
+        <div className={styles.pageHeaderBadge}>Student Record</div>
+      </div>
 
       {curriculumData.map((academicYear, yearIdx) => (
-        <div key={yearIdx} style={{ marginBottom: "2rem" }}>
+        <div
+          key={yearIdx}
+          className={styles.contentCard}
+          style={{ padding: 0, overflow: "hidden" }}
+        >
           <div
             style={{
-              background: "#8b0000",
+              background: "linear-gradient(135deg, #8b0000 0%, #b91c1c 100%)",
               color: "#fff",
-              padding: "12px 16px",
-              borderRadius: "8px 8px 0 0",
-              fontWeight: 600,
-              fontSize: "14px",
+              padding: "14px 18px",
+              fontWeight: 700,
+              fontSize: "15px",
             }}
           >
             {academicYear.year}
           </div>
 
           {academicYear.semesters.map((semester, semIdx) => (
-            <div key={semIdx}>
+            <div key={semIdx} style={{ padding: "16px 18px 18px" }}>
+              <div
+                style={{
+                  marginBottom: "10px",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                }}
+              >
+                {semester.semesterLabel}
+              </div>
               <div className={commonStyles.tableWrapper}>
                 <table className={commonStyles.table}>
                   <thead className={commonStyles.tableHead}>
@@ -174,15 +192,21 @@ const MyGradesPage = () => {
                     {semester.subjects.map((subject, subjIdx) => (
                       <tr key={subjIdx} className={commonStyles.tableRow}>
                         <td>
-                          <span style={{ fontWeight: 600, fontSize: "13px" }}>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "13px",
+                              color: "#8b0000",
+                            }}
+                          >
                             {subject.code}
                           </span>
                         </td>
-                        <td style={{ fontSize: "13px" }}>
+                        <td style={{ fontSize: "13px", color: "#334155" }}>
                           {subject.description}
                         </td>
                         <td>
-                          <span style={{ fontWeight: 600, fontSize: "13px" }}>
+                          <span style={{ fontWeight: 700, fontSize: "13px" }}>
                             {subject.grade}
                           </span>
                         </td>
