@@ -3,7 +3,11 @@ import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabaseClient.js";
-import { signToken, signPendingMfaToken, verifyPendingMfaToken } from "../utils/jwt.js";
+import {
+  signToken,
+  signPendingMfaToken,
+  verifyPendingMfaToken,
+} from "../utils/jwt.js";
 import {
   checkLockStatus,
   registerFailedAttempt,
@@ -12,17 +16,21 @@ import {
   LOCKOUT_DURATION_MS,
 } from "./lockoutService.js";
 import { verifyTotpCode } from "./mfaService.js";
-import { recordAuditLog, AUDIT_ACTIONS, AUDIT_MODULES } from "./auditService.js";
+import {
+  recordAuditLog,
+  AUDIT_ACTIONS,
+  AUDIT_MODULES,
+} from "./auditService.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 // 1. Initialize the SMTP Transporter matching your exact env.js exports
 const transporter = nodemailer.createTransport({
-  host: env.smtpHost,          
-  port: env.smtpPort,          
-  secure: false, 
+  host: env.smtpHost,
+  port: env.smtpPort,
+  secure: false,
   auth: {
-    user: env.smtpUser,       
-    pass: env.smtpPass,    
+    user: env.smtpUser,
+    pass: env.smtpPass,
   },
 });
 
@@ -31,14 +39,83 @@ const otpCache = new Map();
 
 const GENERIC_AUTH_ERROR = "Invalid email or password.";
 
+export const buildPasswordResetProfilePayload = (
+  authUser,
+  passwordHash = null,
+) => ({
+  id: authUser.id,
+  email: authUser.email?.toLowerCase(),
+  password_hash: passwordHash,
+  full_name:
+    authUser.user_metadata?.full_name ||
+    authUser.user_metadata?.fullName ||
+    authUser.user_metadata?.name ||
+    null,
+  role: authUser.user_metadata?.role || "student",
+});
+
 const findUserByEmail = async (email) => {
+  const normalizedEmail = email?.trim().toLowerCase();
+
   const { data, error } = await supabase
     .from("users")
     .select("*")
-    .eq("email", email.toLowerCase())
+    .eq("email", normalizedEmail)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  if (data) return data;
+
+  const { data: authUsersData, error: authListError } =
+    await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+
+  if (authListError) throw authListError;
+
+  const authUser = authUsersData?.users?.find(
+    (user) => user.email?.toLowerCase() === normalizedEmail,
+  );
+  if (!authUser) return null;
+
+  return buildPasswordResetProfilePayload(authUser);
+};
+
+const ensureUserProfileForAuthUser = async (userId) => {
+  const { data: existingUser, error: fetchError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (existingUser) return existingUser;
+
+  const { data: authUserResponse, error: authLookupError } =
+    await supabase.auth.admin.getUserById(userId);
+  if (authLookupError || !authUserResponse?.user) {
+    throw new HttpError(404, "Target account identifier not found.");
+  }
+
+  const { data: createdUser, error: insertError } = await supabase
+    .from("users")
+    .insert(buildPasswordResetProfilePayload(authUserResponse.user))
+    .select("*")
+    .single();
+
+  if (insertError) {
+    const { data: fallbackUser, error: fallbackError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (fallbackError) throw fallbackError;
+    if (!fallbackUser) throw insertError;
+    return fallbackUser;
+  }
+
+  return createdUser;
 };
 
 /**
@@ -111,7 +188,10 @@ export const verifyMfaAndIssueToken = async (pendingToken, code, meta = {}) => {
   try {
     userId = verifyPendingMfaToken(pendingToken).sub;
   } catch {
-    throw new HttpError(401, "Your verification session expired. Please log in again.");
+    throw new HttpError(
+      401,
+      "Your verification session expired. Please log in again.",
+    );
   }
 
   const { data: user, error } = await supabase
@@ -229,10 +309,22 @@ export const recordSessionTimeout = async (authUser, meta = {}) => {
 export const hashPassword = (plain) => bcrypt.hash(plain, 12);
 
 const PASSWORD_RULES = [
-  { test: (value) => value.length >= 8, message: "Password must be at least 8 characters." },
-  { test: (value) => /[A-Z]/.test(value), message: "Password must include an uppercase letter." },
-  { test: (value) => /[0-9]/.test(value), message: "Password must include a number." },
-  { test: (value) => /[^A-Za-z0-9]/.test(value), message: "Password must include a special character." },
+  {
+    test: (value) => value.length >= 8,
+    message: "Password must be at least 8 characters.",
+  },
+  {
+    test: (value) => /[A-Z]/.test(value),
+    message: "Password must include an uppercase letter.",
+  },
+  {
+    test: (value) => /[0-9]/.test(value),
+    message: "Password must include a number.",
+  },
+  {
+    test: (value) => /[^A-Za-z0-9]/.test(value),
+    message: "Password must include a special character.",
+  },
 ];
 
 const assertValidPassword = (password) => {
@@ -283,7 +375,10 @@ export const registerUser = async (payload, meta = {}) => {
   }
 
   if (!authData || !authData.user) {
-    throw new HttpError(500, "Failed to initialize secure authentication session.");
+    throw new HttpError(
+      500,
+      "Failed to initialize secure authentication session.",
+    );
   }
 
   const authUserId = authData.user.id;
@@ -293,7 +388,7 @@ export const registerUser = async (payload, meta = {}) => {
   const { data: user, error } = await supabase
     .from("users")
     .insert({
-      id: authUserId, 
+      id: authUserId,
       email: normalizedEmail,
       password_hash: passwordHash,
       full_name: fullName,
@@ -317,7 +412,6 @@ export const registerUser = async (payload, meta = {}) => {
   return issueSessionForUser(user);
 };
 
-
 /**
  * Initiates a password reset challenge by generating an internal 6-digit verification code.
  */
@@ -335,14 +429,14 @@ export const initiatePasswordReset = async (email, meta = {}) => {
   // 2. Store code in server memory cache with a 10-minute expiration
   otpCache.set(normalizedEmail, {
     code: generatedCode,
-    expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   });
 
   // 3. Fire the real email using Nodemailer via Brevo API relay
   try {
     await transporter.sendMail({
-      from: `"WMSU Engineering Support" <justinjamesalviar@gmail.com>`, 
-      to: normalizedEmail, 
+      from: `"WMSU Engineering Support" <justinjamesalviar@gmail.com>`,
+      to: normalizedEmail,
       subject: `${generatedCode} is your account recovery code`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; border: 1px solid #ddd; border-radius: 8px;">
@@ -358,12 +452,15 @@ export const initiatePasswordReset = async (email, meta = {}) => {
     });
   } catch (mailError) {
     console.error("Mail Dispatch Failure:", mailError);
-    throw new HttpError(500, "Failed to send verification email. Please check server configuration.");
+    throw new HttpError(
+      500,
+      "Failed to send verification email. Please check server configuration.",
+    );
   }
 
-  return { 
-    success: true, 
-    message: "6-digit verification code sent to email."
+  return {
+    success: true,
+    message: "6-digit verification code sent to email.",
   };
 };
 
@@ -375,12 +472,18 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
   const cachedData = otpCache.get(normalizedEmail);
 
   if (!cachedData) {
-    throw new HttpError(400, "No active verification request found for this email.");
+    throw new HttpError(
+      400,
+      "No active verification request found for this email.",
+    );
   }
 
   if (Date.now() > cachedData.expiresAt) {
     otpCache.delete(normalizedEmail); // Clear expired entry
-    throw new HttpError(400, "Your verification code has expired. Please request a new one.");
+    throw new HttpError(
+      400,
+      "Your verification code has expired. Please request a new one.",
+    );
   }
 
   if (cachedData.code !== code.trim()) {
@@ -398,7 +501,7 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
   return {
     success: true,
     userId: user.id,
-    message: "Code verified successfully."
+    message: "Code verified successfully.",
   };
 };
 
@@ -407,7 +510,10 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
  */
 export const completePasswordReset = async (userId, newPassword, meta = {}) => {
   if (!userId) {
-    throw new HttpError(400, "Invalid or missing user identity session context.");
+    throw new HttpError(
+      400,
+      "Invalid or missing user identity session context.",
+    );
   }
 
   const { data: user, error: userError } = await supabase
@@ -422,9 +528,12 @@ export const completePasswordReset = async (userId, newPassword, meta = {}) => {
 
   assertValidPassword(newPassword);
 
-  const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
-    password: newPassword,
-  });
+  const { error: authError } = await supabase.auth.admin.updateUserById(
+    userId,
+    {
+      password: newPassword,
+    },
+  );
   if (authError) {
     throw new HttpError(400, authError.message);
   }
@@ -444,7 +553,8 @@ export const completePasswordReset = async (userId, newPassword, meta = {}) => {
     username: user.email,
     action: AUDIT_ACTIONS.USER_UPDATED,
     module: AUDIT_MODULES.AUTH,
-    description: "Password reset completed successfully via 6-digit OTP validation step.",
+    description:
+      "Password reset completed successfully via 6-digit OTP validation step.",
     ...meta,
   });
 

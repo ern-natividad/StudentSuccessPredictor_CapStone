@@ -1,6 +1,8 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api/auth";
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/auth`
+  : "http://localhost:5003/api/auth";
 
 const parseResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -15,7 +17,7 @@ export const requestPasswordReset = async (identifier) => {
     await fetch(`${API_BASE}/forgot-password/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier }),
+      body: JSON.stringify({ email: identifier, identifier }),
     }),
   );
 };
@@ -25,17 +27,17 @@ export const verifyPasswordResetCode = async (identifier, code) => {
     await fetch(`${API_BASE}/forgot-password/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, code }),
+      body: JSON.stringify({ email: identifier, identifier, code }),
     }),
   );
 };
 
-export const resetPassword = async (userId, newPassword) => {
+export const resetPassword = async (identifier, newPassword) => {
   return parseResponse(
     await fetch(`${API_BASE}/forgot-password/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, newPassword }), 
+      body: JSON.stringify({ email: identifier, identifier, newPassword }),
     }),
   );
 };

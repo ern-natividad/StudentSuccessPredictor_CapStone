@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getRequestMeta } from "../utils/requestMeta.js";
-import { supabase } from "../config/supabaseClient.js"; 
+import { supabase } from "../config/supabaseClient.js";
 import {
   loginWithPassword,
   verifyMfaAndIssueToken,
@@ -24,10 +24,10 @@ export const login = asyncHandler(async (req, res) => {
   const result = await loginWithPassword(email, password, meta);
 
   if (result.requiresMfa) {
-    return res.status(200).json({ 
-      requiresMfa: true, 
+    return res.status(200).json({
+      requiresMfa: true,
       pendingToken: result.pendingToken,
-      userId: result.pendingToken 
+      userId: result.pendingToken,
     });
   }
 
@@ -95,7 +95,9 @@ export const verifyForgotPasswordCode = asyncHandler(async (req, res) => {
   const meta = getRequestMeta(req);
 
   if (!email || !code) {
-    return res.status(400).json({ error: "Email address and verification code are required." });
+    return res
+      .status(400)
+      .json({ error: "Email address and verification code are required." });
   }
 
   const result = await verifyPasswordOtp(email, code, meta);
@@ -120,7 +122,7 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
   // 2. Fallback: If the frontend didn't track the UUID but passed the email address, resolve it
   if (!targetId && (email || identifier)) {
     const fallbackEmail = (email || identifier).trim().toLowerCase();
-    
+
     const { data: foundUser, error: fetchError } = await supabase
       .from("users")
       .select("id")
@@ -128,22 +130,41 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
       .maybeSingle();
 
     if (fetchError) {
-      return res.status(500).json({ error: "Database error resolving account context." });
+      return res
+        .status(500)
+        .json({ error: "Database error resolving account context." });
     }
 
     if (foundUser) {
       targetId = foundUser.id;
+    } else {
+      const { data: authUsersData, error: authListError } =
+        await supabase.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
+
+      if (!authListError) {
+        const authUser = authUsersData?.users?.find(
+          (user) => user.email?.toLowerCase() === fallbackEmail,
+        );
+        if (authUser) {
+          targetId = authUser.id;
+        }
+      }
     }
   }
 
   // 3. Throw a clean error if neither approach can establish who the user is
   if (!targetId) {
-    return res.status(404).json({ error: "Target account identifier not found." });
+    return res
+      .status(404)
+      .json({ error: "Target account identifier not found." });
   }
 
   // 4. Complete password update step via the authService logic
   const user = await completePasswordReset(targetId, newPassword, meta);
-  
+
   return res.status(200).json({
     success: true,
     role: user.role,

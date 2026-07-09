@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { supabase } from "../../lib/supabaseClient";
-import axios from "axios"; 
+import axios from "axios";
 import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5003/api";
 
 const ResetPasswordPage = () => {
   const { error, setError } = useAuth();
@@ -13,8 +16,9 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  
+
   const [userId, setUserId] = useState(null);
+  const [sessionEmail, setSessionEmail] = useState("");
   const [verifyingSession, setVerifyingSession] = useState(true);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -25,12 +29,16 @@ const ResetPasswordPage = () => {
     const parseRecoverySession = async () => {
       try {
         // Supabase auto-parses the hash token from the email link into a valid session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
         if (sessionError || !session?.user?.id) {
           setError("Your password reset link is invalid or has expired.");
         } else {
           setUserId(session.user.id);
+          setSessionEmail(session.user.email || "");
         }
       } catch (err) {
         setError("An error occurred while validating your recovery session.");
@@ -45,7 +53,7 @@ const ResetPasswordPage = () => {
   // === STEP 2: FIXED SUBMISSION HANDLER ===
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Front-end validations
     if (password.length < 8) {
       return setError("Password must be at least 8 characters long.");
@@ -59,16 +67,24 @@ const ResetPasswordPage = () => {
 
     try {
       // Hits your correct backend reset controller
-      const response = await axios.post("http://localhost:5001/api/auth/forgot-password/reset", {
-        userId: userId,
-        newPassword: password
-      });
+      const response = await axios.post(
+        `${API_BASE}/auth/forgot-password/reset`,
+        {
+          userId: userId,
+          email: sessionEmail,
+          identifier: sessionEmail,
+          newPassword: password,
+        },
+      );
 
       if (response.data.success) {
         setDone(true);
       }
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to update password. Please try again.");
+      setError(
+        err.response?.data?.error ||
+          "Failed to update password. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -107,8 +123,8 @@ const ResetPasswordPage = () => {
             <div className={styles.formView}>
               <div className={styles.fvHeading}>Password updated</div>
               <div className={styles.fvSub}>
-                Your password has been changed successfully. You can now sign
-                in with your new password.
+                Your password has been changed successfully. You can now sign in
+                with your new password.
               </div>
               <button className={styles.btnGold} onClick={() => navigate("/")}>
                 Continue to sign in
@@ -158,19 +174,28 @@ const ResetPasswordPage = () => {
                         cursor: "pointer",
                         fontSize: "0.85rem",
                         color: "#666",
-                        userSelect: "none"
+                        userSelect: "none",
                       }}
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
-                  <small style={{ display: "block", marginTop: "4px", color: password.length >= 8 ? "#2e7d32" : "#666" }}>
+                  <small
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      color: password.length >= 8 ? "#2e7d32" : "#666",
+                    }}
+                  >
                     ● At least 8 characters
                   </small>
                 </div>
 
                 <div className={styles.fGroup}>
-                  <label className={styles.fLabel} htmlFor="confirm-new-password">
+                  <label
+                    className={styles.fLabel}
+                    htmlFor="confirm-new-password"
+                  >
                     Confirm Password
                   </label>
                   <div style={{ position: "relative" }}>
@@ -188,7 +213,9 @@ const ResetPasswordPage = () => {
                     <button
                       type="button"
                       tabIndex="-1"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       style={{
                         position: "absolute",
                         right: "12px",
@@ -199,7 +226,7 @@ const ResetPasswordPage = () => {
                         cursor: "pointer",
                         fontSize: "0.85rem",
                         color: "#666",
-                        userSelect: "none"
+                        userSelect: "none",
                       }}
                     >
                       {showConfirmPassword ? "Hide" : "Show"}
