@@ -357,8 +357,9 @@ const HomePage = () => {
 
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
               gap: "var(--space-xl)",
             }}
           >
@@ -366,11 +367,15 @@ const HomePage = () => {
               <div
                 key={idx}
                 style={{
+                  flex: "0 1 320px",
+                  maxWidth: "340px",
+                  minWidth: "280px",
                   padding: "var(--space-xl)",
                   borderRadius: "var(--radius-lg)",
                   border: "1px solid var(--color-border-neutral)",
                   backgroundColor: "var(--color-bg-surface)",
                   transition: "all var(--transition-base)",
+                  boxSizing: "border-box",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "var(--shadow-md)";
@@ -405,6 +410,7 @@ const HomePage = () => {
                 >
                   <i className={feature.icon}></i>
                 </div>
+
                 <h4
                   style={{
                     fontWeight: "var(--font-weight-semibold)",
@@ -415,6 +421,7 @@ const HomePage = () => {
                 >
                   {feature.title}
                 </h4>
+
                 <p
                   style={{
                     fontSize: "var(--font-size-base)",
