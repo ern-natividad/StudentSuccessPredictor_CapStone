@@ -8,6 +8,9 @@ import {
   sessionTimeoutHandler,
   signup,
   me,
+  forgotPasswordRequest,
+  verifyForgotPasswordCode,
+  forgotPasswordReset,
 } from "../controllers/authController.js";
 
 const router = Router();
@@ -18,5 +21,10 @@ router.get("/me", requireAuth, me);
 router.post("/logout", requireAuth, logoutHandler);
 router.post("/session-timeout", requireAuth, sessionTimeoutHandler);
 router.post('/signup', signup);
+
+// Password recovery endpoints using 6-digit OTP
+router.post("/forgot-password/request", authRateLimiter, forgotPasswordRequest);
+router.post("/forgot-password/verify", authRateLimiter, verifyForgotPasswordCode);
+router.post("/forgot-password/reset", authRateLimiter, forgotPasswordReset);
 
 export default router;

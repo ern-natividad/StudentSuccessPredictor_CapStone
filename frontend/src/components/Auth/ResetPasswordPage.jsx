@@ -1,34 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { supabase } from "../../lib/supabaseClient";
+import axios from "axios"; 
 import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const ResetPasswordPage = () => {
-  const { updatePassword, error, setError } = useAuth();
+  const { error, setError } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   
+  const [userId, setUserId] = useState(null);
+  const [verifyingSession, setVerifyingSession] = useState(true);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // === STEP 1: CAPTURE THE LINK ROUTE CONTEXT ===
+  useEffect(() => {
+    const parseRecoverySession = async () => {
+      try {
+        // Supabase auto-parses the hash token from the email link into a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session?.user?.id) {
+          setError("Your password reset link is invalid or has expired.");
+        } else {
+          setUserId(session.user.id);
+        }
+      } catch (err) {
+        setError("An error occurred while validating your recovery session.");
+      } finally {
+        setVerifyingSession(false);
+      }
+    };
+
+    parseRecoverySession();
+  }, [setError]);
+
+  // === STEP 2: FIXED SUBMISSION HANDLER ===
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Front-end validations
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
+      return setError("Password must be at least 8 characters long.");
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
+      return setError("Passwords do not match.");
     }
+
     setSubmitting(true);
-    const success = await updatePassword(password);
-    setSubmitting(false);
-    if (success) setDone(true);
+    setError("");
+
+    try {
+      // Hits your correct backend reset controller
+      const response = await axios.post("http://localhost:5001/api/auth/forgot-password/reset", {
+        userId: userId,
+        newPassword: password
+      });
+
+      if (response.data.success) {
+        setDone(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update password. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -53,7 +96,14 @@ const ResetPasswordPage = () => {
         </div>
 
         <div className={styles.formPanel}>
-          {done ? (
+          {verifyingSession ? (
+            <div className={styles.formView}>
+              <div className={styles.fvHeading}>Verifying...</div>
+              <div className={styles.fvSub}>
+                Validating secure single-use access link parameters...
+              </div>
+            </div>
+          ) : done ? (
             <div className={styles.formView}>
               <div className={styles.fvHeading}>Password updated</div>
               <div className={styles.fvSub}>
@@ -88,6 +138,7 @@ const ResetPasswordPage = () => {
                       type={showPassword ? "text" : "password"}
                       className={styles.fInput}
                       value={password}
+                      disabled={!userId}
                       onChange={(e) => {
                         setPassword(e.target.value);
                         setError("");
@@ -128,6 +179,7 @@ const ResetPasswordPage = () => {
                       type={showConfirmPassword ? "text" : "password"}
                       className={styles.fInput}
                       value={confirmPassword}
+                      disabled={!userId}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
                         setError("");
@@ -158,7 +210,7 @@ const ResetPasswordPage = () => {
                 <button
                   type="submit"
                   className={styles.btnGold}
-                  disabled={submitting}
+                  disabled={submitting || !userId}
                 >
                   {submitting ? "Updating..." : "Update password"}
                 </button>

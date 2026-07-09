@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api/auth";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api/auth";
 
 const parseResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -30,12 +30,12 @@ export const verifyPasswordResetCode = async (identifier, code) => {
   );
 };
 
-export const resetPassword = async (identifier, newPassword) => {
+export const resetPassword = async (userId, newPassword) => {
   return parseResponse(
     await fetch(`${API_BASE}/forgot-password/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, newPassword }),
+      body: JSON.stringify({ userId, newPassword }), 
     }),
   );
 };

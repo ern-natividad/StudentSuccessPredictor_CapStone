@@ -29,4 +29,9 @@ export const env = {
 
   adminAccessCode: process.env.ADMIN_ACCESS_CODE || "",
   staffAccessCode: process.env.STAFF_ACCESS_CODE || "",
+
+  smtpHost: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+  smtpPort: Number(process.env.SMTP_PORT || 587),
+  smtpUser: required("SMTP_USER"),
+  smtpPass: required("SMTP_PASS"),
 };
