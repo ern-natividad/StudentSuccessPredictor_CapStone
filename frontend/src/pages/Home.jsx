@@ -5,7 +5,7 @@ import engineeringLogo from "../assets/EngineeringLogo.jpg";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const roles = Object.values(AUTH_ROLES);
+  const roles = [AUTH_ROLES.admin, AUTH_ROLES.staff, AUTH_ROLES.student];
 
   const features = [
     {
@@ -207,8 +207,9 @@ const HomePage = () => {
                 color: "var(--color-text-primary)",
               }}
             >
-              Account Portals
+              Account Portal
             </h3>
+
             <p
               style={{
                 fontSize: "var(--font-size-base)",
@@ -216,7 +217,7 @@ const HomePage = () => {
                 margin: "0 0 var(--space-lg) 0",
               }}
             >
-              Select your role to access personalized dashboards
+              Choose your role to access your designated dashboard.
             </p>
 
             <div
@@ -280,7 +281,8 @@ const HomePage = () => {
                     >
                       <i className={role.icon}></i>
                     </div>
-                    <div style={{ textAlign: "left" }}>
+
+                    <div>
                       <div
                         style={{
                           fontWeight: "var(--font-weight-semibold)",
@@ -288,8 +290,9 @@ const HomePage = () => {
                           color: "var(--color-text-primary)",
                         }}
                       >
-                        {role.title} Portal
+                        {role.shortTitle}
                       </div>
+
                       <div
                         style={{
                           fontSize: "var(--font-size-sm)",
@@ -297,10 +300,11 @@ const HomePage = () => {
                           marginTop: "var(--space-xs)",
                         }}
                       >
-                        Access your dashboard
+                        {role.description}
                       </div>
                     </div>
                   </div>
+
                   <div
                     style={{
                       color: "var(--color-brand-primary)",
