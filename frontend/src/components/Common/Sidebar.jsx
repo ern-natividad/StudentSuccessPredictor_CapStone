@@ -130,7 +130,7 @@ const Sidebar = () => {
           label: "Alerts",
           badge: alerts.length,
         },
-        { id: "models", icon: "fas fa-cogs", label: "Model Management" },
+        
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
         { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },
       ],

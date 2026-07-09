@@ -3,7 +3,7 @@ export const AUTH_ROLES = {
     id: "admin",
     shortTitle: "Admin",
     description:
-      "System oversight, student management, audit logs, alert monitoring, and model management",
+      "System oversight, student management, audit logs, and alert monitoring",
     icon: "fas fa-user-tie",
     path: "/auth/admin",
     loginTitle: "Administrator Login",
