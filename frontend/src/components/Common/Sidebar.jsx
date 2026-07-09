@@ -242,13 +242,7 @@ const Sidebar = () => {
         </>
       )}
 
-      <div className={styles.sidebarToggleContainer}>
-        <button className={styles.sidebarToggleButton} onClick={toggleCollapse}>
-          <i
-            className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`}
-          ></i>
-        </button>
-      </div>
+      
     </aside>
   );
 };
