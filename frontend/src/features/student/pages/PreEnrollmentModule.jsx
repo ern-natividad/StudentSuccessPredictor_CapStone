@@ -59,12 +59,12 @@ const PreEnrollmentModule = () => {
     applicantId: initialForm.applicantId,
     fullName: "",
     sex: "Female",
-    age: "18",
+    age: "",
     strand: "STEM",
-    gwa: "1.12",
-    cet: "82",
-    eat: "78",
-    screening: "85",
+    gwa: "",
+    cet: "",
+    eat: "",
+    screening: "",
   });
   const [recommendation, setRecommendation] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,6 +86,14 @@ const PreEnrollmentModule = () => {
       ...current,
       [name]: value,
     }));
+  };
+
+  const handleResetForm = () => {
+    setFormData({
+      ...initialForm,
+      applicantId: formData.applicantId,
+    });
+    setRecommendation(null);
   };
 
   const handleRecommend = () => {
@@ -117,16 +125,10 @@ const PreEnrollmentModule = () => {
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px",
-        }}
-      >
-        <button className={styles.secondaryButton} onClick={() => navigate(-1)}>
-          Back
+      {/* Reduced bottom margin and added negative top margin to close the vertical gap */}
+      <div style={{ marginBottom: "16px", marginTop: "-12px" }}>
+        <button className={styles.headerBackButton} onClick={() => navigate(-1)}>
+          ← BACK
         </button>
       </div>
 
@@ -239,19 +241,7 @@ const PreEnrollmentModule = () => {
             </button>
             <button
               className={styles.secondaryButton}
-              onClick={() =>
-                setFormData({
-                  ...formData,
-                  fullName: "",
-                  sex: "Female",
-                  age: "18",
-                  strand: "STEM",
-                  gwa: "1.12",
-                  cet: "82",
-                  eat: "78",
-                  screening: "85",
-                })
-              }
+              onClick={handleResetForm}
             >
               Reset Form
             </button>
