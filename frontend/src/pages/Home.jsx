@@ -5,7 +5,20 @@ import engineeringLogo from "../assets/EngineeringLogo.jpg";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const roles = [AUTH_ROLES.admin, AUTH_ROLES.staff, AUTH_ROLES.student];
+
+  // Safe wrapper to prevent any 'toLowerCase' or 'undefined' array element sort crashes
+  const safeSort = (arrayToSort, extractPropertyString) => {
+    if (!Array.isArray(arrayToSort)) return [];
+    return [...arrayToSort].sort((a, b) => {
+      const valA = String(a?.[extractPropertyString] || "").toLowerCase();
+      const valB = String(b?.[extractPropertyString] || "").toLowerCase();
+      return valA.localeCompare(valB);
+    });
+  };
+
+  // 1. Safe implementation of the Roles selection list
+  const baseRoles = [AUTH_ROLES.admin, AUTH_ROLES.staff, AUTH_ROLES.student].filter(Boolean);
+  const roles = safeSort(baseRoles, "shortTitle");
 
   const features = [
     {
@@ -49,7 +62,7 @@ const HomePage = () => {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* 1. Header Navigation Bar */}
+      {/* Header Navigation Bar */}
       <header
         style={{
           borderBottom: "1px solid rgba(255,255,255,0.15)",
@@ -115,7 +128,7 @@ const HomePage = () => {
           padding: "0 var(--space-2xl)",
         }}
       >
-        {/* 2. Hero Section */}
+        {/* Hero Section */}
         <section
           style={{
             display: "grid",
@@ -125,7 +138,7 @@ const HomePage = () => {
             padding: "var(--space-3xl) 0",
           }}
         >
-          {/* Left Column: Value Proposition */}
+          {/* Left Column */}
           <div>
             <div
               style={{
@@ -229,8 +242,8 @@ const HomePage = () => {
             >
               {roles.map((role) => (
                 <div
-                  key={role.id}
-                  onClick={() => navigate(role.path)}
+                  key={role?.id || role?.shortTitle}
+                  onClick={() => role?.path && navigate(role.path)}
                   style={{
                     background: "var(--color-bg-main)",
                     border: "1px solid var(--color-border-neutral)",
@@ -279,7 +292,7 @@ const HomePage = () => {
                         fontSize: "var(--font-size-xl)",
                       }}
                     >
-                      <i className={role.icon}></i>
+                      <i className={role?.icon || "fas fa-user"}></i>
                     </div>
 
                     <div>
@@ -290,7 +303,7 @@ const HomePage = () => {
                           color: "var(--color-text-primary)",
                         }}
                       >
-                        {role.shortTitle}
+                        {role?.shortTitle}
                       </div>
 
                       <div
@@ -300,7 +313,7 @@ const HomePage = () => {
                           marginTop: "var(--space-xs)",
                         }}
                       >
-                        {role.description}
+                        {role?.description}
                       </div>
                     </div>
                   </div>
@@ -319,7 +332,7 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* 3. Feature Showcase Section */}
+        {/* Feature Showcase Section */}
         <section
           style={{
             background: "rgba(255, 255, 255, 0.96)",
@@ -442,7 +455,7 @@ const HomePage = () => {
         </section>
       </main>
 
-      {/* 4. Footer */}
+      {/* Footer */}
       <footer
         style={{
           borderTop: "1px solid var(--color-border-neutral)",

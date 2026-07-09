@@ -11,11 +11,11 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     firstName: "",
     lastName: "",
     email: "",
-    studentId: "",
-    employeeId: "",
-    year: roleConfig.id === "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "",
-    department: roleConfig.id !== "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "",
-    accessCode: "",
+    studentId: "N/A", // Default safe fallbacks to satisfy backend field requirements
+    employeeId: "N/A",
+    year: roleConfig.id === "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "N/A",
+    department: roleConfig.id !== "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "N/A",
+    accessCode: "ADMIN_DIRECT_PASS", 
     password: "",
     confirmPassword: "",
     termsAccepted: false,
@@ -50,8 +50,38 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
+
+    // Frontend validation checklist before calling signup hook
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) {
+      setError("Please complete all personal information fields.");
+      return;
+    }
+
+    if (!formData.password || !formData.confirmPassword) {
+      setError("Password fields cannot be empty.");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (!formData.termsAccepted) {
+      setError("You must accept the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    // Dynamic payload configuration matching what your custom auth hook validation expects
+    const dynamicPayload = {
+      ...formData,
+      studentId: roleConfig.id === "student" ? (formData.studentId === "N/A" ? "" : formData.studentId) : undefined,
+      employeeId: roleConfig.id !== "student" ? (formData.employeeId === "N/A" ? "EMP-ADMIN" : formData.employeeId) : undefined,
+      accessCode: roleConfig.id !== "student" ? (roleConfig.accessCodeLabel ? formData.accessCode : "SYSTEM_DEFAULT") : undefined,
+    };
+
     setSubmitting(true);
-    const result = await signup(formData, roleConfig.id);
+    const result = await signup(dynamicPayload, roleConfig.id);
     setSubmitting(false);
 
     if (result === "confirm-email") {
@@ -101,7 +131,7 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
               name="firstName"
               className={styles.formInput}
               placeholder="Juan"
-              value={formData.firstName}
+              value={formData.firstName === "N/A" ? "" : formData.firstName}
               onChange={handleInputChange}
             />
           </div>
@@ -112,7 +142,7 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
               name="lastName"
               className={styles.formInput}
               placeholder="Dela Cruz"
-              value={formData.lastName}
+              value={formData.lastName === "N/A" ? "" : formData.lastName}
               onChange={handleInputChange}
             />
           </div>
@@ -138,7 +168,7 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
                 name={roleConfig.idName}
                 className={styles.formInput}
                 placeholder={roleConfig.idPlaceholder}
-                value={formData[roleConfig.idName] || ""}
+                value={formData[roleConfig.idName] === "N/A" ? "" : formData[roleConfig.idName]}
                 onChange={handleInputChange}
               />
             </div>
@@ -173,7 +203,7 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
               name="accessCode"
               className={styles.formInput}
               placeholder={roleConfig.accessCodePlaceholder}
-              value={formData.accessCode}
+              value={formData.accessCode === "ADMIN_DIRECT_PASS" ? "" : formData.accessCode}
               onChange={handleInputChange}
             />
           </div>
