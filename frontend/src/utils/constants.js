@@ -1,7 +1,6 @@
 export const AUTH_ROLES = {
   admin: {
     id: "admin",
-    title: "Administrator",
     shortTitle: "Admin",
     description:
       "System oversight, student management, audit logs, alert monitoring, and model management",
@@ -16,7 +15,6 @@ export const AUTH_ROLES = {
   },
   staff: {
     id: "staff",
-    title: "Staff",
     shortTitle: "Staff",
     description:
       "Monitor student performance, generate reports, and coordinate interventions",
@@ -31,7 +29,6 @@ export const AUTH_ROLES = {
   },
   student: {
     id: "student",
-    title: "Student",
     shortTitle: "Student",
     description:
       "View personal success prediction, track progress, and receive academic guidance",
