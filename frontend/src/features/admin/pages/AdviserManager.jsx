@@ -110,7 +110,7 @@ const AdviserManager = () => {
 
   return (
     <div>
-      <h1 className={styles.pageTitle}>Adviser Manager</h1>
+      <h1 className={styles.pageTitle}>Manage Adviser</h1>
 
       <div className={styles.card}>
         <div

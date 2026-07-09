@@ -122,7 +122,7 @@ const Sidebar = () => {
         {
           id: "adviser-manager",
           icon: "fas fa-user-tie",
-          label: "Adviser Manager",
+          label: "Manage Adviser",
         },
         {
           id: "alerts",
