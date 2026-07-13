@@ -237,7 +237,7 @@ const PreEnrollmentModule = () => {
                 onChange={handleChange}
               />
             </div>
-            <div className={styles.formField}>
+            <div className={styles.formField} style={{ gridColumn: "span 2" }}>
               <label className={styles.formLabel}>
                 Interview Screening Score
               </label>
