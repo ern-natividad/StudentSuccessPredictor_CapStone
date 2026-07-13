@@ -173,7 +173,7 @@
 /* TOP NAV */
 .topNav {
   height: 56px;
-  background: #8b0000; /* Updated to match Home.jsx deep dark red */
+  background: #8b0000; 
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
