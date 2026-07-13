@@ -120,16 +120,30 @@ const PreEnrollmentModule = () => {
 
   return (
     <ModuleShell
-      title="Pre-Enrollment Degree Recommendation Module"
-      description="Assist admission personnel in recommending the most suitable engineering degree program for incoming applicants based on their academic profile."
+      title=""
+      description=""
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
     >
-      {/* Reduced bottom margin and added negative top margin to close the vertical gap */}
-      <div style={{ marginBottom: "16px", marginTop: "-12px" }}>
-        <button className={styles.headerBackButton} onClick={() => navigate(-1)}>
-          ← BACK
+      {/* Clean Back Button Alignment */}
+      <div style={{ marginBottom: "1rem" }}>
+        <button
+          className={styles.headerBackButton}
+          onClick={() => navigate(-1)}
+        >
+          &larr; Back to Dashboard
         </button>
+      </div>
+
+      <div className={styles.headerCard}>
+        <h1 className={styles.headerCardTitle}>
+          Pre-Enrollment Degree Recommendation Module
+        </h1>
+        <p className={styles.headerCardDescription}>
+          Assist admission personnel in recommending the most suitable
+          engineering degree program for incoming applicants based on their
+          academic profile.
+        </p>
       </div>
 
       <div className={styles.sectionGrid}>
