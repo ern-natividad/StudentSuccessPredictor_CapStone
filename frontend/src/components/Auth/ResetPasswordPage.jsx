@@ -7,7 +7,7 @@ import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5003/api";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
 
 const ResetPasswordPage = () => {
   const { error, setError } = useAuth();

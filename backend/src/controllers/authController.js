@@ -171,3 +171,95 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
     message: "Password updated successfully.",
   });
 });
+
+/* DELETE STAFF AND STUDENT ACCOUNT */
+export const getManageableUsers = async (req, res) => {
+  try {
+    // 1. Verify user exists and check role safely
+    const currentUser = req.user;
+    if (!currentUser || currentUser.role !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    // 2. Query Supabase database for non-admin accounts
+    // Select all columns (*) to prevent errors if column names differ (e.g. fullName vs full_name)
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("*")
+      .in("role", ["student", "staff"]);
+
+    if (error) {
+      console.error("Supabase error in getManageableUsers:", error.message);
+      return res.status(500).json({ error: "Database error: " + error.message });
+    }
+
+    return res.status(200).json(users || []);
+  } catch (err) {
+    console.error("Crash in getManageableUsers:", err);
+    return res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+};
+
+/**
+ * DELETE /api/auth/users/:id
+ * Removes a student or staff account
+ */
+export const deleteUserAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    // 1. Role Guard
+    if (!currentUser || currentUser.role !== 'admin') {
+      return res.status(403).json({ error: "Access denied. Admin rights required." });
+    }
+
+    // 2. Prevent self-deletion
+    const currentUserId = currentUser.id || currentUser.sub;
+    if (currentUserId === id) {
+      return res.status(400).json({ error: "You cannot delete your own admin account." });
+    }
+
+    // 3. Fetch target user to ensure it isn't an admin
+    const { data: targetUser, error: fetchError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError || !targetUser) {
+      return res.status(404).json({ error: "Target account not found." });
+    }
+
+    if (targetUser.role === 'admin') {
+      return res.status(400).json({ error: "Admin accounts cannot be deleted via this action." });
+    }
+
+    // 4. Delete record from Supabase 'users' table
+    const { error: dbDeleteError } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id);
+
+    if (dbDeleteError) {
+      console.error("DB deletion error:", dbDeleteError.message);
+      return res.status(500).json({ error: "Failed to remove user database record." });
+    }
+
+    // 5. Delete from Supabase Auth service (if admin auth client is configured)
+    if (supabase.auth?.admin?.deleteUser) {
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
+      if (authDeleteError) {
+        console.warn("Auth deletion note:", authDeleteError.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Account (${targetUser.email}) removed successfully.`,
+    });
+  } catch (err) {
+    console.error("Crash in deleteUserAccount:", err);
+    return res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+};

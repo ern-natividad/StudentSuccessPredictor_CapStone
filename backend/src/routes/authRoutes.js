@@ -11,6 +11,8 @@ import {
   forgotPasswordRequest,
   verifyForgotPasswordCode,
   forgotPasswordReset,
+  getManageableUsers,
+  deleteUserAccount,
 } from "../controllers/authController.js";
 
 const router = Router();
@@ -20,11 +22,18 @@ router.post("/login/verify-mfa", authRateLimiter, verifyMfaLogin);
 router.get("/me", requireAuth, me);
 router.post("/logout", requireAuth, logoutHandler);
 router.post("/session-timeout", requireAuth, sessionTimeoutHandler);
-router.post('/signup', signup);
+router.post("/signup", signup);
+
+router.get("/manageable-users", requireAuth, getManageableUsers);
+router.delete("/users/:id", requireAuth, deleteUserAccount);
 
 // Password recovery endpoints using 6-digit OTP
 router.post("/forgot-password/request", authRateLimiter, forgotPasswordRequest);
-router.post("/forgot-password/verify", authRateLimiter, verifyForgotPasswordCode);
+router.post(
+  "/forgot-password/verify",
+  authRateLimiter,
+  verifyForgotPasswordCode,
+);
 router.post("/forgot-password/reset", authRateLimiter, forgotPasswordReset);
 
 export default router;
