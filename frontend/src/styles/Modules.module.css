@@ -56,6 +56,210 @@
   padding: var(--space-2xl);
 }
 
+.aiChatLayout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.aiSidebar {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: 24px;
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.aiSidebarLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.aiSidebarCard {
+  background: var(--color-bg-surface);
+  border-radius: 18px;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border-neutral);
+}
+
+.aiSidebarTitle {
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.aiSidebarMetric {
+  font-size: 0.94rem;
+  color: var(--color-text-secondary);
+  padding-top: var(--space-xs);
+}
+
+.aiQuickPromptList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.aiQuickPrompt {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-neutral);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.aiQuickPrompt:hover {
+  border-color: #8b0000;
+  background: var(--color-brand-primary-light);
+}
+
+.aiChatPanel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: 24px;
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.aiChatHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.aiChatEyebrow {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.aiChatTitle {
+  font-size: 1.45rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.aiChatStatus {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(45, 122, 79, 0.12);
+  color: var(--color-risk-low);
+  font-size: 0.84rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.aiComposer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-bg-main);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: 999px;
+  padding: 0.45rem 0.55rem;
+}
+
+.aiComposerPlus,
+.aiComposerAttach,
+.aiComposerSend {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-neutral);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.aiComposerInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.7rem 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.aiComposerInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.aiComposerSend {
+  background: #8b0000;
+  color: white;
+  border: none;
+}
+
+.chatWindow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: 20px;
+  background: var(--color-bg-main);
+  padding: var(--space-lg);
+  min-height: 360px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.chatMessage {
+  max-width: 82%;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: 18px;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.chatUser {
+  background: #8b0000;
+  color: white;
+  align-self: flex-end;
+}
+
+.chatBot {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  align-self: flex-start;
+}
+
+@media (max-width: 980px) {
+  .aiChatLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .aiChatHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chatMessage {
+    max-width: 100%;
+  }
+}
+
 .moduleHeader {
   display: flex;
   justify-content: space-between;
@@ -146,6 +350,10 @@
 
   .moduleContent {
     padding: var(--space-xl);
+  }
+
+  .aiPromptCards {
+    grid-template-columns: 1fr;
   }
 }
 

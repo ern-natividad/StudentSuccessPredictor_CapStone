@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import styles from "../../../styles/Modules.module.css";
 
@@ -24,53 +24,39 @@ const initialMessages = [
   {
     id: 1,
     sender: "bot",
-    text: "Welcome to AI Academic Advising. How can I help you improve a student's performance today?",
+    text: "Welcome back. I can help you review academic risk, suggest next steps, and prepare a student-specific advising plan.",
   },
+];
+
+const quickPrompts = [
+  "Summarize this student's risk level",
+  "What should the student improve first?",
+  "Create a weekly advising plan",
 ];
 
 const AIAcademicAdvisingModule = () => {
   const [messages, setMessages] = useState(initialMessages);
   const [query, setQuery] = useState("");
 
-  const handleAsk = () => {
-    if (!query.trim()) return;
+  const handleAsk = (promptText = query) => {
+    const cleanedPrompt = (promptText || "").trim();
+    if (!cleanedPrompt) return;
 
     const newMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       sender: "user",
-      text: query.trim(),
+      text: cleanedPrompt,
     };
+
     const botMessage = {
-      id: messages.length + 2,
+      id: Date.now() + 1,
       sender: "bot",
-      text: "Based on current performance, the student should strengthen core mathematics, maintain attendance, and follow a weekly review plan. Prioritize higher-risk subjects first.",
+      text: "Based on the current student performance profile, I recommend focusing on attendance consistency, subject-level support in high-risk courses, and a weekly review schedule with measurable checkpoints.",
     };
 
     setMessages((prev) => [...prev, newMessage, botMessage]);
     setQuery("");
   };
-
-  const aiNotes = [
-    {
-      id: 1,
-      title: "Time Management Plan",
-      content:
-        "Suggest weekly study blocks and review time for core technical subjects.",
-    },
-    {
-      id: 2,
-      title: "Course Recommendations",
-      content:
-        "Recommend tutoring for Calculus and Physics for students with GWA below 3.0.",
-    },
-  ];
-
-  const previousSessions = [
-    { id: 1, title: "Advising Session - March", status: "Completed" },
-    { id: 2, title: "AI Recommendation - April", status: "Completed" },
-  ];
-
-  const chatMessages = useMemo(() => messages, [messages]);
 
   return (
     <ModuleShell
@@ -79,34 +65,40 @@ const AIAcademicAdvisingModule = () => {
       activeKey="ai-advising"
       menuItems={moduleLinks}
     >
-      <div style={{ marginBottom: "var(--space-xl)" }}>
-        <div
-          className={styles.moduleTitleSmall}
-          style={{ marginBottom: "var(--space-lg)" }}
-        >
-          AI Chat Interface
-        </div>
-        <div
-          className={styles.moduleCard}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            minHeight: "600px",
-            padding: 0,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            className={styles.chatWindow}
-            style={{
-              flex: 1,
-              marginBottom: 0,
-              borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
-              border: "none",
-              borderBottom: "1px solid var(--color-border-neutral)",
-            }}
-          >
-            {chatMessages.map((message) => (
+      <div className={styles.aiChatLayout}>
+        <aside className={styles.aiSidebar}>
+          <div className={styles.aiSidebarLabel}>AI Advisor</div>
+          <div className={styles.aiSidebarCard}>
+            <div className={styles.aiSidebarTitle}>Student Support Snapshot</div>
+            <div className={styles.aiSidebarMetric}>Risk: Medium</div>
+            <div className={styles.aiSidebarMetric}>Focus: Attendance & Core Subjects</div>
+          </div>
+          <div className={styles.aiSidebarTitle}>Quick prompts</div>
+          <div className={styles.aiQuickPromptList}>
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className={styles.aiQuickPrompt}
+                onClick={() => handleAsk(prompt)}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div className={styles.aiChatPanel}>
+          <div className={styles.aiChatHeader}>
+            <div>
+              <div className={styles.aiChatEyebrow}>Academic Advising AI</div>
+              <div className={styles.aiChatTitle}>How can I help today?</div>
+            </div>
+            <div className={styles.aiChatStatus}>Online</div>
+          </div>
+
+          <div className={styles.chatWindow}>
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={`${styles.chatMessage} ${
@@ -117,27 +109,27 @@ const AIAcademicAdvisingModule = () => {
               </div>
             ))}
           </div>
-          <div
-            className={styles.chatInputRow}
-            style={{
-              marginTop: 0,
-              padding: "var(--space-lg)",
-              gap: "var(--space-md)",
-            }}
-          >
+
+          <div className={styles.aiComposer}>
+            <button type="button" className={styles.aiComposerPlus}>
+              +
+            </button>
+            <button type="button" className={styles.aiComposerAttach}>
+              ⌁
+            </button>
             <input
-              className={styles.chatInput}
+              className={styles.aiComposerInput}
               value={query}
-              placeholder="Ask how the student can improve..."
+              placeholder="Write a message here..."
               onChange={(event) => setQuery(event.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   handleAsk();
                 }
               }}
             />
-            <button className={styles.primaryButton} onClick={handleAsk}>
-              Send
+            <button type="button" className={styles.aiComposerSend} onClick={() => handleAsk()}>
+              ↑
             </button>
           </div>
         </div>
