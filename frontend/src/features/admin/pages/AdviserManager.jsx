@@ -49,37 +49,48 @@ const AdviserManager = () => {
     }
   }, [selectedRow, selectedStaff, staffMembers]);
 
-  const sectionOverviewRows = useMemo(
-    () =>
-      sections.map((section) => {
-        const adviser = getStaffById(section.adviserId);
-        const sectionStudents = students.filter(
-          (student) => student.assignedSectionId === section.id,
-        );
-        return {
-          id: section.id,
-          name: adviser?.full_name || "Unassigned",
-          section: section.name,
-          role: adviser?.title?.toLowerCase().includes("adviser")
-            ? "Adviser"
-            : "Subject Teacher",
-          students: sectionStudents.length,
-          adviserId: section.adviserId,
-        };
-      }),
-    [sections, staffMembers, students, getStaffById],
-  );
+  const sectionOverviewRows = useMemo(() => {
+    if (sections.length === 0) {
+      return staffMembers.map((staff) => ({
+        id: staff.id,
+        name: staff.full_name,
+        section: "Unassigned",
+        role: staff.title || "Academic Adviser",
+        students: students.filter(
+          (student) => student.assignedStaffId === staff.id,
+        ).length,
+        adviserId: staff.id,
+      }));
+    }
+
+    return sections.map((section) => {
+      const adviser = getStaffById(section.adviserId);
+      const sectionStudents = students.filter(
+        (student) => student.assignedSectionId === section.id,
+      );
+      return {
+        id: section.id,
+        name: adviser?.full_name || "Unassigned",
+        section: section.name,
+        role: adviser?.title?.toLowerCase().includes("adviser")
+          ? "Adviser"
+          : "Subject Teacher",
+        students: sectionStudents.length,
+        adviserId: section.adviserId,
+      };
+    });
+  }, [sections, staffMembers, students, getStaffById]);
 
   const viewSectionStudents = useMemo(
     () =>
-      students.filter((student) => student.assignedSectionId === viewSectionId),
+      students.filter((student) => student.assignedStaffId === viewSectionId),
     [students, viewSectionId],
   );
 
   const handleOpenEdit = (row) => {
     setSelectedEditRowId(row.id);
     setEditStaffId(row.adviserId || staffMembers[0]?.id || "");
-    setEditSectionId(row.id);
+    setEditSectionId(sections[0]?.id || "");
     setEditRole(row.role);
   };
 
@@ -96,9 +107,13 @@ const AdviserManager = () => {
   };
 
   const handleSaveEdit = () => {
-    if (!selectedEditRowId || !editStaffId || !editSectionId) return;
+    if (!selectedEditRowId || !editStaffId) return;
     updateStaffRole(editStaffId, editRole);
-    updateSectionAdviser(editSectionId, editStaffId);
+
+    if (editSectionId) {
+      updateSectionAdviser(editSectionId, editStaffId);
+    }
+
     setSelectedEditRowId(null);
   };
 
@@ -174,7 +189,7 @@ const AdviserManager = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setViewSectionId(row.id)}
+                      onClick={() => setViewSectionId(row.adviserId || row.id)}
                       style={{
                         background: "#fff",
                         color: "#8b0000",
