@@ -45,7 +45,7 @@ const students = [
     student_id: "202301-01-006",
     full_name: "Sofia Garcia",
     program: "Industrial Engineering",
-    current_gpa: 3.1,
+    current_gpa: 3.10,
     predicted_gpa: 3.38,
     outcome: "Caution",
     risk_level: "Medium",
@@ -62,9 +62,21 @@ const AcademicPerformanceModule = () => {
   });
   const [search, setSearch] = useState("");
 
+  const processedStudents = useMemo(() => {
+    return students.map((student) => {
+      const absError = Math.abs(student.current_gpa - student.predicted_gpa);
+      const percentError = (absError / student.current_gpa) * 100;
+      return {
+        ...student,
+        absError,
+        percentError,
+      };
+    });
+  }, []);
+
   const filteredStudents = useMemo(() => {
     const query = search.toLowerCase();
-    return students.filter((student) => {
+    return processedStudents.filter((student) => {
       const matchesText =
         student.full_name.toLowerCase().includes(query) ||
         student.student_id.toLowerCase().includes(query) ||
@@ -75,7 +87,16 @@ const AcademicPerformanceModule = () => {
         filters.yearLevel === "All" || filters.yearLevel === student.program;
       return matchesText && matchesRisk && matchesYear;
     });
-  }, [filters, search]);
+  }, [filters, search, processedStudents]);
+
+  const mae = useMemo(() => {
+    if (filteredStudents.length === 0) return 0;
+    const totalError = filteredStudents.reduce(
+      (sum, student) => sum + student.absError,
+      0
+    );
+    return (totalError / filteredStudents.length).toFixed(2);
+  }, [filteredStudents]);
 
   const riskClass = (risk) => {
     switch (risk) {
@@ -93,7 +114,7 @@ const AcademicPerformanceModule = () => {
   return (
     <ModuleShell
       title="Academic Performance Forecasting and Early Warning Module"
-      description="Predict student academic performance and identify learners requiring intervention before risks surface."
+      description="Predict student academic performance, monitor model accuracy, and identify learners requiring intervention."
       activeKey="academic-performance"
       menuItems={moduleLinks}
     >
@@ -104,11 +125,9 @@ const AcademicPerformanceModule = () => {
           <div className={styles.metricSubtext}>Active student cohort</div>
         </div>
         <div className={styles.metricCard}>
-          <div className={styles.metricLabel}>Predicted Low Risk</div>
-          <div className={styles.metricValue}>72%</div>
-          <div className={styles.metricSubtext}>
-            Students on strong trajectory
-          </div>
+          <div className={styles.metricLabel}>Prediction MAE</div>
+          <div className={styles.metricValue}>{mae}</div>
+          <div className={styles.metricSubtext}>Mean Absolute Error (GWA)</div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted Moderate Risk</div>
@@ -123,7 +142,9 @@ const AcademicPerformanceModule = () => {
       </div>
 
       <div className={styles.moduleCard}>
-        <div className={styles.moduleTitleSmall}>Student Prediction Table</div>
+        <div className={styles.moduleTitleSmall}>
+          Student Prediction & Error Analysis
+        </div>
         <div className={styles.buttonGroup}>
           <input
             type="search"
@@ -166,9 +187,10 @@ const AcademicPerformanceModule = () => {
                 <th>Student ID</th>
                 <th>Name</th>
                 <th>Program</th>
-                <th>Current GWA</th>
+                <th>Actual GWA</th>
                 <th>Predicted GWA</th>
-                <th>Graduation Outcome</th>
+                <th>Abs. Error</th>
+                <th>Error Rate (%)</th>
                 <th>Risk Level</th>
                 <th>Recommendation</th>
               </tr>
@@ -181,10 +203,13 @@ const AcademicPerformanceModule = () => {
                   <td>{student.program}</td>
                   <td>{student.current_gpa.toFixed(2)}</td>
                   <td>{student.predicted_gpa.toFixed(2)}</td>
-                  <td>{student.outcome}</td>
+                  <td>{student.absError.toFixed(2)}</td>
+                  <td>{student.percentError.toFixed(1)}%</td>
                   <td>
                     <span
-                      className={`${styles.statusChip} ${riskClass(student.risk_level)}`}
+                      className={`${styles.statusChip} ${riskClass(
+                        student.risk_level
+                      )}`}
                     >
                       {student.risk_level}
                     </span>

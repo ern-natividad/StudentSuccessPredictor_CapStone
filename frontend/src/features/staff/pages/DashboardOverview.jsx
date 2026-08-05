@@ -133,48 +133,83 @@ const DashboardOverview = () => {
           <div className={styles.cardTitle}>Risk Distribution</div>
           <div
             style={{
-              position: "relative",
-              height: "160px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-around",
+              gap: "1rem",
+              padding: "0.5rem 0",
             }}
           >
-            <Doughnut
-              data={riskChartData}
-              options={{
-                cutout: "72%",
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (context) =>
-                        ` ${context.label}: ${context.raw} students`,
+            {/* Doughnut Chart */}
+            <div
+              style={{
+                position: "relative",
+                height: "160px",
+                width: "160px",
+                flexShrink: 0,
+              }}
+            >
+              <Doughnut
+                data={riskChartData}
+                options={{
+                  cutout: "72%",
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) =>
+                          ` ${context.label}: ${context.raw} students`,
+                      },
                     },
                   },
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
-            />
-          </div>
-        </div>
+                  responsive: true,
+                  maintainAspectRatio: false,
+                }}
+              />
+            </div>
 
-        {/* Model Version */}
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Model Status</div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Current Version</div>
-            <div className={commonStyles.metricValue}>v1.3.0</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Accuracy</div>
-            <div className={commonStyles.metricValue}>94.2%</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Last Updated</div>
-            <div style={{ fontSize: "12px", color: "#5a5240" }}>
-              Yesterday 14:30
+            {/* Side Legend with Student Counts */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.875rem",
+              }}
+            >
+              {riskChartData.labels?.map((label, index) => {
+                const value = riskChartData.datasets?.[0]?.data?.[index] ?? 0;
+                const color =
+                  riskChartData.datasets?.[0]?.backgroundColor?.[index] ??
+                  "#cbd5e1";
+
+                return (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        borderRadius: "3px",
+                        backgroundColor: color,
+                        display: "inline-block",
+                      }}
+                    />
+                    <span style={{ fontWeight: 500, color: "#334155" }}>
+                      {label}:
+                    </span>
+                    <span style={{ fontWeight: 600, color: "#0f172a" }}>
+                      {value} {value === 1 ? "student" : "students"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

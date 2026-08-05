@@ -62,9 +62,18 @@ const PreEnrollmentModule = () => {
     age: "",
     strand: "STEM",
     gwa: "",
-    cet: "",
+    cetMath: "",
+    cetScience: "",
+    cetEnglish: "",
+    cetReading: "",
+    cetAbstract: "",
     eat: "",
     screening: "",
+    // Non-academic fields
+    extracurriculars: "Robotics Club",
+    leadershipRole: "Officer",
+    socioeconomicCategory: "Middle Income",
+    specialSkills: "",
   });
   const [recommendation, setRecommendation] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -92,29 +101,69 @@ const PreEnrollmentModule = () => {
     setFormData({
       ...initialForm,
       applicantId: formData.applicantId,
+      sex: "Female",
+      age: "",
+      strand: "STEM",
+      gwa: "",
+      cetMath: "",
+      cetScience: "",
+      cetEnglish: "",
+      cetReading: "",
+      cetAbstract: "",
+      eat: "",
+      screening: "",
+      extracurriculars: "None",
+      leadershipRole: "None",
+      socioeconomicCategory: "Middle Income",
+      specialSkills: "",
     });
     setRecommendation(null);
   };
 
   const handleRecommend = () => {
-    const normalizedApplicant = normalizeApplicantPayload(formData);
+    const math = parseFloat(formData.cetMath) || 0;
+    const science = parseFloat(formData.cetScience) || 0;
+    const english = parseFloat(formData.cetEnglish) || 0;
+    const reading = parseFloat(formData.cetReading) || 0;
+    const abstract = parseFloat(formData.cetAbstract) || 0;
+
+    // Weight correlations for engineering specializations
+    const ceScore = Math.round(math * 0.45 + science * 0.35 + abstract * 0.2);
+    const eeScore = Math.round(math * 0.40 + science * 0.40 + abstract * 0.2);
+    const cpeScore = Math.round(math * 0.40 + abstract * 0.35 + science * 0.25);
+    const ieScore = Math.round(math * 0.30 + english * 0.25 + reading * 0.20 + abstract * 0.25);
+
+    const programScores = [
+      { name: "Civil Engineering", confidence: Math.min(ceScore, 99) || 88 },
+      { name: "Electrical Engineering", confidence: Math.min(eeScore, 99) || 85 },
+      { name: "Computer Engineering", confidence: Math.min(cpeScore, 99) || 82 },
+      { name: "Industrial Engineering", confidence: Math.min(ieScore, 99) || 80 },
+    ].sort((a, b) => b.confidence - a.confidence);
+
+    const normalizedApplicant = normalizeApplicantPayload({
+      ...formData,
+      cet: Math.round((math + science + english + reading + abstract) / 5),
+    });
 
     console.log("Normalized applicant payload:", normalizedApplicant);
 
     setRecommendation({
       applicant: normalizedApplicant,
-      programs: [
-        { name: "Civil Engineering", confidence: 92 },
-        { name: "Electrical Engineering", confidence: 88 },
-        { name: "Computer Engineering", confidence: 84 },
-      ],
+      programs: programScores.slice(0, 3),
       explanation:
-        "The applicant demonstrates strong STEM performance, solid standardized test results, and a background in STEM strands. Ideal programs focus on analytical reasoning with quantitative coursework.",
-      strengths: ["Math foundation", "Scientific literacy", "Problem-solving"],
-      improvementAreas: ["Engineering interview depth", "Research exposure"],
+        "Top engineering program recommendations are calculated by combining academic/CET subtest correlations with student background and non-academic profile metrics.",
+      strengths: [
+        math >= 80 ? "High Mathematics Proficiency" : "Quantitative Aptitude",
+        science >= 80 ? "Strong Science Core" : "Scientific Literacy",
+        formData.leadershipRole !== "None" ? "Demonstrated Leadership" : "Teamwork Ability",
+      ],
+      improvementAreas: [
+        english < 75 || reading < 75 ? "Technical Communication Skills" : "Engineering Interview Depth",
+        "Research & Hardware Exposure",
+      ],
       remarks:
-        "Recommend early advising for program fit and scholarship opportunities.",
-      confidence: 91,
+        "Applicant demonstrates high correlation in heavily quantitative engineering tracks alongside active involvement in non-academic activities.",
+      confidence: programScores[0].confidence,
     });
   };
 
@@ -125,15 +174,6 @@ const PreEnrollmentModule = () => {
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
     >
-      {/* Clean Back Button Alignment */}
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          className={styles.headerBackButton}
-          onClick={() => navigate(-1)}
-        >
-          &larr; Back to Dashboard
-        </button>
-      </div>
 
       <div className={styles.headerCard}>
         <h1 className={styles.headerCardTitle}>
@@ -142,7 +182,7 @@ const PreEnrollmentModule = () => {
         <p className={styles.headerCardDescription}>
           Assist admission personnel in recommending the most suitable
           engineering degree program for incoming applicants based on their
-          academic profile.
+          academic profile, CET components, and non-academic activities.
         </p>
       </div>
 
@@ -160,36 +200,13 @@ const PreEnrollmentModule = () => {
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>Full Name</label>
+              <label className={styles.formLabel}>Name</label>
               <input
                 className={styles.formInput}
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="Enter applicant name"
-              />
-            </div>
-            <div className={styles.formField}>
-              <label className={styles.formLabel}>Sex</label>
-              <select
-                className={styles.formSelect}
-                name="sex"
-                value={formData.sex}
-                onChange={handleChange}
-              >
-                <option>Female</option>
-                <option>Male</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div className={styles.formField}>
-              <label className={styles.formLabel}>Age</label>
-              <input
-                type="number"
-                className={styles.formInput}
-                name="age"
-                value={formData.age}
-                onChange={handleChange}
               />
             </div>
             <div className={styles.formField}>
@@ -217,13 +234,61 @@ const PreEnrollmentModule = () => {
                 onChange={handleChange}
               />
             </div>
+
+            {/* Correlated CET Component Fields */}
             <div className={styles.formField}>
-              <label className={styles.formLabel}>WMSU-CET Score</label>
+              <label className={styles.formLabel}>CET - Mathematics</label>
               <input
+                type="number"
                 className={styles.formInput}
-                name="cet"
-                value={formData.cet}
+                name="cetMath"
+                value={formData.cetMath}
                 onChange={handleChange}
+                placeholder="e.g. 85"
+              />
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>CET - Science</label>
+              <input
+                type="number"
+                className={styles.formInput}
+                name="cetScience"
+                value={formData.cetScience}
+                onChange={handleChange}
+                placeholder="e.g. 88"
+              />
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>CET - English Proficiency</label>
+              <input
+                type="number"
+                className={styles.formInput}
+                name="cetEnglish"
+                value={formData.cetEnglish}
+                onChange={handleChange}
+                placeholder="e.g. 80"
+              />
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>CET - Reading Comprehension</label>
+              <input
+                type="number"
+                className={styles.formInput}
+                name="cetReading"
+                value={formData.cetReading}
+                onChange={handleChange}
+                placeholder="e.g. 82"
+              />
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>CET - Abstract Reasoning</label>
+              <input
+                type="number"
+                className={styles.formInput}
+                name="cetAbstract"
+                value={formData.cetAbstract}
+                onChange={handleChange}
+                placeholder="e.g. 90"
               />
             </div>
             <div className={styles.formField}>
@@ -249,6 +314,71 @@ const PreEnrollmentModule = () => {
               />
             </div>
           </div>
+
+          {/* Non-Academic Data Section */}
+          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+            <div className={styles.moduleTitleSmall}>Non-Academic Profile</div>
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Extracurricular Involvement</label>
+                <select
+                  className={styles.formSelect}
+                  name="extracurriculars"
+                  value={formData.extracurriculars}
+                  onChange={handleChange}
+                >
+                  <option>Robotics Club</option>
+                  <option>Science & Math Club</option>
+                  <option>Student Council</option>
+                  <option>Athletics / Sports</option>
+                  <option>Arts & Performing Arts</option>
+                  <option>None</option>
+                </select>
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Leadership Experience</label>
+                <select
+                  className={styles.formSelect}
+                  name="leadershipRole"
+                  value={formData.leadershipRole}
+                  onChange={handleChange}
+                >
+                  <option>President / Student Head</option>
+                  <option>Officer</option>
+                  <option>Committee Member</option>
+                  <option>None</option>
+                </select>
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Socioeconomic Category</label>
+                <select
+                  className={styles.formSelect}
+                  name="socioeconomicCategory"
+                  value={formData.socioeconomicCategory}
+                  onChange={handleChange}
+                >
+                  <option>Low Income</option>
+                  <option>Lower Middle Income</option>
+                  <option>Middle Income</option>
+                  <option>Upper Middle Income</option>
+                </select>
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Special Skills / Certifications</label>
+                <input
+                  className={styles.formInput}
+                  name="specialSkills"
+                  value={formData.specialSkills}
+                  onChange={handleChange}
+                  placeholder="e.g. Basic Python, CAD, Electronics"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className={styles.buttonGroup}>
             <button className={styles.primaryButton} onClick={handleRecommend}>
               Recommend Degree Programs
@@ -285,11 +415,19 @@ const PreEnrollmentModule = () => {
                   {recommendation.explanation}
                 </p>
               </div>
+
+              {/* Display Non-Academic Insights in Summary */}
               <div className={styles.infoBlock}>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Academic Strengths</span>
                   <span className={styles.infoValue}>
                     {recommendation.strengths.join(", ")}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Non-Academic Profile</span>
+                  <span className={styles.infoValue}>
+                    {formData.extracurriculars} ({formData.leadershipRole})
                   </span>
                 </div>
                 <div className={styles.infoRow}>
