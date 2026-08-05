@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authRateLimiter } from "../middleware/rateLimiter.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import {
   login,
   verifyMfaLogin,
@@ -17,15 +17,15 @@ import {
 
 const router = Router();
 
+router.get("/users", requireAuth, requireRole("admin"), getManageableUsers);
+router.delete("/users/:id", requireAuth, requireRole("admin"), deleteUserAccount);
+
 router.post("/login", authRateLimiter, login);
 router.post("/login/verify-mfa", authRateLimiter, verifyMfaLogin);
 router.get("/me", requireAuth, me);
 router.post("/logout", requireAuth, logoutHandler);
 router.post("/session-timeout", requireAuth, sessionTimeoutHandler);
 router.post("/signup", signup);
-
-router.get("/manageable-users", requireAuth, getManageableUsers);
-router.delete("/users/:id", requireAuth, deleteUserAccount);
 
 // Password recovery endpoints using 6-digit OTP
 router.post("/forgot-password/request", authRateLimiter, forgotPasswordRequest);

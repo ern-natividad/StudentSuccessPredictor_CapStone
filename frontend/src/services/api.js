@@ -78,60 +78,62 @@ export const api = {
     request(`/audit-logs?limit=${limit}&offset=${offset}`),
 
   getManageableUsers: async (token) => {
-  const authToken = 
-    token || 
-    localStorage.getItem("token") || 
-    localStorage.getItem("accessToken");
+    const authToken =
+      token ||
+      sessionStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
 
-  const response = await fetch("/api/auth/manageable-users", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": authToken ? `Bearer ${authToken}` : "",
-    },
-  });
+    const response = await fetch(`${BASE_URL.replace(/\/$/, "")}/auth/users`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authToken ? `Bearer ${authToken}` : "",
+      },
+    });
 
-  const contentType = response.headers.get("content-type");
-  let data = null;
-  if (contentType && contentType.includes("application/json")) {
-    data = await response.json();
-  }
+    const contentType = response.headers.get("content-type");
+    let data = null;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    }
 
-  if (!response.ok) {
-    const errorMsg = data?.error || `Failed to load users (${response.status})`;
-    throw new Error(errorMsg);
-  }
+    if (!response.ok) {
+      const errorMsg = data?.error || `Failed to load users (${response.status})`;
+      throw new Error(errorMsg);
+    }
 
-  return data || [];
-},
+    return data || [];
+  },
 
-deleteAccount: async (userId, token) => {
-  const authToken = 
-    token || 
-    localStorage.getItem("token") || 
-    localStorage.getItem("accessToken");
+  deleteAccount: async (userId, token) => {
+    const authToken =
+      token ||
+      sessionStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken");
 
-  const response = await fetch(`/api/auth/users/${userId}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": authToken ? `Bearer ${authToken}` : "",
-    },
-  });
+    const response = await fetch(`${BASE_URL.replace(/\/$/, "")}/auth/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authToken ? `Bearer ${authToken}` : "",
+      },
+    });
 
-  const contentType = response.headers.get("content-type");
-  let data = null;
-  if (contentType && contentType.includes("application/json")) {
-    data = await response.json();
-  }
+    const contentType = response.headers.get("content-type");
+    let data = null;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    }
 
-  if (!response.ok) {
-    const errorMsg = data?.error || `Failed to delete account (${response.status})`;
-    throw new Error(errorMsg);
-  }
+    if (!response.ok) {
+      const errorMsg = data?.error || `Failed to delete account (${response.status})`;
+      throw new Error(errorMsg);
+    }
 
-  return data;
-},
+    return data;
+  },
 };
 
 export const isBackendAuthEnabled = () =>

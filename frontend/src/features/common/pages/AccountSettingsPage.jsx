@@ -7,11 +7,12 @@ const AccountSettingsPage = () => {
   const user = authContext.user;
   const updateUserFields = authContext.updateUserFields;
   
-  // Extract token from context or fallback to localStorage keys
-  const token = 
-    authContext.token || 
-    user?.token || 
-    localStorage.getItem("token") || 
+  // Extract token from context or fallback to the same session sources the backend auth flow uses
+  const token =
+    authContext.token ||
+    user?.token ||
+    sessionStorage.getItem("authToken") ||
+    localStorage.getItem("token") ||
     localStorage.getItem("accessToken");
   
   const isMfaEnabled = user?.two_factor_enabled || user?.twoFactorEnabled || false;
@@ -27,7 +28,7 @@ const AccountSettingsPage = () => {
 
   // Account Removal States (Admin Only)
   const [manageableUsers, setManageableUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null); // Selected user object for deletion
+  const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(false);
@@ -47,8 +48,10 @@ const AccountSettingsPage = () => {
     setFetchingUsers(true);
     setUiError("");
     try {
-      const users = await api.getManageableUsers(token);
-      setManageableUsers(users || []);
+      const res = await api.getManageableUsers(token);
+      // Safely extract users whether API returns direct array or object payload
+      const userList = Array.isArray(res) ? res : (res?.users || []);
+      setManageableUsers(userList);
     } catch (err) {
       console.error("Failed to load users for deletion management:", err);
       setUiError(err.message || "Could not load manageable accounts. Please re-login if session expired.");
@@ -141,10 +144,10 @@ const AccountSettingsPage = () => {
       const res = await api.deleteAccount(selectedUser.id, token);
       setShowDeleteModal(false);
       setSelectedUser(null);
-      setUiSuccess(res.message || "Account removed successfully.");
+      setUiSuccess(res?.message || "Account removed successfully.");
       
-      // Refresh the user table
-      loadManageableAccounts();
+      // Refresh user table
+      await loadManageableAccounts();
     } catch (err) {
       setUiError(err.message || "Failed to delete account.");
       setShowDeleteModal(false);
@@ -260,7 +263,7 @@ const AccountSettingsPage = () => {
             <div>
               <h3 style={{ color: "#800000", margin: 0 }}>Remove User Account</h3>
               <p style={{ color: "#666", fontSize: "14px", margin: "0.25rem 0 0 0" }}>
-                Manage Student and Staff accounts with full system revocation capabilities.
+                Manage registered user accounts with full system revocation capabilities.
               </p>
             </div>
             <button 
@@ -287,18 +290,18 @@ const AccountSettingsPage = () => {
                 {fetchingUsers ? (
                   <tr>
                     <td colSpan="4" style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-                      Loading manageable accounts...
+                      Loading accounts...
                     </td>
                   </tr>
                 ) : manageableUsers.length === 0 ? (
                   <tr>
                     <td colSpan="4" style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-                      No student or staff accounts found.
+                      No registered accounts found.
                     </td>
                   </tr>
                 ) : (
                   manageableUsers.map((u) => {
-                    const name = u.full_name || u.fullName || u.email.split("@")[0];
+                    const name = u.full_name || u.fullName || u.email?.split("@")[0] || "User";
                     return (
                       <tr key={u.id} style={{ borderBottom: "1px solid #eee", fontSize: "14px" }}>
                         <td style={{ padding: "0.75rem 1rem", fontWeight: "600" }}>{name}</td>
@@ -309,8 +312,8 @@ const AccountSettingsPage = () => {
                             borderRadius: "4px", 
                             fontSize: "11px", 
                             fontWeight: "bold",
-                            backgroundColor: u.role === 'staff' ? '#e3f2fd' : '#f3e5f5',
-                            color: u.role === 'staff' ? '#1565c0' : '#7b1fa2'
+                            backgroundColor: u.role === 'admin' ? '#ffebee' : u.role === 'staff' ? '#e3f2fd' : '#f3e5f5',
+                            color: u.role === 'admin' ? '#c62828' : u.role === 'staff' ? '#1565c0' : '#7b1fa2'
                           }}>
                             {u.role ? u.role.toUpperCase() : 'USER'}
                           </span>

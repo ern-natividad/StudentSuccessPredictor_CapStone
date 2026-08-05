@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getRequestMeta } from "../utils/requestMeta.js";
-import { supabase } from "../config/supabaseClient.js";
+import { supabase } from '../config/supabaseClient.js';
 import {
   loginWithPassword,
   verifyMfaAndIssueToken,
@@ -109,7 +109,6 @@ export const verifyForgotPasswordCode = asyncHandler(async (req, res) => {
  * Updates the password in Supabase Auth using the validated user context.
  */
 export const forgotPasswordReset = asyncHandler(async (req, res) => {
-  // 1. Accept userId OR email parameters dynamically from the frontend payload
   const { userId, email, identifier, newPassword } = req.body;
   const meta = getRequestMeta(req);
 
@@ -119,7 +118,6 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
 
   let targetId = userId;
 
-  // 2. Fallback: If the frontend didn't track the UUID but passed the email address, resolve it
   if (!targetId && (email || identifier)) {
     const fallbackEmail = (email || identifier).trim().toLowerCase();
 
@@ -155,14 +153,12 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
     }
   }
 
-  // 3. Throw a clean error if neither approach can establish who the user is
   if (!targetId) {
     return res
       .status(404)
       .json({ error: "Target account identifier not found." });
   }
 
-  // 4. Complete password update step via the authService logic
   const user = await completePasswordReset(targetId, newPassword, meta);
 
   return res.status(200).json({
@@ -172,94 +168,74 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
   });
 });
 
-/* DELETE STAFF AND STUDENT ACCOUNT */
-export const getManageableUsers = async (req, res) => {
-  try {
-    // 1. Verify user exists and check role safely
-    const currentUser = req.user;
-    if (!currentUser || currentUser.role !== 'admin') {
-      return res.status(403).json({ error: "Access denied. Admin privileges required." });
-    }
+/**
+ * GET /api/auth/users
+ * Returns list of user accounts to display in administration/removal UI.
+ */
+export const getManageableUsers = asyncHandler(async (req, res) => {
+  // Query Supabase database for accounts
+  const { data: users, error } = await supabase
+    .from("users")
+    .select("id, email, full_name, role, created_at")
+    .order("created_at", { ascending: false });
 
-    // 2. Query Supabase database for non-admin accounts
-    // Select all columns (*) to prevent errors if column names differ (e.g. fullName vs full_name)
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("*")
-      .in("role", ["student", "staff"]);
-
-    if (error) {
-      console.error("Supabase error in getManageableUsers:", error.message);
-      return res.status(500).json({ error: "Database error: " + error.message });
-    }
-
-    return res.status(200).json(users || []);
-  } catch (err) {
-    console.error("Crash in getManageableUsers:", err);
-    return res.status(500).json({ error: "Internal server error: " + err.message });
+  if (error) {
+    console.error("Supabase error in getManageableUsers:", error.message);
+    return res.status(500).json({ error: "Database error: " + error.message });
   }
-};
+
+  // Respond with full users array or structured payload depending on route expectation
+  return res.status(200).json({
+    success: true,
+    users: users || [],
+  });
+});
 
 /**
  * DELETE /api/auth/users/:id
- * Removes a student or staff account
+ * Removes a user account from Supabase database & auth
  */
-export const deleteUserAccount = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const currentUser = req.user;
+export const deleteUserAccount = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const currentUser = req.user;
 
-    // 1. Role Guard
-    if (!currentUser || currentUser.role !== 'admin') {
-      return res.status(403).json({ error: "Access denied. Admin rights required." });
-    }
-
-    // 2. Prevent self-deletion
-    const currentUserId = currentUser.id || currentUser.sub;
-    if (currentUserId === id) {
-      return res.status(400).json({ error: "You cannot delete your own admin account." });
-    }
-
-    // 3. Fetch target user to ensure it isn't an admin
-    const { data: targetUser, error: fetchError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (fetchError || !targetUser) {
-      return res.status(404).json({ error: "Target account not found." });
-    }
-
-    if (targetUser.role === 'admin') {
-      return res.status(400).json({ error: "Admin accounts cannot be deleted via this action." });
-    }
-
-    // 4. Delete record from Supabase 'users' table
-    const { error: dbDeleteError } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", id);
-
-    if (dbDeleteError) {
-      console.error("DB deletion error:", dbDeleteError.message);
-      return res.status(500).json({ error: "Failed to remove user database record." });
-    }
-
-    // 5. Delete from Supabase Auth service (if admin auth client is configured)
-    if (supabase.auth?.admin?.deleteUser) {
-      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
-      if (authDeleteError) {
-        console.warn("Auth deletion note:", authDeleteError.message);
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: `Account (${targetUser.email}) removed successfully.`,
-    });
-  } catch (err) {
-    console.error("Crash in deleteUserAccount:", err);
-    return res.status(500).json({ error: "Internal server error: " + err.message });
+  // Prevent self-deletion if current user context exists
+  if (currentUser && (currentUser.id === id || currentUser.sub === id)) {
+    return res.status(400).json({ error: "You cannot delete your own account." });
   }
-};
+
+  // Fetch target user to verify existence
+  const { data: targetUser, error: fetchError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError || !targetUser) {
+    return res.status(404).json({ error: "Target account not found." });
+  }
+
+  // Delete record from Supabase 'users' table
+  const { error: dbDeleteError } = await supabase
+    .from("users")
+    .delete()
+    .eq("id", id);
+
+  if (dbDeleteError) {
+    console.error("DB deletion error:", dbDeleteError.message);
+    return res.status(500).json({ error: "Failed to remove user database record: " + dbDeleteError.message });
+  }
+
+  // Delete from Supabase Auth service if available
+  if (supabase.auth?.admin?.deleteUser) {
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
+    if (authDeleteError) {
+      console.warn("Auth deletion note:", authDeleteError.message);
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `Account (${targetUser.email}) removed successfully.`,
+  });
+});

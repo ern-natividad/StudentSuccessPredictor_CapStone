@@ -1,4 +1,5 @@
 import axios from "axios";
+import { api } from './api'; 
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
   ? `${import.meta.env.VITE_API_BASE_URL}/auth`
@@ -50,4 +51,12 @@ export const loginWithBackend = async (email, password) => {
       body: JSON.stringify({ email, password }),
     }),
   );
+};
+
+export const fetchAllUsers = async () => {
+  return await api.getManageableUsers();
+};
+
+export const removeUserAccount = async (id, token) => {
+  return await api.deleteAccount(id, token);
 };
