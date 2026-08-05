@@ -14,7 +14,7 @@ const TopNav = ({ onLogout }) => {
   const ROLE_LABELS = {
     admin: "System Administrator",
     staff: "Academic Staff",
-    student: "Engineering Student - 3rd Year",
+    student: "Student",
   };
   const roleLabel = ROLE_LABELS[user.role] ?? "User";
 

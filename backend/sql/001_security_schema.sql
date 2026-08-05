@@ -5,7 +5,8 @@ create table if not exists public.users (
   full_name text,
   role text not null default 'student' check (role in ('admin', 'staff', 'student')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  year_level text
 );
 
 create index if not exists idx_users_email on public.users (email);
@@ -17,7 +18,8 @@ alter table public.users
 
 alter table public.users
   add column if not exists totp_secret text,
-  add column if not exists two_factor_enabled boolean not null default false;
+  add column if not exists two_factor_enabled boolean not null default false,
+  add column if not exists year_level text;
 
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),

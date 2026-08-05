@@ -343,7 +343,13 @@ export const registerUser = async (payload, meta = {}) => {
     role = "student",
     password,
     terms_accepted: termsAccepted,
+    year_level: yearLevel,
   } = payload;
+
+  console.log("authService -> payload:", payload);
+  console.log("authService -> yearLevel:", yearLevel);
+
+  const safeYearLevel = yearLevel ?? null;
 
   if (!firstName || !lastName || !email || !password) {
     throw new HttpError(400, "Please complete all required fields.");
@@ -393,9 +399,18 @@ export const registerUser = async (payload, meta = {}) => {
       password_hash: passwordHash,
       full_name: fullName,
       role,
+      year_level: safeYearLevel,
     })
     .select("*")
     .single();
+
+  console.log("authService -> insert payload:", {
+    id: authUserId,
+    email: normalizedEmail,
+    full_name: fullName,
+    role,
+    year_level: safeYearLevel,
+  });
 
   if (error) {
     throw error;

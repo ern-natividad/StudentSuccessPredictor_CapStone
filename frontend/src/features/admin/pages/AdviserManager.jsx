@@ -237,7 +237,7 @@ const AdviserManager = () => {
                       {getSectionById(student.assignedSectionId)?.name ||
                         "Unassigned"}
                     </td>
-                    <td>{student.year_level}</td>
+                    <td>{student.yearLevel}</td>
                     <td>{student.grade_records?.[0]?.subject || "N/A"}</td>
                     <td>{student.grade_records?.[0]?.semester || "TBA"}</td>
                     <td>{student.grade_records?.[0]?.grade || "N/A"}</td>

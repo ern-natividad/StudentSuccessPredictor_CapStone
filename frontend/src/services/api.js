@@ -28,8 +28,10 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
-  signup: (userData) =>
-    request("/auth/signup", { method: "POST", body: JSON.stringify(userData) }),
+  signup: (userData) => {
+    console.log("api.js -> signup -> year_level:", userData.year_level);
+    return request("/auth/signup", { method: "POST", body: JSON.stringify(userData) });
+  },
 
   verifyMfaLogin: (pendingToken, code) =>
     request("/auth/login/verify-mfa", {

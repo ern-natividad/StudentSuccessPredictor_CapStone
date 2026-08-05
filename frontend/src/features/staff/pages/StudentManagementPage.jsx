@@ -191,7 +191,7 @@ const StudentManagementPage = () => {
               {selectedStudent.full_name}
             </div>
             <div className={styles.contentCardMeta}>
-              {selectedStudent.student_id} • {selectedStudent.year_level} •{" "}
+              {selectedStudent.student_id} • {selectedStudent.yearLevel} •{" "}
               {selectedStudent.program || "Program pending"}
             </div>
           </div>
@@ -245,7 +245,7 @@ const StudentManagementPage = () => {
                   <td>{row.student_id}</td>
                   <td>{row.full_name}</td>
                   <td>{row.sectionName}</td>
-                  <td>{row.year_level}</td>
+                  <td>{row.yearLevel}</td>
                   <td>{row.subjectCode}</td>
                   <td>{row.schedule}</td>
                   <td>{row.displayGrade}</td>

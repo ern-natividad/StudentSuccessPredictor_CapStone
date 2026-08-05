@@ -7,13 +7,16 @@ import styles from "../../styles/Auth.module.css";
 const SignupForm = ({ roleConfig, onSwitch }) => {
   const { signup, error, setError } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const defaultGroupValue = roleConfig.groupOptions?.[0] ?? "1st Year";
+
+    const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     studentId: "",
     employeeId: "",
-    year: "",
+    yearLevel: defaultGroupValue,
+    year: defaultGroupValue,
     department: "",
     accessCode: "",
     password: "",
@@ -72,13 +75,18 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
       return;
     }
 
-    // Dynamic payload configuration matching what your custom auth hook validation expects
     const dynamicPayload = {
       ...formData,
-      studentId: roleConfig.id === "student" ? formData.studentId : undefined,
-      employeeId: roleConfig.id !== "student" ? formData.employeeId : undefined,
-      accessCode: roleConfig.id !== "student" ? formData.accessCode : undefined,
+      yearLevel: formData.yearLevel,
+      year_level:
+        roleConfig.id === "student"
+          ? formData.yearLevel || formData.year || defaultGroupValue
+          : undefined,
     };
+
+    console.log("SignupForm -> formData:", formData);
+    console.log("SignupForm -> dynamicPayload:", dynamicPayload);
+    console.log("SignupForm -> handleSubmit -> yearLevel:", formData.yearLevel);
 
     setSubmitting(true);
     const result = await signup(dynamicPayload, roleConfig.id);
@@ -179,9 +187,9 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>{roleConfig.groupLabel}</label>
             <select
-              name={roleConfig.groupName}
+              name="yearLevel"
               className={styles.formSelect}
-              value={formData[roleConfig.groupName]}
+              value={formData.yearLevel}
               onChange={handleInputChange}
             >
               {roleConfig.groupOptions.map((option) => (

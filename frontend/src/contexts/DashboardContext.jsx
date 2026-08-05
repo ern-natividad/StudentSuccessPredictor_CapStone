@@ -16,8 +16,10 @@ export const DashboardProvider = ({ children }) => {
   const [staffMembers, setStaffMembers] = useState([]);
 
   useEffect(() => {
-    const isRoleManagementUser = user?.role === "admin" || user?.role === "staff";
-    if (!isRoleManagementUser) {
+    const canLoadRoleAccounts =
+      user?.role === "admin" || user?.role === "staff" || user?.role === "student";
+
+    if (!canLoadRoleAccounts) {
       setStudents([]);
       setStaffMembers([]);
       return undefined;
@@ -38,7 +40,8 @@ export const DashboardProvider = ({ children }) => {
               account.full_name ||
               account.email?.split("@")[0] ||
               `Student ${index + 1}`,
-            year_level: account.year_level || "N/A",
+            year_level: account.year_level ?? account.year ?? "N/A",
+            yearLevel: account.year_level ?? account.year ?? "N/A",
             current_gpa: Number(account.current_gpa ?? 0),
             predicted_gpa: Number(account.predicted_gpa ?? 0),
             confidence_score: Number(account.confidence_score ?? 0),

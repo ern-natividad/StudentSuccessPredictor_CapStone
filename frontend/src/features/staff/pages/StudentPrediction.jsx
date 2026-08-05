@@ -3,302 +3,134 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import styles from "../../../styles/Dashboard.module.css";
-import commonStyles from "../../../styles/Common.module.css";
 
 const StudentPrediction = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { students, showPage } = useDashboard();
+  const { students } = useDashboard();
   const currentStudent = students.find((student) =>
     user.name
       .toLowerCase()
       .startsWith(student.full_name.toLowerCase().split(" ")[0]),
   );
 
-  const studentData = currentStudent || students[0];
+  const studentData = currentStudent || students[0] || null;
+  const effectiveCurrentGpa = Number(studentData?.current_gpa ?? 0);
+  const effectivePredictedGpa = Number(studentData?.predicted_gpa ?? 0);
+  const hasLiveStudentMetrics = Boolean(
+    studentData && (studentData.current_gpa || studentData.predicted_gpa),
+  );
   const successPercent = Math.min(
     99,
-    Math.max(65, Math.round(studentData.predicted_gpa * 24)),
+    Math.max(65, Math.round(effectivePredictedGpa * 24 || 0)),
   );
-  const bestProgram =
-    studentData.predicted_gpa >= 3.7
-      ? "Computer Engineering"
-      : studentData.current_gpa >= 3.2
-        ? "Electronics Engineering"
-        : "Civil Engineering";
-
-  const programCards = [
-    {
-      name: "Computer Engineering",
-      percent: successPercent,
-      badge: "Best fit",
-      active: true,
-    },
-    {
-      name: "Electronics Engineering",
-      percent: Math.max(74, successPercent - 6),
-      badge: "Good match",
-    },
-    {
-      name: "Civil Engineering",
-      percent: Math.max(68, successPercent - 12),
-      badge: "Good match",
-    },
-    {
-      name: "Mechanical Engineering",
-      percent: Math.max(61, successPercent - 18),
-      badge: "Fair match",
-    },
-  ];
-
-  // Semester prediction data
-  const semesterPredictions = [
-    {
-      year: "S.Y. 2025 - 2026",
-      semester: "1st Semester",
-      gwa: 3.72,
-      predictedNextGrade: 3.7,
-      confidence: 92,
-      graduationGrade: 2.0,
-    },
-    {
-      year: "S.Y. 2025 - 2026",
-      semester: "2nd Semester",
-      gwa: 3.72,
-      predictedNextGrade: 3.95,
-      confidence: 92,
-      graduationGrade: 2.0,
-    },
-    {
-      year: "S.Y. 2026 - 2027",
-      semester: "1st Semester",
-      gwa: 3.72,
-      predictedNextGrade: 3.8,
-      confidence: 87,
-      graduationGrade: 2.0,
-    },
-    {
-      year: "S.Y. 2026 - 2027",
-      semester: "2nd Semester",
-      gwa: 3.72,
-      predictedNextGrade: 3.9,
-      confidence: 84,
-      graduationGrade: 2.0,
-    },
-  ];
 
   return (
     <div className={styles.studentPredictionPage}>
       <div className={styles.pageHeaderSection}>
-        <h1 className={styles.pageTitle}>Engineering program predictor</h1>
+        <h1 className={styles.pageTitle}>Engineering Program predictor</h1>
         <p className={styles.pageDesc}>
           Based on your academic profile and current performance indicators,
           here is your personalized student dashboard summary.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "2rem",
-          marginBottom: "2rem",
-        }}
-      >
-        {/* Left side - Prediction Summary */}
-        <div
-          style={{
-            background: "#8b0000",
-            borderRadius: "16px",
-            padding: "2rem",
-            color: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            minHeight: "200px",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "2rem",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: "48px", fontWeight: "700" }}>
-                  {studentData.current_gpa.toFixed(2)}
-                </div>
-                <div
-                  style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
-                >
-                  GRADUATION GRADE
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: "48px", fontWeight: "700" }}>
-                  {successPercent}%
-                </div>
-                <div
-                  style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
-                >
-                  SUCCESS PROBABILITY
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                marginBottom: "8px",
-              }}
-            >
-              Best fit: {bestProgram}
-            </div>
-            <div style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.5" }}>
-              Strong match based on your GPA trend, confidence score, and
-              academic performance.
-            </div>
-          </div>
-        </div>
-
-        {/* Right side - All Program Predictions */}
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>All program predictions</div>
-          <div className={styles.programGrid}>
-            {programCards.map((program) => (
-              <div
-                key={program.name}
-                className={`${styles.programCard} ${program.active ? styles.programCardActive : ""}`}
-              >
-                <div className={styles.programPercent}>{program.percent}%</div>
-                <div className={styles.programName}>{program.name}</div>
-                <div className={styles.programBarBg}>
-                  <div
-                    className={styles.programBar}
-                    style={{ width: `${program.percent}%` }}
-                  />
-                </div>
-                <div className={styles.programBadge}>{program.badge}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* School year predicted score */}
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ color: "#8b0000", fontWeight: "700", margin: 0 }}>
-            School year predicted score
-          </h3>
-        </div>
+      {hasLiveStudentMetrics ? (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "1rem",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "2rem",
+            marginBottom: "2rem",
           }}
         >
-          {semesterPredictions.map((prediction, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: "linear-gradient(135deg, #ffffff 0%, #fff7f7 100%)",
-                border: "1px solid #f5d0d0",
-                borderRadius: "14px",
-                padding: "1.25rem 1.2rem",
-                boxShadow: "0 8px 24px rgba(139, 0, 0, 0.06)",
-              }}
-            >
+          <div
+            style={{
+              background: "#8b0000",
+              borderRadius: "16px",
+              padding: "2rem",
+              color: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              minHeight: "200px",
+            }}
+          >
+            <div>
               <div
                 style={{
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#b91c1c",
-                  marginBottom: "0.35rem",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "2rem",
+                  marginBottom: "1.5rem",
                 }}
               >
-                {prediction.year}
-              </div>
-              <div
-                style={{
-                  fontSize: "15px",
-                  fontWeight: "700",
-                  marginBottom: "0.9rem",
-                  color: "#111827",
-                }}
-              >
-                {prediction.semester}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.65rem",
-                  fontSize: "13px",
-                  color: "#334155",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "#64748b" }}>GWA</span>
-                  <span style={{ fontWeight: "700", color: "#111827" }}>
-                    {prediction.gwa}
-                  </span>
+                <div>
+                  <div style={{ fontSize: "48px", fontWeight: "700" }}>
+                    {effectiveCurrentGpa.toFixed(2)}
+                  </div>
+                  <div
+                    style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
+                  >
+                    GRADUATION GRADE
+                  </div>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "#64748b" }}>Predicted Next Grade</span>
-                  <span style={{ fontWeight: "700", color: "#111827" }}>
-                    {prediction.predictedNextGrade}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "#64748b" }}>Confidence</span>
-                  <span style={{ fontWeight: "700", color: "#111827" }}>
-                    {prediction.confidence}%
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ color: "#64748b" }}>Graduation Grade</span>
-                  <span style={{ fontWeight: "700", color: "#111827" }}>
-                    {prediction.graduationGrade}
-                  </span>
+                <div>
+                  <div style={{ fontSize: "48px", fontWeight: "700" }}>
+                    {successPercent}%
+                  </div>
+                  <div
+                    style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
+                  >
+                    SUCCESS PROBABILITY
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                }}
+              >
+                Student record loaded from the live dashboard dataset.
+              </div>
+              <div style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.5" }}>
+                Current prediction values are derived from the authenticated
+                student record in the dashboard context.
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>Prediction Details</div>
+            <div style={{ display: "grid", gap: "12px" }}>
+              <div>
+                <strong>Risk Level:</strong> {studentData?.risk_level || "N/A"}
+              </div>
+              <div>
+                <strong>Current GPA:</strong> {effectiveCurrentGpa.toFixed(2)}
+              </div>
+              <div>
+                <strong>Predicted GPA:</strong> {effectivePredictedGpa.toFixed(2)}
+              </div>
+              <div>
+                <strong>Confidence:</strong>{" "}
+                {Number(studentData?.confidence_score ?? 0)}%
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className={styles.card} style={{ marginBottom: "2rem" }}>
+          <div className={styles.cardTitle}>Prediction Details</div>
+          <div style={{ padding: "1rem 0" }}>
+            No live student prediction metrics are available yet.
+          </div>
+        </div>
+      )}
 
       {/* AI Advising Card */}
       <div

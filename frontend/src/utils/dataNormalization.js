@@ -17,7 +17,10 @@ export const normalizeUserPayload = (formData, roleId = "student") => ({
   role: roleId,
   student_id: roleId === "student" ? formData.studentId : undefined,
   employee_id: roleId !== "student" ? formData.employeeId : undefined,
-  year_level: roleId === "student" ? formData.year : undefined,
+  year_level:
+    roleId === "student"
+      ? formData.year_level ?? formData.yearLevel ?? formData.year ?? "1st Year"
+      : undefined,
   department: roleId !== "student" ? formData.department : undefined,
   access_code: roleId !== "student" ? formData.accessCode : undefined,
   password: formData.password,

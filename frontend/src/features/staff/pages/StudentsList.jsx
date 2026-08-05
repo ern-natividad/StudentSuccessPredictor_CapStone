@@ -116,15 +116,15 @@ const StudentsList = () => {
               <tr key={student.student_id} className={commonStyles.tableRow}>
                 <td>{student.student_id}</td>
                 <td>{student.full_name}</td>
-                <td>{student.year_level}</td>
-                <td>{student.current_gpa.toFixed(2)}</td>
-                <td>{student.predicted_gpa.toFixed(2)}</td>
-                <td>{student.confidence_score}%</td>
+                <td>{student.yearLevel || "N/A"}</td>
+                <td>{Number(student.current_gpa ?? 0).toFixed(2)}</td>
+                <td>{Number(student.predicted_gpa ?? 0).toFixed(2)}</td>
+                <td>{Number(student.confidence_score ?? 0)}%</td>
                 <td>
                   <span
-                    className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + student.risk_level.toLowerCase()]}`}
+                    className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + (student.risk_level || "low").toLowerCase()]}`}
                   >
-                    {student.risk_level}
+                    {student.risk_level || "Low"}
                   </span>
                 </td>
               </tr>

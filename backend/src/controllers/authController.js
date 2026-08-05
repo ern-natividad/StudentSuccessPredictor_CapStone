@@ -65,7 +65,19 @@ export const sessionTimeoutHandler = asyncHandler(async (req, res) => {
 
 export const signup = asyncHandler(async (req, res) => {
   const meta = getRequestMeta(req);
-  const result = await registerUser(req.body, meta);
+  const { year_level: yearLevel, ...rest } = req.body;
+
+  console.log("authController -> req.body:", req.body);
+  console.log("authController -> year_level:", yearLevel);
+
+  const result = await registerUser(
+    {
+      ...rest,
+      year_level: yearLevel,
+    },
+    meta,
+  );
+
   return res.status(201).json(result);
 });
 
@@ -173,11 +185,19 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
  * Returns list of user accounts to display in administration/removal UI.
  */
 export const getManageableUsers = asyncHandler(async (req, res) => {
-  // Query Supabase database for accounts
-  const { data: users, error } = await supabase
+  const currentUser = req.user;
+  let query = supabase
     .from("users")
-    .select("id, email, full_name, role, created_at")
+    .select(
+      "id, email, full_name, role, created_at, year_level, current_gpa, predicted_gpa, confidence_score, risk_level, title, assignedSectionId, assignedStaffId, grade_records",
+    )
     .order("created_at", { ascending: false });
+
+  if (currentUser?.role === "student") {
+    query = query.eq("id", currentUser.id || currentUser.sub);
+  }
+
+  const { data: users, error } = await query;
 
   if (error) {
     console.error("Supabase error in getManageableUsers:", error.message);

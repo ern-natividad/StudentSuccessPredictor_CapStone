@@ -17,7 +17,7 @@ import {
 
 const router = Router();
 
-router.get("/users", requireAuth, requireRole("admin"), getManageableUsers);
+router.get("/users", requireAuth, requireRole("admin", "staff", "student"), getManageableUsers);
 router.delete("/users/:id", requireAuth, requireRole("admin"), deleteUserAccount);
 
 router.post("/login", authRateLimiter, login);

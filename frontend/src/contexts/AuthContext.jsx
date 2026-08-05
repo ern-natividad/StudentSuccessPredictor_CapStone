@@ -137,6 +137,7 @@ export const AuthProvider = ({ children }) => {
       studentId,
       employeeId,
       year,
+      yearLevel,
       department,
       accessCode,
       password,
@@ -145,7 +146,10 @@ export const AuthProvider = ({ children }) => {
     } = formData;
     const roleId = selectedRole || "student";
     const roleSpecificId = roleId === "student" ? studentId : employeeId;
-    const roleSpecificGroup = roleId === "student" ? year : department;
+    const roleSpecificGroup =
+      roleId === "student"
+        ? (yearLevel ?? year ?? "1st Year")
+        : department;
 
     if (
       !firstName ||
@@ -176,6 +180,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     const normalizedUser = normalizeUserPayload(formData, roleId);
+    console.log("AuthContext -> signup -> yearLevel:", yearLevel);
     console.log("Normalized user payload:", normalizedUser);
 
     if (isBackendAuthEnabled()) {
