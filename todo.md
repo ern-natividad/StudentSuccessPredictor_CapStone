@@ -6,6 +6,10 @@
 
 🟡 *In Progress*
 - Add linear regression model (neural network)
+- Add a backend logic to the Pre-Enrollment Module
+- Add a backend logic to the Curriculum Manager Module
+- Add a backend logic to the Performance Forecasting Module
+- Add a backend logic to the Students & Manage Adviser Module
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
@@ -13,3 +17,4 @@
 - Consider non academic data (if available)
 - Error rate/actual grade should be connect to the predicted grades (compare)
 - Add feature in Account Setting for ADMIN (REMOVE ACCOUNT of the students and staff) AccountSettingsPage.jsx 
+- Remove every static/sample data in the code
