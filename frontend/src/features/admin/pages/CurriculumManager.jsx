@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import styles from "../../../styles/Modules.module.css";
-import BSIT_CURRICULUM from "../../../utils/curriculumData";
 
 const moduleLinks = [
   {
@@ -69,10 +68,7 @@ const CurriculumManager = () => {
     if (raw) {
       setCurricula(JSON.parse(raw));
     } else {
-      // Pre-populate with sample BSIT curriculum on first load
-      const initial = [BSIT_CURRICULUM];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-      setCurricula(initial);
+      setCurricula([]);
     }
   }, []);
 

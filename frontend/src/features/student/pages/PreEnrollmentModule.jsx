@@ -23,32 +23,8 @@ const moduleLinks = [
   },
 ];
 
-const sampleHistory = [
-  {
-    id: "APP-2026-011",
-    name: "Angela Reyes",
-    program: "Civil Engineering",
-    confidence: 91,
-    status: "Recommended",
-  },
-  {
-    id: "APP-2026-015",
-    name: "Mark Johnson",
-    program: "Industrial Engineering",
-    confidence: 83,
-    status: "Selected",
-  },
-  {
-    id: "APP-2026-019",
-    name: "Sarah Lim",
-    program: "Electrical Engineering",
-    confidence: 89,
-    status: "Reviewed",
-  },
-];
-
 const initialForm = {
-  applicantId: "APP-2026-021",
+  applicantId: "",
   fullName: "",
 };
 
@@ -58,9 +34,9 @@ const PreEnrollmentModule = () => {
   const [formData, setFormData] = useState({
     applicantId: initialForm.applicantId,
     fullName: "",
-    sex: "Female",
+    sex: "",
     age: "",
-    strand: "STEM",
+    strand: "",
     gwa: "",
     cetMath: "",
     cetScience: "",
@@ -69,10 +45,9 @@ const PreEnrollmentModule = () => {
     cetAbstract: "",
     eat: "",
     screening: "",
-    // Non-academic fields
-    extracurriculars: "Robotics Club",
-    leadershipRole: "Officer",
-    socioeconomicCategory: "Middle Income",
+    extracurriculars: "",
+    leadershipRole: "",
+    socioeconomicCategory: "",
     specialSkills: "",
   });
   const [recommendation, setRecommendation] = useState(null);
@@ -80,13 +55,8 @@ const PreEnrollmentModule = () => {
 
   const filteredHistory = useMemo(() => {
     const query = searchTerm.toLowerCase();
-    if (!query) return sampleHistory;
-    return sampleHistory.filter(
-      (item) =>
-        item.id.toLowerCase().includes(query) ||
-        item.name.toLowerCase().includes(query) ||
-        item.program.toLowerCase().includes(query),
-    );
+    if (!query) return [];
+    return [];
   }, [searchTerm]);
 
   const handleChange = (event) => {
@@ -101,9 +71,9 @@ const PreEnrollmentModule = () => {
     setFormData({
       ...initialForm,
       applicantId: formData.applicantId,
-      sex: "Female",
+      sex: "",
       age: "",
-      strand: "STEM",
+      strand: "",
       gwa: "",
       cetMath: "",
       cetScience: "",
@@ -112,9 +82,9 @@ const PreEnrollmentModule = () => {
       cetAbstract: "",
       eat: "",
       screening: "",
-      extracurriculars: "None",
-      leadershipRole: "None",
-      socioeconomicCategory: "Middle Income",
+      extracurriculars: "",
+      leadershipRole: "",
+      socioeconomicCategory: "",
       specialSkills: "",
     });
     setRecommendation(null);
@@ -132,13 +102,6 @@ const PreEnrollmentModule = () => {
     const eeScore = Math.round(math * 0.40 + science * 0.40 + abstract * 0.2);
     const cpeScore = Math.round(math * 0.40 + abstract * 0.35 + science * 0.25);
     const ieScore = Math.round(math * 0.30 + english * 0.25 + reading * 0.20 + abstract * 0.25);
-
-    const programScores = [
-      { name: "Civil Engineering", confidence: Math.min(ceScore, 99) || 88 },
-      { name: "Electrical Engineering", confidence: Math.min(eeScore, 99) || 85 },
-      { name: "Computer Engineering", confidence: Math.min(cpeScore, 99) || 82 },
-      { name: "Industrial Engineering", confidence: Math.min(ieScore, 99) || 80 },
-    ].sort((a, b) => b.confidence - a.confidence);
 
     const normalizedApplicant = normalizeApplicantPayload({
       ...formData,
@@ -219,10 +182,11 @@ const PreEnrollmentModule = () => {
                 value={formData.strand}
                 onChange={handleChange}
               >
-                <option>STEM</option>
-                <option>ABM</option>
-                <option>HUMSS</option>
-                <option>GAS</option>
+                <option value="">Select strand</option>
+                <option value="STEM">STEM</option>
+                <option value="ABM">ABM</option>
+                <option value="HUMSS">HUMSS</option>
+                <option value="GAS">GAS</option>
               </select>
             </div>
             <div className={styles.formField}>
@@ -327,12 +291,13 @@ const PreEnrollmentModule = () => {
                   value={formData.extracurriculars}
                   onChange={handleChange}
                 >
-                  <option>Robotics Club</option>
-                  <option>Science & Math Club</option>
-                  <option>Student Council</option>
-                  <option>Athletics / Sports</option>
-                  <option>Arts & Performing Arts</option>
-                  <option>None</option>
+                  <option value="">Select extracurricular involvement</option>
+                  <option value="Robotics Club">Robotics Club</option>
+                  <option value="Science & Math Club">Science & Math Club</option>
+                  <option value="Student Council">Student Council</option>
+                  <option value="Athletics / Sports">Athletics / Sports</option>
+                  <option value="Arts & Performing Arts">Arts & Performing Arts</option>
+                  <option value="None">None</option>
                 </select>
               </div>
 
@@ -344,10 +309,11 @@ const PreEnrollmentModule = () => {
                   value={formData.leadershipRole}
                   onChange={handleChange}
                 >
-                  <option>President / Student Head</option>
-                  <option>Officer</option>
-                  <option>Committee Member</option>
-                  <option>None</option>
+                  <option value="">Select leadership experience</option>
+                  <option value="President / Student Head">President / Student Head</option>
+                  <option value="Officer">Officer</option>
+                  <option value="Committee Member">Committee Member</option>
+                  <option value="None">None</option>
                 </select>
               </div>
 
@@ -359,10 +325,11 @@ const PreEnrollmentModule = () => {
                   value={formData.socioeconomicCategory}
                   onChange={handleChange}
                 >
-                  <option>Low Income</option>
-                  <option>Lower Middle Income</option>
-                  <option>Middle Income</option>
-                  <option>Upper Middle Income</option>
+                  <option value="">Select socioeconomic category</option>
+                  <option value="Low Income">Low Income</option>
+                  <option value="Lower Middle Income">Lower Middle Income</option>
+                  <option value="Middle Income">Middle Income</option>
+                  <option value="Upper Middle Income">Upper Middle Income</option>
                 </select>
               </div>
 
@@ -473,28 +440,34 @@ const PreEnrollmentModule = () => {
             </button>
           </div>
           <div className={styles.tableWrapper}>
-            <table className={styles.moduleTable}>
-              <thead>
-                <tr>
-                  <th>Applicant ID</th>
-                  <th>Name</th>
-                  <th>Program</th>
-                  <th>Confidence</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody className={styles.tableStriped}>
-                {filteredHistory.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.id}</td>
-                    <td>{item.name}</td>
-                    <td>{item.program}</td>
-                    <td>{item.confidence}%</td>
-                    <td>{item.status}</td>
+            {filteredHistory.length === 0 ? (
+              <div className={styles.placeholderChart}>
+                <div>No recommendation history is available yet.</div>
+              </div>
+            ) : (
+              <table className={styles.moduleTable}>
+                <thead>
+                  <tr>
+                    <th>Applicant ID</th>
+                    <th>Name</th>
+                    <th>Program</th>
+                    <th>Confidence</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className={styles.tableStriped}>
+                  {filteredHistory.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.id}</td>
+                      <td>{item.name}</td>
+                      <td>{item.program}</td>
+                      <td>{item.confidence}%</td>
+                      <td>{item.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       ) : null}

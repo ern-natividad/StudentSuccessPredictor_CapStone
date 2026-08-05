@@ -11,11 +11,11 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     firstName: "",
     lastName: "",
     email: "",
-    studentId: "N/A", // Default safe fallbacks to satisfy backend field requirements
-    employeeId: "N/A",
-    year: roleConfig.id === "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "N/A",
-    department: roleConfig.id !== "student" && roleConfig.groupOptions ? roleConfig.groupOptions[0] : "N/A",
-    accessCode: "ADMIN_DIRECT_PASS", 
+    studentId: "",
+    employeeId: "",
+    year: "",
+    department: "",
+    accessCode: "",
     password: "",
     confirmPassword: "",
     termsAccepted: false,
@@ -75,9 +75,9 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     // Dynamic payload configuration matching what your custom auth hook validation expects
     const dynamicPayload = {
       ...formData,
-      studentId: roleConfig.id === "student" ? (formData.studentId === "N/A" ? "" : formData.studentId) : undefined,
-      employeeId: roleConfig.id !== "student" ? (formData.employeeId === "N/A" ? "EMP-ADMIN" : formData.employeeId) : undefined,
-      accessCode: roleConfig.id !== "student" ? (roleConfig.accessCodeLabel ? formData.accessCode : "SYSTEM_DEFAULT") : undefined,
+      studentId: roleConfig.id === "student" ? formData.studentId : undefined,
+      employeeId: roleConfig.id !== "student" ? formData.employeeId : undefined,
+      accessCode: roleConfig.id !== "student" ? formData.accessCode : undefined,
     };
 
     setSubmitting(true);

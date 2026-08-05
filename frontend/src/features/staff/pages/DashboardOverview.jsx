@@ -29,12 +29,13 @@ ChartJS.register(
 const DashboardOverview = () => {
   const { alerts, students } = useDashboard();
 
-  // Risk distribution data
+  const safeStudents = Array.isArray(students) ? students : [];
+
   const riskCounts = {
-    Low: students.filter((s) => s.risk_level === "Low").length,
-    Medium: students.filter((s) => s.risk_level === "Medium").length,
-    High: students.filter((s) => s.risk_level === "High").length,
-    Critical: students.filter((s) => s.risk_level === "Critical").length,
+    Low: safeStudents.filter((s) => s.risk_level === "Low").length,
+    Medium: safeStudents.filter((s) => s.risk_level === "Medium").length,
+    High: safeStudents.filter((s) => s.risk_level === "High").length,
+    Critical: safeStudents.filter((s) => s.risk_level === "Critical").length,
   };
 
   const riskChartData = {
@@ -54,20 +55,29 @@ const DashboardOverview = () => {
     ],
   };
 
-  // GPA trend data
+  const currentGpaValues = safeStudents
+    .map((student) => Number(student.current_gpa))
+    .filter((value) => Number.isFinite(value));
+  const predictedGpaValues = safeStudents
+    .map((student) => Number(student.predicted_gpa))
+    .filter((value) => Number.isFinite(value));
+
+  const averageCurrentGpa = currentGpaValues.length
+    ? (currentGpaValues.reduce((sum, value) => sum + value, 0) /
+        currentGpaValues.length).toFixed(2)
+    : "—";
+
+  const averagePredictedGpa = predictedGpaValues.length
+    ? (predictedGpaValues.reduce((sum, value) => sum + value, 0) /
+        predictedGpaValues.length).toFixed(2)
+    : "—";
+
   const gpaChartData = {
-    labels: [
-      "1st Sem Y1",
-      "2nd Sem Y1",
-      "1st Sem Y2",
-      "2nd Sem Y2",
-      "1st Sem Y3",
-      "2nd Sem Y3",
-    ],
+    labels: ["Current Average", "Predicted Average"],
     datasets: [
       {
-        label: "Cohort Average",
-        data: [2.9, 3.0, 3.05, 3.1, 3.08, null],
+        label: "Current",
+        data: [averageCurrentGpa === "—" ? null : Number(averageCurrentGpa)],
         borderColor: "#C9A200",
         backgroundColor: "rgba(197,162,0,0.08)",
         pointBackgroundColor: "#C9A200",
@@ -77,7 +87,7 @@ const DashboardOverview = () => {
       },
       {
         label: "Predicted",
-        data: [null, null, null, null, 3.08, 3.14],
+        data: [averagePredictedGpa === "—" ? null : Number(averagePredictedGpa)],
         borderColor: "#8B6F00",
         borderDash: [5, 4],
         pointStyle: "circle",
@@ -124,7 +134,7 @@ const DashboardOverview = () => {
           </div>
           <div className={commonStyles.metric}>
             <div className={commonStyles.metricLabel}>Avg GPA</div>
-            <div className={commonStyles.metricValue}>3.08</div>
+            <div className={commonStyles.metricValue}>{averageCurrentGpa}</div>
           </div>
         </div>
 

@@ -20,59 +20,30 @@ const moduleLinks = [
   },
 ];
 
-const students = [
-  {
-    student_id: "202301-01-001",
-    full_name: "Maria Santos",
-    program: "Civil Engineering",
-    current_gpa: 3.72,
-    predicted_gpa: 3.95,
-    outcome: "On Track",
-    risk_level: "Low",
-    recommendation: "Maintain study plan",
-  },
-  {
-    student_id: "202301-01-003",
-    full_name: "Juan Dela Cruz",
-    program: "Electrical Engineering",
-    current_gpa: 2.85,
-    predicted_gpa: 2.72,
-    outcome: "At Risk",
-    risk_level: "High",
-    recommendation: "Enroll in tutoring",
-  },
-  {
-    student_id: "202301-01-006",
-    full_name: "Sofia Garcia",
-    program: "Industrial Engineering",
-    current_gpa: 3.10,
-    predicted_gpa: 3.38,
-    outcome: "Caution",
-    risk_level: "Medium",
-    recommendation: "Review core subjects",
-  },
-];
+const studentRecords = [];
 
 const AcademicPerformanceModule = () => {
   const [filters, setFilters] = useState({
     course: "All",
     yearLevel: "All",
     risk: "All",
-    academicYear: "2025-2026",
+    academicYear: "",
   });
   const [search, setSearch] = useState("");
 
   const processedStudents = useMemo(() => {
-    return students.map((student) => {
-      const absError = Math.abs(student.current_gpa - student.predicted_gpa);
-      const percentError = (absError / student.current_gpa) * 100;
+    return studentRecords.map((student) => {
+      const currentGpa = Number(student.current_gpa) || 0;
+      const predictedGpa = Number(student.predicted_gpa) || 0;
+      const absError = Math.abs(currentGpa - predictedGpa);
+      const percentError = currentGpa ? (absError / currentGpa) * 100 : 0;
       return {
         ...student,
         absError,
         percentError,
       };
     });
-  }, []);
+  }, [studentRecords]);
 
   const filteredStudents = useMemo(() => {
     const query = search.toLowerCase();
@@ -121,7 +92,7 @@ const AcademicPerformanceModule = () => {
       <div className={styles.metricGrid}>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Total Students</div>
-          <div className={styles.metricValue}>128</div>
+          <div className={styles.metricValue}>{processedStudents.length}</div>
           <div className={styles.metricSubtext}>Active student cohort</div>
         </div>
         <div className={styles.metricCard}>
@@ -131,12 +102,12 @@ const AcademicPerformanceModule = () => {
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted Moderate Risk</div>
-          <div className={styles.metricValue}>18%</div>
+          <div className={styles.metricValue}>0</div>
           <div className={styles.metricSubtext}>Monitor progress closely</div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted High Risk</div>
-          <div className={styles.metricValue}>10%</div>
+          <div className={styles.metricValue}>0</div>
           <div className={styles.metricSubtext}>Intervention required</div>
         </div>
       </div>
@@ -181,44 +152,50 @@ const AcademicPerformanceModule = () => {
           <button className={styles.secondaryButton}>Export Excel</button>
         </div>
         <div className={styles.tableWrapper}>
-          <table className={styles.moduleTable}>
-            <thead>
-              <tr>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>Program</th>
-                <th>Actual GWA</th>
-                <th>Predicted GWA</th>
-                <th>Abs. Error</th>
-                <th>Error Rate (%)</th>
-                <th>Risk Level</th>
-                <th>Recommendation</th>
-              </tr>
-            </thead>
-            <tbody className={styles.tableStriped}>
-              {filteredStudents.map((student) => (
-                <tr key={student.student_id}>
-                  <td>{student.student_id}</td>
-                  <td>{student.full_name}</td>
-                  <td>{student.program}</td>
-                  <td>{student.current_gpa.toFixed(2)}</td>
-                  <td>{student.predicted_gpa.toFixed(2)}</td>
-                  <td>{student.absError.toFixed(2)}</td>
-                  <td>{student.percentError.toFixed(1)}%</td>
-                  <td>
-                    <span
-                      className={`${styles.statusChip} ${riskClass(
-                        student.risk_level
-                      )}`}
-                    >
-                      {student.risk_level}
-                    </span>
-                  </td>
-                  <td>{student.recommendation}</td>
+          {filteredStudents.length === 0 ? (
+            <div className={styles.placeholderChart}>
+              <div>No student prediction records are available yet.</div>
+            </div>
+          ) : (
+            <table className={styles.moduleTable}>
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Program</th>
+                  <th>Actual GWA</th>
+                  <th>Predicted GWA</th>
+                  <th>Abs. Error</th>
+                  <th>Error Rate (%)</th>
+                  <th>Risk Level</th>
+                  <th>Recommendation</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className={styles.tableStriped}>
+                {filteredStudents.map((student) => (
+                  <tr key={student.student_id}>
+                    <td>{student.student_id}</td>
+                    <td>{student.full_name}</td>
+                    <td>{student.program}</td>
+                    <td>{student.current_gpa.toFixed(2)}</td>
+                    <td>{student.predicted_gpa.toFixed(2)}</td>
+                    <td>{student.absError.toFixed(2)}</td>
+                    <td>{student.percentError.toFixed(1)}%</td>
+                    <td>
+                      <span
+                        className={`${styles.statusChip} ${riskClass(
+                          student.risk_level
+                        )}`}
+                      >
+                        {student.risk_level}
+                      </span>
+                    </td>
+                    <td>{student.recommendation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </ModuleShell>

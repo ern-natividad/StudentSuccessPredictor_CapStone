@@ -20,7 +20,6 @@ const ForgotPassword = () => {
   const [step, setStep] = useState(STEPS.REQUEST);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState("");
   const [userRole, setUserRole] = useState("student");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,8 +42,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const result = await requestPasswordReset(email.trim());
-      setDevCode(result.devCode || "");
+      await requestPasswordReset(email.trim());
       setStep(STEPS.VERIFY);
     } catch (err) {
       setError(err.message);
@@ -111,8 +109,7 @@ const ForgotPassword = () => {
     setError("");
     setLoading(true);
     try {
-      const result = await requestPasswordReset(email.trim());
-      setDevCode(result.devCode || "");
+      await requestPasswordReset(email.trim());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -207,22 +204,6 @@ const ForgotPassword = () => {
                   We sent a 6-digit code to <strong>{email}</strong>. Enter it
                   below to continue.
                 </div>
-
-                {devCode && (
-                  <div
-                    className={styles.errorBox}
-                    style={{
-                      background: "#fff9d9",
-                      border: "1px solid #f0e0a0",
-                      color: "#7a5c00",
-                    }}
-                  >
-                    <span>
-                      Demo mode (no email server connected) — your code is{" "}
-                      <strong>{devCode}</strong>
-                    </span>
-                  </div>
-                )}
 
                 {error && (
                   <div className={styles.errorBox}>

@@ -1,12 +1,6 @@
 import { createContext, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import {
-  STUDENTS,
-  ALERTS_DATA,
-  SECTIONS,
-  STAFF_MEMBERS,
-} from "../utils/constants";
 
 export const DashboardContext = createContext();
 
@@ -16,10 +10,10 @@ export const DashboardProvider = ({ children }) => {
   const defaultTab = user.role === "student" ? "prediction" : "dashboard";
   const currentPage = searchParams.get("tab") || defaultTab;
 
-  const [students, setStudents] = useState(STUDENTS);
-  const [sections, setSections] = useState(SECTIONS);
-  const [staffMembers, setStaffMembers] = useState(STAFF_MEMBERS);
-  const [alerts] = useState(ALERTS_DATA);
+  const [students, setStudents] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [staffMembers, setStaffMembers] = useState([]);
+  const [alerts] = useState([]);
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [studentFilter, setStudentFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
