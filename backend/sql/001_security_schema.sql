@@ -19,7 +19,8 @@ alter table public.users
 alter table public.users
   add column if not exists totp_secret text,
   add column if not exists two_factor_enabled boolean not null default false,
-  add column if not exists year_level text;
+  add column if not exists year_level text,
+  add column if not exists grade_records jsonb not null default '[]'::jsonb;
 
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),

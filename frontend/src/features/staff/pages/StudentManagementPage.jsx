@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { api } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
@@ -10,7 +11,7 @@ const StudentManagementPage = () => {
     students,
     getStudentsForStaff,
     getSectionById,
-    updateStudentGradeRecord,
+    addStudentGradeRecord,
     directoryLoading,
     directoryError,
   } = useDashboard();
@@ -40,12 +41,17 @@ const StudentManagementPage = () => {
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
+  const [gradeError, setGradeError] = useState("");
+  const [isSavingGrade, setIsSavingGrade] = useState(false);
   const [gradeForm, setGradeForm] = useState({
     subject: "",
     semester: "1S",
     grade: "",
     remarks: "",
   });
+  const [studentGrades, setStudentGrades] = useState([]);
+  const [gradesLoading, setGradesLoading] = useState(false);
+  const [gradesError, setGradesError] = useState("");
 
   const selectedStudent = useMemo(
     () =>
@@ -67,6 +73,25 @@ const StudentManagementPage = () => {
     if (selectedStudent) {
       setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
     }
+  }, [selectedStudent]);
+
+  useEffect(() => {
+    const loadGrades = async () => {
+      if (!selectedStudent) return;
+      setGradesLoading(true);
+      setGradesError("");
+      try {
+        const result = await api.getStudentGrades(selectedStudent.student_id);
+        setStudentGrades(result.grades || []);
+      } catch (error) {
+        setGradesError(error.message || "Unable to load student grades.");
+        setStudentGrades([]);
+      } finally {
+        setGradesLoading(false);
+      }
+    };
+
+    loadGrades();
   }, [selectedStudent]);
 
   const studentTableRows = useMemo(
@@ -98,6 +123,7 @@ const StudentManagementPage = () => {
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
+    setGradeError("");
     setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
     setIsGradeModalOpen(true);
   };
@@ -106,31 +132,37 @@ const StudentManagementPage = () => {
     setIsGradeModalOpen(false);
   };
 
-  const handleAddGrade = () => {
+  const handleAddGrade = async () => {
     if (
       !selectedStudent ||
       !gradeForm.subject.trim() ||
       gradeForm.grade === "" ||
       gradeForm.grade === null
     ) {
+      setGradeError("Enter a subject and a grade from 1 to 5.");
       return;
     }
 
-    const nextGrades = [
-      ...(selectedStudent.grade_records || []),
-      { ...gradeForm },
-    ];
-    updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
-    setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
-    setIsGradeModalOpen(false);
-  };
-
-  const handleEditGrade = (index, field, value) => {
-    if (!selectedStudent) return;
-    const nextGrades = (selectedStudent.grade_records || []).map(
-      (record, idx) => (idx === index ? { ...record, [field]: value } : record),
-    );
-    updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
+    try {
+      setIsSavingGrade(true);
+      setGradeError("");
+      const payload = {
+        user_id: selectedStudent.student_id,
+        subject_name: gradeForm.subject.trim(),
+        semester: gradeForm.semester,
+        grade: Number(gradeForm.grade),
+        remarks: gradeForm.remarks.trim() || "",
+      };
+      const result = await api.createStudentGrade(payload);
+      setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
+      setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
+      setIsGradeModalOpen(false);
+      addStudentGradeRecord(selectedStudent.student_id, [result.grade, ...studentGrades]);
+    } catch (error) {
+      setGradeError(error.message || "Unable to save the grade record.");
+    } finally {
+      setIsSavingGrade(false);
+    }
   };
 
   const summaryStats = useMemo(() => {
@@ -254,7 +286,7 @@ const StudentManagementPage = () => {
                   <td>{row.subjectCode}</td>
                   <td>{row.schedule}</td>
                   <td>{row.displayGrade}</td>
-                  <td style={{ minWidth: 150, whiteSpace: "nowrap" }}>
+                  <td style={{ minWidth: 70, whiteSpace: "nowrap" }}>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -262,8 +294,10 @@ const StudentManagementPage = () => {
                         openGradeModal(row.student_id);
                       }}
                       className={styles.tableActionButton}
+                      aria-label={`Manage grades for ${row.full_name}`}
+                      title="Manage grades"
                     >
-                      Manage Grades
+                      <i className="fas fa-pen-to-square" aria-hidden="true" />
                     </button>
                   </td>
                 </tr>
@@ -272,6 +306,59 @@ const StudentManagementPage = () => {
           </table>
         </div>
       </div>
+
+      {selectedStudent && (
+        <div className={styles.contentCard}>
+          <div className={styles.contentCardHeader}>
+            <div>
+              <div className={styles.contentCardEyebrow}>Grade history</div>
+              <div className={styles.contentCardTitle}>
+                {selectedStudent.full_name}'s Grades
+              </div>
+            </div>
+            <button
+              type="button"
+              className={commonStyles.secondaryButton}
+              onClick={() => openGradeModal(selectedStudent.student_id)}
+            >
+              Add grade
+            </button>
+          </div>
+
+          {gradesLoading ? (
+            <p>Loading grade history…</p>
+          ) : gradesError ? (
+            <p style={{ color: "#b91c1c" }}>{gradesError}</p>
+          ) : studentGrades.length === 0 ? (
+            <p>No grade history found for this student.</p>
+          ) : (
+            <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
+              <table className={commonStyles.table}>
+                <thead className={commonStyles.tableHead}>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Semester</th>
+                    <th>Grade</th>
+                    <th>Remarks</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentGrades.map((record) => (
+                    <tr key={record.id} className={commonStyles.tableRow}>
+                      <td>{record.subject_name}</td>
+                      <td>{record.semester}</td>
+                      <td>{record.grade}</td>
+                      <td>{record.remarks || "-"}</td>
+                      <td>{new Date(record.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {isGradeModalOpen && selectedStudent ? (
         <div
@@ -327,6 +414,9 @@ const StudentManagementPage = () => {
             </div>
 
             <div style={{ display: "grid", gap: 16 }}>
+              {gradeError && (
+                <div style={{ color: "#b91c1c", fontSize: 14 }}>{gradeError}</div>
+              )}
               <div style={{ display: "grid", gap: 6 }}>
                 <label
                   style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
@@ -416,10 +506,11 @@ const StudentManagementPage = () => {
                 <button
                   type="button"
                   onClick={handleAddGrade}
+                  disabled={isSavingGrade}
                   className={commonStyles.primaryButton}
                   style={{ padding: "10px 16px" }}
                 >
-                  Save Grade Record
+                  {isSavingGrade ? "Saving..." : "Save Grade Record"}
                 </button>
               </div>
             </div>

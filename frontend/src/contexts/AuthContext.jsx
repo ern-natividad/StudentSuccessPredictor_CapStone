@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem("authToken", token);
     storeUserSession(backendUser.fullName || backendUser.email, backendUser.role);
     setUser({
+      id: backendUser.id || backendUser.userId || backendUser.user?.id || null,
       name: backendUser.fullName || backendUser.email,
       role: backendUser.role,
       email: backendUser.email,

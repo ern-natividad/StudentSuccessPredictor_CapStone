@@ -1,4 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { randomUUID } from "node:crypto";
 import { getRequestMeta } from "../utils/requestMeta.js";
 import { supabase } from '../config/supabaseClient.js';
 import {
@@ -258,4 +259,50 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
     success: true,
     message: `Account (${targetUser.email}) removed successfully.`,
   });
+});
+
+/** Adds a grade record for a student. Staff and administrators only. */
+export const addStudentGrade = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { gradeRecord } = req.body;
+  const subject = gradeRecord?.subject?.trim();
+  const grade = Number(gradeRecord?.grade);
+
+  if (!subject || !Number.isFinite(grade) || grade < 1 || grade > 5) {
+    return res.status(400).json({ error: "A subject and a grade from 1 to 5 are required." });
+  }
+
+  const { data: student, error: fetchError } = await supabase
+    .from("users")
+    .select("id, role, grade_records")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (!student || student.role !== "student") {
+    return res.status(404).json({ error: "Student account not found." });
+  }
+
+  const newRecord = {
+    id: randomUUID(),
+    subject,
+    subject_code: subject,
+    subject_description: gradeRecord.description?.trim() || subject,
+    semester: gradeRecord.semester || "1S",
+    grade,
+    remarks: gradeRecord.remarks?.trim() || "",
+    recorded_at: new Date().toISOString(),
+    recorded_by: req.user.sub,
+  };
+  const gradeRecords = [...(Array.isArray(student.grade_records) ? student.grade_records : []), newRecord];
+
+  const { data: updatedStudent, error: updateError } = await supabase
+    .from("users")
+    .update({ grade_records: gradeRecords })
+    .eq("id", id)
+    .select("id, grade_records")
+    .single();
+
+  if (updateError) throw updateError;
+  return res.status(201).json({ success: true, user: updatedStudent });
 });

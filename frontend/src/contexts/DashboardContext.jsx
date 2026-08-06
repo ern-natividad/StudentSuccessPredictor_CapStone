@@ -52,9 +52,6 @@ export const DashboardProvider = ({ children }) => {
             risk_level: account.risk_level || "Low",
             assignedSectionId: account.assignedSectionId || null,
             assignedStaffId: account.assignedStaffId || null,
-            grade_records: Array.isArray(account.grade_records)
-              ? account.grade_records
-              : [],
             email: account.email || "",
             account_locked: Boolean(account.account_locked),
             created_at: account.created_at,
@@ -191,6 +188,7 @@ export const DashboardProvider = ({ children }) => {
     },
     [setStudents],
   );
+
 
   const updateStudentSectionAssignment = useCallback(
     (studentId, sectionId) => {

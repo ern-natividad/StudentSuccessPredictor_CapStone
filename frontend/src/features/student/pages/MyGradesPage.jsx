@@ -1,24 +1,41 @@
-import React, { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
+import { api } from "../../../services/api";
 import { useDashboard } from "../../../hooks/useDashboard";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const MyGradesPage = () => {
   const { user } = useAuth();
-  const { students } = useDashboard();
+  const [gradeRecords, setGradeRecords] = useState([]);
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  const [gradeError, setGradeError] = useState("");
 
-  const currentStudent = useMemo(() => {
-    return (
-      students.find((student) =>
-        user.name
-          .toLowerCase()
-          .startsWith(student.full_name.toLowerCase().split(" ")[0]),
-      ) || students[0]
-    );
-  }, [students, user]);
+  useEffect(() => {
+    const loadGrades = async () => {
+      setLoadingGrades(true);
+      setGradeError("");
+      try {
+        const result = await api.getMyGrades();
+        setGradeRecords(result.grades || []);
+      } catch (error) {
+        setGradeError(error.message || "Unable to load grades.");
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
 
-  const gradeRecords = currentStudent?.grade_records || [];
+    if (user?.isAuthenticated) {
+      loadGrades();
+    }
+  }, [user]);
+
+  const gradesBySemester = gradeRecords.reduce((grouped, record) => {
+    const semester = record.semester || "Unknown";
+    if (!grouped[semester]) grouped[semester] = [];
+    grouped[semester].push(record);
+    return grouped;
+  }, {});
 
   return (
     <div className={styles.pageShell}>
@@ -33,55 +50,45 @@ const MyGradesPage = () => {
         <div className={styles.pageHeaderBadge}>Student Record</div>
       </div>
 
-      {gradeRecords.length === 0 ? (
+      {loadingGrades ? (
+        <div className={styles.contentCard}>Loading grade records…</div>
+      ) : gradeError ? (
+        <div className={styles.contentCard}>{gradeError}</div>
+      ) : gradeRecords.length === 0 ? (
         <div className={styles.contentCard}>
           <p className={styles.pageSubtitle}>No grade records are available yet.</p>
         </div>
       ) : (
-        <div className={styles.contentCard} style={{ padding: 0, overflow: "hidden" }}>
-          <div
-            style={{
-              background: "linear-gradient(135deg, #8b0000 0%, #b91c1c 100%)",
-              color: "#fff",
-              padding: "14px 18px",
-              fontWeight: 700,
-              fontSize: "15px",
-            }}
-          >
-            Grade Records
-          </div>
+        Object.keys(gradesBySemester).map((semester) => (
+          <div key={semester} className={styles.contentCard}>
+            <div className={styles.contentCardHeader}>
+              <div>
+                <div className={styles.contentCardEyebrow}>Semester</div>
+                <div className={styles.contentCardTitle}>{semester}</div>
+              </div>
+              <div className={styles.contentCardHint}>
+                {gradesBySemester[semester].length} subjects tracked
+              </div>
+            </div>
 
-          <div style={{ padding: "16px 18px 18px" }}>
-            <div className={commonStyles.tableWrapper}>
+            <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
               <table className={commonStyles.table}>
                 <thead className={commonStyles.tableHead}>
                   <tr>
-                    <th style={{ width: "15%" }}>Subject Code</th>
-                    <th style={{ width: "60%" }}>Description</th>
-                    <th style={{ width: "25%" }}>Grade</th>
+                    <th>Subject</th>
+                    <th>Grade</th>
+                    <th>Remarks</th>
+                    <th>Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {gradeRecords.map((record, idx) => (
-                    <tr key={record.id || idx} className={commonStyles.tableRow}>
+                  {gradesBySemester[semester].map((record) => (
+                    <tr key={record.id} className={commonStyles.tableRow}>
+                      <td>{record.subject_name}</td>
+                      <td>{record.grade}</td>
+                      <td>{record.remarks || "-"}</td>
                       <td>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontSize: "13px",
-                            color: "#8b0000",
-                          }}
-                        >
-                          {record.subject_code || record.code || "—"}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: "13px", color: "#334155" }}>
-                        {record.subject_description || record.description || "—"}
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 700, fontSize: "13px" }}>
-                          {record.grade ?? "—"}
-                        </span>
+                        {new Date(record.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
@@ -89,7 +96,7 @@ const MyGradesPage = () => {
               </table>
             </div>
           </div>
-        </div>
+        ))
       )}
     </div>
   );

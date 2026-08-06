@@ -108,6 +108,20 @@ export const api = {
     return data || [];
   },
 
+  getStudentGrades: (studentId) => request(`/grades/${studentId}`),
+  getMyGrades: () => request(`/grades/me`),
+
+  createStudentGrade: (grade) =>
+    request("/grades", {
+      method: "POST",
+      body: JSON.stringify(grade),
+    }),
+
+  updateStudentGrade: (gradeId, grade) =>
+    request(`/grades/${gradeId}`, { method: "PUT", body: JSON.stringify(grade) }),
+
+  deleteStudentGrade: (gradeId) => request(`/grades/${gradeId}`, { method: "DELETE" }),
+
   deleteAccount: async (userId, token) => {
     const authToken =
       token ||

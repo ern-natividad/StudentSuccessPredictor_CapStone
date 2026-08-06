@@ -13,12 +13,14 @@ import {
   forgotPasswordReset,
   getManageableUsers,
   deleteUserAccount,
+  addStudentGrade,
 } from "../controllers/authController.js";
 
 const router = Router();
 
 router.get("/users", requireAuth, requireRole("admin", "staff", "student"), getManageableUsers);
 router.delete("/users/:id", requireAuth, requireRole("admin"), deleteUserAccount);
+router.post("/users/:id/grades", requireAuth, requireRole("admin", "staff"), addStudentGrade);
 
 router.post("/login", authRateLimiter, login);
 router.post("/login/verify-mfa", authRateLimiter, verifyMfaLogin);
