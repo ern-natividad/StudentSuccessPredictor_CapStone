@@ -12,6 +12,8 @@ export const AUTH_ROLES = {
     signupSubtitle: "Register an account for system-level access",
     emailLabel: "Administrator Email",
     emailPlaceholder: "admin@wmsu.edu.ph",
+    accessCodeLabel: "Admin Access Code",
+    accessCodePlaceholder: "Enter the administrator access code",
   },
   staff: {
     id: "staff",
@@ -26,6 +28,8 @@ export const AUTH_ROLES = {
     signupSubtitle: "Register an account for academic support access",
     emailLabel: "Staff Email",
     emailPlaceholder: "staff@wmsu.edu.ph",
+    accessCodeLabel: "Staff Access Code",
+    accessCodePlaceholder: "Enter the staff access code",
   },
   student: {
     id: "student",

@@ -14,14 +14,14 @@ import {
 } from "../services/authService.js";
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, accessCode } = req.body;
   const meta = getRequestMeta(req);
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required." });
   }
 
-  const result = await loginWithPassword(email, password, meta);
+  const result = await loginWithPassword(email, password, accessCode, meta);
 
   if (result.requiresMfa) {
     return res.status(200).json({

@@ -43,12 +43,12 @@ export const resetPassword = async (identifier, newPassword) => {
   );
 };
 
-export const loginWithBackend = async (email, password) => {
+export const loginWithBackend = async (email, password, accessCode) => {
   return parseResponse(
     await fetch(`${API_BASE}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, accessCode }),
     }),
   );
 };

@@ -211,8 +211,9 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
               name="accessCode"
               className={styles.formInput}
               placeholder={roleConfig.accessCodePlaceholder}
-              value={formData.accessCode === "ADMIN_DIRECT_PASS" ? "" : formData.accessCode}
+              value={formData.accessCode}
               onChange={handleInputChange}
+              required
             />
           </div>
         )}

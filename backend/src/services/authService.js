@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabaseClient.js";
@@ -110,7 +111,21 @@ const ensureUserProfileForAuthUser = async (userId) => {
 /**
  * Step 1 of login: validates email/password and lockout state.
  */
-export const loginWithPassword = async (email, password, meta = {}) => {
+const accessCodesMatch = (providedCode, configuredCode) => {
+  if (!providedCode || !configuredCode) return false;
+  const provided = Buffer.from(providedCode);
+  const configured = Buffer.from(configuredCode);
+  return provided.length === configured.length && timingSafeEqual(provided, configured);
+};
+
+const getRequiredAccessCode = (role) =>
+  role === "admin"
+    ? env.adminAccessCode
+    : role === "staff"
+      ? env.staffAccessCode
+      : null;
+
+export const loginWithPassword = async (email, password, accessCode, meta = {}) => {
   const user = await findUserByEmail(email);
 
   if (!user) {
@@ -122,6 +137,20 @@ export const loginWithPassword = async (email, password, meta = {}) => {
       ...meta,
     });
     throw new HttpError(401, GENERIC_AUTH_ERROR);
+  }
+
+  const requiredAccessCode = getRequiredAccessCode(user.role);
+
+  if (requiredAccessCode !== null && !accessCodesMatch(accessCode, requiredAccessCode)) {
+    await recordAuditLog({
+      userId: user.id,
+      username: user.email,
+      action: AUDIT_ACTIONS.LOGIN_FAILED,
+      module: AUDIT_MODULES.AUTH,
+      description: "Invalid role access code.",
+      ...meta,
+    });
+    throw new HttpError(401, "Invalid role access code.");
   }
 
   const { locked, remainingMs } = await checkLockStatus(user);
@@ -331,6 +360,7 @@ export const registerUser = async (payload, meta = {}) => {
     email,
     role = "student",
     password,
+    access_code: accessCode,
     terms_accepted: termsAccepted,
     year_level: yearLevel,
   } = payload;
@@ -350,6 +380,11 @@ export const registerUser = async (payload, meta = {}) => {
 
   if (!["admin", "staff", "student"].includes(role)) {
     throw new HttpError(400, "Invalid role.");
+  }
+
+  const requiredAccessCode = getRequiredAccessCode(role);
+  if (requiredAccessCode !== null && !accessCodesMatch(accessCode, requiredAccessCode)) {
+    throw new HttpError(401, "Invalid role access code.");
   }
 
   assertValidPassword(password);

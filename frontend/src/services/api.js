@@ -22,10 +22,10 @@ const request = async (path, options = {}) => {
 };
 
 export const api = {
-  login: (email, password) =>
+  login: (email, password, accessCode) =>
     request("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, accessCode }),
     }),
 
   signup: (userData) => {

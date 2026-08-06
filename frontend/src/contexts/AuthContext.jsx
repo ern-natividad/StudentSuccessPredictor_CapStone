@@ -65,9 +65,9 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
-  const loginBackend = async (email, password) => {
+  const loginBackend = async (email, password, accessCode) => {
     try {
-      const result = await api.login(email, password);
+      const result = await api.login(email, password, accessCode);
       
       console.log("Backend API login raw response:", result);
 
@@ -106,10 +106,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = useCallback(async (email, password, selectedRole = "student") => {
+  const login = useCallback(async (email, password, selectedRole = "student", accessCode = "") => {
     setError("");
     if (isBackendAuthEnabled()) {
-      return loginBackend(email, password);
+      return loginBackend(email, password, accessCode);
     }
     return loginLocal(email, password, selectedRole);
   }, []);
@@ -145,22 +145,19 @@ export const AuthProvider = ({ children }) => {
       termsAccepted,
     } = formData;
     const roleId = selectedRole || "student";
-    const roleSpecificId = roleId === "student" ? studentId : employeeId;
-    const roleSpecificGroup =
-      roleId === "student"
-        ? (yearLevel ?? year ?? "1st Year")
-        : department;
-
     if (
       !firstName ||
       !lastName ||
       !email ||
-      !roleSpecificId ||
-      !roleSpecificGroup ||
       !password ||
       !confirmPassword
     ) {
       setError("Please complete all fields.");
+      return false;
+    }
+
+    if (roleId === "student" && (!studentId || !(yearLevel ?? year))) {
+      setError("Please complete all student information fields.");
       return false;
     }
 
