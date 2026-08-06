@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient.js';
+import { initiatePasswordReset, verifyPasswordOtp } from './authService.js';
 
 class AuthService {
   async signUp(email, password, name) {
@@ -24,25 +25,17 @@ class AuthService {
   }
 
   // Handle forgot password initiation
-  async forgotPassword(email, redirectToUrl) {
+  async forgotPassword(email) {
     if (!email) throw new Error("Email identifier is required.");
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: redirectToUrl || 'http://localhost:5174/update-password',
-    });
-    if (error) throw error;
-    return data;
+    // Password recovery is delivered through the shared Brevo service, not
+    // Supabase's built-in email sender.
+    return initiatePasswordReset(email);
   }
 
   // Handle OTP token verification 
   async verifyResetCode(email, token) {
     if (!email || !token) throw new Error("Email and verification code are required.");
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: token.trim(),
-      type: 'recovery'
-    });
-    if (error) throw error;
-    return data;
+    return verifyPasswordOtp(email, token);
   }
 
   // Handle updating to a brand new password

@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
 process.env.JWT_SECRET = "jwt-secret";
-process.env.SMTP_USER = "smtp-user";
-process.env.SMTP_PASS = "smtp-pass";
+process.env.BREVO_API_KEY = "brevo-api-key";
+process.env.BREVO_SENDER_EMAIL = "sender@example.com";
 
 test("buildPasswordResetProfilePayload creates a profile payload from auth metadata", async () => {
   const { buildPasswordResetProfilePayload } =

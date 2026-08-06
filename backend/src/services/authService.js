@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabaseClient.js";
@@ -22,19 +21,9 @@ import {
   AUDIT_MODULES,
 } from "./auditService.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { sendPasswordResetOtpEmail } from "./emailService.js";
 
-// 1. Initialize the SMTP Transporter matching your exact env.js exports
-const transporter = nodemailer.createTransport({
-  host: env.smtpHost,
-  port: env.smtpPort,
-  secure: false,
-  auth: {
-    user: env.smtpUser,
-    pass: env.smtpPass,
-  },
-});
-
-// 2. Clear state-free backend cache for transient verification tokens
+// Clear state-free backend cache for transient verification tokens
 const otpCache = new Map();
 
 const GENERIC_AUTH_ERROR = "Invalid email or password.";
@@ -447,24 +436,9 @@ export const initiatePasswordReset = async (email, meta = {}) => {
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   });
 
-  // 3. Fire the real email using Nodemailer via Brevo API relay
+  // 3. Send the verification code through Brevo Transactional Email.
   try {
-    await transporter.sendMail({
-      from: `"WMSU Engineering Support" <justinjamesalviar@gmail.com>`,
-      to: normalizedEmail,
-      subject: `${generatedCode} is your account recovery code`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #800000; text-align: center;">Account Recovery Request</h2>
-          <p>We received a request to reset your password for the College of Engineering portal.</p>
-          <p>Use the following 6-digit verification code to proceed:</p>
-          <div style="background: #f4f4f4; text-align: center; font-size: 28px; font-weight: bold; padding: 15px; letter-spacing: 6px; color: #333; margin: 20px 0; border-radius: 4px;">
-            ${generatedCode}
-          </div>
-          <p style="font-size: 12px; color: #666;">This verification code expires in 10 minutes. If you did not make this request, you can safely ignore this message.</p>
-        </div>
-      `,
-    });
+    await sendPasswordResetOtpEmail({ to: normalizedEmail, code: generatedCode });
   } catch (mailError) {
     console.error("Mail Dispatch Failure:", mailError);
     throw new HttpError(
