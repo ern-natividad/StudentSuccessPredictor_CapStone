@@ -1,15 +1,12 @@
 **TODO LIST**
 🔴 *To be Fixed*
-- 
-
-
-
-🟡 *In Progress*
-- Add linear regression model (neural network)
 - Add a backend logic to the Pre-Enrollment Module
 - Add a backend logic to the Curriculum Manager Module
 - Add a backend logic to the Performance Forecasting Module
 
+
+🟡 *In Progress*
+- Add linear regression model (neural network)
 - Fix "Not Found" Error in Student Management Page route to MyGradesPage🟡
 
 🟢 *Done*
