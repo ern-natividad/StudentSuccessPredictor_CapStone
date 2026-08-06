@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../../hooks/useAuth"; 
 import { api } from "../../../services/api";
+import { getUserDirectory } from "../../../services/userDirectory";
 
 const AccountSettingsPage = () => {
   const authContext = useAuth();
@@ -37,28 +38,24 @@ const AccountSettingsPage = () => {
   const [uiSuccess, setUiSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Load manageable accounts when Admin views the page
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      loadManageableAccounts();
-    }
-  }, [user]);
-
-  const loadManageableAccounts = async () => {
+  // Reads only the approved, non-sensitive directory columns from Supabase.
+  const loadManageableAccounts = useCallback(async () => {
     setFetchingUsers(true);
     setUiError("");
     try {
-      const res = await api.getManageableUsers(token);
-      // Safely extract users whether API returns direct array or object payload
-      const userList = Array.isArray(res) ? res : (res?.users || []);
-      setManageableUsers(userList);
+      setManageableUsers(await getUserDirectory());
     } catch (err) {
       console.error("Failed to load users for deletion management:", err);
-      setUiError(err.message || "Could not load manageable accounts. Please re-login if session expired.");
+      setUiError(err.message || "Could not load accounts from Supabase.");
     } finally {
       setFetchingUsers(false);
     }
-  };
+  }, []);
+
+  // Load accounts directly from Supabase when an administrator opens this page.
+  useEffect(() => {
+    if (user?.role === "admin") loadManageableAccounts();
+  }, [user?.role, loadManageableAccounts]);
 
   // 1. Initialize MFA Request
   const handleStartSetup = async () => {

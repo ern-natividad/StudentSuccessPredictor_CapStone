@@ -9,6 +9,8 @@ const StudentsList = () => {
     updateStudentFilter,
     updateRiskFilter,
     getFilteredStudents,
+    directoryLoading,
+    directoryError,
   } = useDashboard();
   const [searchTerm, setSearchTerm] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
@@ -28,6 +30,8 @@ const StudentsList = () => {
   return (
     <div>
       <h1 className={styles.pageTitle}>All Students</h1>
+
+      {directoryError && <div className={styles.card}>{directoryError}</div>}
 
       <div className={styles.card} style={{ marginBottom: "20px" }}>
         <div className={styles.cardTitle}>Statistics</div>
@@ -132,7 +136,8 @@ const StudentsList = () => {
           </tbody>
         </table>
 
-        {filteredStudents.length === 0 && (
+        {directoryLoading && <div className={commonStyles.emptyState}>Loading students…</div>}
+        {!directoryLoading && filteredStudents.length === 0 && (
           <div className={commonStyles.emptyState}>
             <div className={commonStyles.emptyStateIcon}>👥</div>
             <div className={commonStyles.emptyStateTitle}>

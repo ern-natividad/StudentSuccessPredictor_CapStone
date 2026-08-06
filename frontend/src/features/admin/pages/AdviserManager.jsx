@@ -13,6 +13,8 @@ const AdviserManager = () => {
     updateSectionAdviser,
     updateStaffRole,
     addStaffMember,
+    directoryLoading,
+    directoryError,
   } = useDashboard();
 
   const [selectedEditRowId, setSelectedEditRowId] = useState(null);
@@ -127,6 +129,8 @@ const AdviserManager = () => {
     <div>
       <h1 className={styles.pageTitle}>Manage Adviser</h1>
 
+      {directoryError && <div className={styles.card}>{directoryError}</div>}
+
       <div className={styles.card}>
         <div
           style={{
@@ -166,6 +170,13 @@ const AdviserManager = () => {
               </tr>
             </thead>
             <tbody>
+              {directoryLoading && (
+                <tr>
+                  <td colSpan={5} style={{ padding: 16, textAlign: "center" }}>
+                    Loading staff…
+                  </td>
+                </tr>
+              )}
               {sectionOverviewRows.map((row) => (
                 <tr key={row.id} className={commonStyles.tableRow}>
                   <td>{row.name}</td>
@@ -204,6 +215,13 @@ const AdviserManager = () => {
                   </td>
                 </tr>
               ))}
+              {!directoryLoading && sectionOverviewRows.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: 16, textAlign: "center" }}>
+                    No staff accounts found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

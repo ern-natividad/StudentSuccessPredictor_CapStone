@@ -7,11 +7,11 @@ import styles from "../../../styles/Dashboard.module.css";
 const StudentPrediction = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { students } = useDashboard();
-  const currentStudent = students.find((student) =>
-    user.name
-      .toLowerCase()
-      .startsWith(student.full_name.toLowerCase().split(" ")[0]),
+  const { students, directoryLoading, directoryError } = useDashboard();
+  const currentStudent = students.find(
+    (student) =>
+      student.email?.toLowerCase() === user.email?.toLowerCase() ||
+      student.full_name?.toLowerCase() === user.name?.toLowerCase(),
   );
 
   const studentData = currentStudent || students[0] || null;
@@ -35,7 +35,10 @@ const StudentPrediction = () => {
         </p>
       </div>
 
-      {hasLiveStudentMetrics ? (
+      {directoryLoading && <div className={styles.card}>Loading your profile…</div>}
+      {directoryError && <div className={styles.card}>{directoryError}</div>}
+
+      {!directoryLoading && !directoryError && hasLiveStudentMetrics ? (
         <div
           style={{
             display: "grid",
@@ -123,14 +126,14 @@ const StudentPrediction = () => {
             </div>
           </div>
         </div>
-      ) : (
+      ) : !directoryLoading && !directoryError ? (
         <div className={styles.card} style={{ marginBottom: "2rem" }}>
           <div className={styles.cardTitle}>Prediction Details</div>
           <div style={{ padding: "1rem 0" }}>
             No live student prediction metrics are available yet.
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* AI Advising Card */}
       <div

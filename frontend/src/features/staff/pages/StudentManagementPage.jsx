@@ -11,6 +11,8 @@ const StudentManagementPage = () => {
     getStudentsForStaff,
     getSectionById,
     updateStudentGradeRecord,
+    directoryLoading,
+    directoryError,
   } = useDashboard();
 
   const currentStaff = useMemo(() => {
@@ -170,9 +172,12 @@ const StudentManagementPage = () => {
           </p>
         </div>
         <div className={styles.pageHeaderBadge}>
-          {currentStaff?.full_name || "Staff overview"}
+          {currentStaff?.full_name || "Student directory"}
         </div>
       </div>
+
+      {directoryError && <div className={styles.contentCard}>{directoryError}</div>}
+      {directoryLoading && <div className={styles.contentCard}>Loading student directory…</div>}
 
       <div className={styles.summaryGrid}>
         {summaryStats.map((item) => (
@@ -196,7 +201,7 @@ const StudentManagementPage = () => {
             </div>
           </div>
           <div className={styles.selectedStudentTag}>
-            Latest grade: {selectedStudent.displayGrade}
+            Latest grade: {selectedStudent.grade_records?.[0]?.grade ?? "N/A"}
           </div>
         </div>
       )}

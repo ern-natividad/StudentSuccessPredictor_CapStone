@@ -4,7 +4,7 @@ import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const AlertsList = () => {
-  const { alerts } = useDashboard();
+  const { alerts, directoryLoading, directoryError } = useDashboard();
 
   const getAlertIcon = (severity) => {
     const icons = {
@@ -19,6 +19,8 @@ const AlertsList = () => {
   return (
     <div>
       <h1 className={styles.pageTitle}>Early Alerts</h1>
+
+      {directoryError && <div className={styles.card}>{directoryError}</div>}
 
       <div className={styles.card} style={{ marginBottom: "20px" }}>
         <div className={styles.cardTitle}>Alert Summary</div>
@@ -81,6 +83,12 @@ const AlertsList = () => {
               </div>
             </div>
           ))}
+          {!directoryLoading && alerts.length === 0 && (
+            <div className={commonStyles.emptyState}>No account alerts found.</div>
+          )}
+          {directoryLoading && (
+            <div className={commonStyles.emptyState}>Loading alerts…</div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { createContext, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { api } from "../services/api";
+import { getUserDirectory } from "../services/userDirectory";
 
 export const DashboardContext = createContext();
 
@@ -14,14 +14,17 @@ export const DashboardProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [directoryLoading, setDirectoryLoading] = useState(false);
+  const [directoryError, setDirectoryError] = useState("");
 
   useEffect(() => {
-    const canLoadRoleAccounts =
-      user?.role === "admin" || user?.role === "staff" || user?.role === "student";
+    const canLoadRoleAccounts = user?.isAuthenticated;
 
     if (!canLoadRoleAccounts) {
       setStudents([]);
       setStaffMembers([]);
+      setAlerts([]);
       return undefined;
     }
 
@@ -29,8 +32,9 @@ export const DashboardProvider = ({ children }) => {
 
     const loadRoleAccounts = async () => {
       try {
-        const response = await api.getManageableUsers();
-        const accounts = Array.isArray(response?.users) ? response.users : [];
+        setDirectoryLoading(true);
+        setDirectoryError("");
+        const accounts = await getUserDirectory();
 
         const normalizedStudents = accounts
           .filter((account) => String(account.role).toLowerCase() === "student")
@@ -51,6 +55,9 @@ export const DashboardProvider = ({ children }) => {
             grade_records: Array.isArray(account.grade_records)
               ? account.grade_records
               : [],
+            email: account.email || "",
+            account_locked: Boolean(account.account_locked),
+            created_at: account.created_at,
           }));
 
         const normalizedStaffMembers = accounts
@@ -64,6 +71,8 @@ export const DashboardProvider = ({ children }) => {
             email: account.email || "",
             role: "staff",
             title: account.title || "Academic Adviser",
+            account_locked: Boolean(account.account_locked),
+            created_at: account.created_at,
           }));
 
         if (!isMounted) {
@@ -72,12 +81,29 @@ export const DashboardProvider = ({ children }) => {
 
         setStudents(normalizedStudents);
         setStaffMembers(normalizedStaffMembers);
+        setAlerts(
+          accounts
+            .filter((account) => account.account_locked)
+            .map((account) => ({
+              id: account.id,
+              sev: "high",
+              name: account.full_name || account.email || "User account",
+              desc: "This user account is currently locked.",
+              time: account.updated_at
+                ? new Date(account.updated_at).toLocaleString()
+                : "Recently updated",
+            })),
+        );
       } catch (error) {
         console.error("Failed to load role-based dashboard accounts:", error);
         if (isMounted) {
           setStudents([]);
           setStaffMembers([]);
+          setAlerts([]);
+          setDirectoryError("Unable to load the user directory from Supabase.");
         }
+      } finally {
+        if (isMounted) setDirectoryLoading(false);
       }
     };
 
@@ -86,8 +112,7 @@ export const DashboardProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, user?.role]);
-  const [alerts] = useState([]);
+  }, [user?.id, user?.role, user?.isAuthenticated]);
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [studentFilter, setStudentFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
@@ -256,6 +281,8 @@ export const DashboardProvider = ({ children }) => {
     sections,
     staffMembers,
     alerts,
+    directoryLoading,
+    directoryError,
     notificationsPanelOpen,
     toggleNotificationsPanel,
     closeNotificationsPanel,
