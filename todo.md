@@ -18,3 +18,8 @@
 - Remove every static/sample data in the code
 - Fix UI for the AI Advising Module AIAcademicAdvisingModule.jsx
 - Fix "Not Found" Error in Student Management Page route to MyGradesPage
+
+**SYSTEM IMPORTANT FEATURES**
+- AI Academic and Advising Module
+- Pre-Enrollment Degree Recommendation Module
+- Academic Performance Forecasting and Early Warning Module
