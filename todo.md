@@ -7,7 +7,7 @@
 
 🟡 *In Progress*
 - Add linear regression model (neural network)
-- Fix "Not Found" Error in Student Management Page route to MyGradesPage🟡
+- Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
@@ -17,3 +17,4 @@
 - Add feature in Account Setting for ADMIN (REMOVE ACCOUNT of the students and staff)
 - Remove every static/sample data in the code
 - Fix UI for the AI Advising Module AIAcademicAdvisingModule.jsx
+- Fix "Not Found" Error in Student Management Page route to MyGradesPage
