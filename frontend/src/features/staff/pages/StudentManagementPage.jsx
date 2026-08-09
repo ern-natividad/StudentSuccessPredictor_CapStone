@@ -203,9 +203,6 @@ const StudentManagementPage = () => {
             support tasks organized in one space.
           </p>
         </div>
-        <div className={styles.pageHeaderBadge}>
-          {currentStaff?.full_name || "Student directory"}
-        </div>
       </div>
 
       {directoryError && <div className={styles.contentCard}>{directoryError}</div>}
