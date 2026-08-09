@@ -215,7 +215,7 @@ const ScreeningPage = () => {
             <label
               style={{ fontSize: "12px", fontWeight: 600, color: "#475569" }}
             >
-              Full Name
+              Student's Name
             </label>
             <input
               value={formData.fullName}

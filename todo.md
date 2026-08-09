@@ -3,6 +3,7 @@
 - Add a backend logic to the Pre-Enrollment Module
 - Add a backend logic to the Curriculum Manager Module
 - Add a backend logic to the Performance Forecasting Module
+- Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin) 
 
 
 🟡 *In Progress*
@@ -18,6 +19,7 @@
 - Remove every static/sample data in the code
 - Fix UI for the AI Advising Module AIAcademicAdvisingModule.jsx
 - Fix "Not Found" Error in Student Management Page route to MyGradesPage
+- Connected early alerts module to the student list module
 
 **SYSTEM IMPORTANT FEATURES**
 - AI Academic and Advising Module
