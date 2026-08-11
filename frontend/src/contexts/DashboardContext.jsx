@@ -96,6 +96,8 @@ export const DashboardProvider = ({ children }) => {
             email: account.email || "",
             role: "staff",
             title: account.title || "Academic Adviser",
+            assignedSection: account.adviser_info?.assigned_section || null,
+            assignedYearLevel: account.adviser_info?.year_level || "N/A",
             account_locked: Boolean(account.account_locked),
             created_at: account.created_at,
           }));
