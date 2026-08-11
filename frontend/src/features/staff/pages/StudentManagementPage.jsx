@@ -11,7 +11,7 @@ const StudentManagementPage = () => {
     students,
     getStudentsForStaff,
     getSectionById,
-    addStudentGradeRecord,
+    updateStudentGradeRecord,
     directoryLoading,
     directoryError,
   } = useDashboard();
@@ -41,6 +41,8 @@ const StudentManagementPage = () => {
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
+  const [isGradeHistoryModalOpen, setIsGradeHistoryModalOpen] = useState(false);
+  const [semesterFilter, setSemesterFilter] = useState("");
   const [gradeError, setGradeError] = useState("");
   const [isSavingGrade, setIsSavingGrade] = useState(false);
   const [gradeForm, setGradeForm] = useState({
@@ -63,6 +65,22 @@ const StudentManagementPage = () => {
     [displayStudentList, selectedStudentId],
   );
 
+  const filteredStudentGrades = useMemo(() => {
+    if (!semesterFilter) return studentGrades;
+
+    const semesterValues = {
+      "1S": ["1s", "1st semester"],
+      "2S": ["2s", "2nd semester"],
+      Summer: ["summer"],
+    };
+
+    return studentGrades.filter((record) =>
+      (semesterValues[semesterFilter] || []).includes(
+        String(record.semester || "").toLowerCase(),
+      ),
+    );
+  }, [semesterFilter, studentGrades]);
+
   useEffect(() => {
     if (!selectedStudentId && displayStudentList.length > 0) {
       setSelectedStudentId(displayStudentList[0].student_id);
@@ -81,7 +99,7 @@ const StudentManagementPage = () => {
       setGradesLoading(true);
       setGradesError("");
       try {
-        const result = await api.getStudentGrades(selectedStudent.student_id);
+        const result = await api.getStudentGrades(selectedStudent.user_id);
         setStudentGrades(result.grades || []);
       } catch (error) {
         setGradesError(error.message || "Unable to load student grades.");
@@ -132,6 +150,16 @@ const StudentManagementPage = () => {
     setIsGradeModalOpen(false);
   };
 
+  const openGradeHistoryModal = (studentId) => {
+    setSelectedStudentId(studentId);
+    setSemesterFilter("");
+    setIsGradeHistoryModalOpen(true);
+  };
+
+  const closeGradeHistoryModal = () => {
+    setIsGradeHistoryModalOpen(false);
+  };
+
   const handleAddGrade = async () => {
     if (
       !selectedStudent ||
@@ -147,7 +175,7 @@ const StudentManagementPage = () => {
       setIsSavingGrade(true);
       setGradeError("");
       const payload = {
-        user_id: selectedStudent.student_id,
+        user_id: selectedStudent.user_id,
         subject_name: gradeForm.subject.trim(),
         semester: gradeForm.semester,
         grade: Number(gradeForm.grade),
@@ -157,7 +185,10 @@ const StudentManagementPage = () => {
       setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
       setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
       setIsGradeModalOpen(false);
-      addStudentGradeRecord(selectedStudent.student_id, [result.grade, ...studentGrades]);
+      updateStudentGradeRecord(selectedStudent.student_id, [
+        result.grade,
+        ...studentGrades,
+      ]);
     } catch (error) {
       setGradeError(error.message || "Unable to save the grade record.");
     } finally {
@@ -246,8 +277,22 @@ const StudentManagementPage = () => {
           </div>
         </div>
 
-        <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
-          <table className={commonStyles.table}>
+        <div
+          className={`${commonStyles.tableWrapper} ${styles.studentTableWrapper}`}
+          style={{ marginTop: 16 }}
+        >
+          <table className={`${commonStyles.table} ${styles.studentTable}`}>
+            <colgroup>
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "8%" }} />
+            </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
                 <th>#</th>
@@ -283,19 +328,33 @@ const StudentManagementPage = () => {
                   <td>{row.subjectCode}</td>
                   <td>{row.schedule}</td>
                   <td>{row.displayGrade}</td>
-                  <td style={{ minWidth: 70, whiteSpace: "nowrap" }}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openGradeModal(row.student_id);
-                      }}
-                      className={styles.tableActionButton}
-                      aria-label={`Manage grades for ${row.full_name}`}
-                      title="Manage grades"
-                    >
-                      <i className="fas fa-pen-to-square" aria-hidden="true" />
-                    </button>
+                  <td>
+                    <div className={styles.tableActionGroup}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGradeHistoryModal(row.student_id);
+                        }}
+                        className={styles.tableActionButton}
+                        aria-label={`View grade history for ${row.full_name}`}
+                        title="View grade history"
+                      >
+                        <i className="fas fa-eye" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGradeModal(row.student_id);
+                        }}
+                        className={styles.tableActionButton}
+                        aria-label={`Manage grades for ${row.full_name}`}
+                        title="Manage grades"
+                      >
+                        <i className="fas fa-pen-to-square" aria-hidden="true" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -304,58 +363,120 @@ const StudentManagementPage = () => {
         </div>
       </div>
 
-      {selectedStudent && (
-        <div className={styles.contentCard}>
-          <div className={styles.contentCardHeader}>
-            <div>
-              <div className={styles.contentCardEyebrow}>Grade history</div>
-              <div className={styles.contentCardTitle}>
-                {selectedStudent.full_name}'s Grades
+      {isGradeHistoryModalOpen && selectedStudent ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1000,
+          }}
+          onClick={closeGradeHistoryModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="grade-history-title"
+            style={{
+              width: "min(900px, 100%)",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.contentCardHeader}>
+              <div>
+                <div className={styles.contentCardEyebrow}>Grade history</div>
+                <h2 id="grade-history-title" style={{ margin: 0 }}>
+                  {selectedStudent.full_name}'s Grades
+                </h2>
               </div>
+              <button
+                type="button"
+                onClick={closeGradeHistoryModal}
+                aria-label="Close grade history"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
             </div>
-            <button
-              type="button"
-              className={commonStyles.secondaryButton}
-              onClick={() => openGradeModal(selectedStudent.student_id)}
-            >
-              Add grade
-            </button>
-          </div>
 
-          {gradesLoading ? (
-            <p>Loading grade history…</p>
-          ) : gradesError ? (
-            <p style={{ color: "#b91c1c" }}>{gradesError}</p>
-          ) : studentGrades.length === 0 ? (
-            <p>No grade history found for this student.</p>
-          ) : (
-            <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
-              <table className={commonStyles.table}>
-                <thead className={commonStyles.tableHead}>
-                  <tr>
-                    <th>Subject</th>
-                    <th>Semester</th>
-                    <th>Grade</th>
-                    <th>Remarks</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentGrades.map((record) => (
-                    <tr key={record.id} className={commonStyles.tableRow}>
-                      <td>{record.subject_name}</td>
-                      <td>{record.semester}</td>
-                      <td>{record.grade}</td>
-                      <td>{record.remarks || "-"}</td>
-                      <td>{new Date(record.created_at).toLocaleDateString()}</td>
+            <label
+              style={{
+                display: "grid",
+                gap: 6,
+                marginTop: 20,
+                maxWidth: 240,
+              }}
+            >
+              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                Filter by semester
+              </span>
+              <select
+                value={semesterFilter}
+                onChange={(event) => setSemesterFilter(event.target.value)}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                <option value="">All semesters</option>
+                <option value="1S">1st Semester</option>
+                <option value="2S">2nd Semester</option>
+                <option value="Summer">Summer</option>
+              </select>
+            </label>
+
+            {gradesLoading ? (
+              <p>Loading grade history…</p>
+            ) : gradesError ? (
+              <p style={{ color: "#b91c1c" }}>{gradesError}</p>
+            ) : filteredStudentGrades.length === 0 ? (
+              <p>No grade history found for this semester.</p>
+            ) : (
+              <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
+                <table className={commonStyles.table}>
+                  <thead className={commonStyles.tableHead}>
+                    <tr>
+                      <th>Subject</th>
+                      <th>Semester</th>
+                      <th>Grade</th>
+                      <th>Remarks</th>
+                      <th>Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {filteredStudentGrades.map((record) => (
+                      <tr key={record.id} className={commonStyles.tableRow}>
+                        <td>{record.subject_name}</td>
+                        <td>{record.semester}</td>
+                        <td>{record.grade}</td>
+                        <td>{record.remarks || "-"}</td>
+                        <td>{new Date(record.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      ) : null}
 
       {isGradeModalOpen && selectedStudent ? (
         <div

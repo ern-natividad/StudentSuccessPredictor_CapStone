@@ -155,19 +155,100 @@
 }
 
 .tableActionButton {
-  background: #8b0000;
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  padding: 7px 12px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  padding: 0;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background 0.2s ease;
+  font-size: 13px;
+  transition: background 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .tableActionButton:hover {
-  background: #6f0000;
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
+  box-shadow: 0 4px 10px rgba(185, 28, 28, 0.12);
+  transform: translateY(-1px);
+}
+
+.tableActionButton:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+
+.tableActionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.studentTableWrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.studentTable {
+  min-width: 1080px;
+  table-layout: fixed;
+}
+
+.studentTable th,
+.studentTable td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid #e8edf3;
+}
+
+.studentTable th {
+  white-space: nowrap;
+}
+
+.studentTable td {
+  color: #334155;
+  line-height: 1.4;
+}
+
+.studentTable th:nth-child(1),
+.studentTable td:nth-child(1),
+.studentTable th:nth-child(4),
+.studentTable td:nth-child(4),
+.studentTable th:nth-child(5),
+.studentTable td:nth-child(5),
+.studentTable th:nth-child(6),
+.studentTable td:nth-child(6),
+.studentTable th:nth-child(7),
+.studentTable td:nth-child(7),
+.studentTable th:nth-child(8),
+.studentTable td:nth-child(8),
+.studentTable th:nth-child(9),
+.studentTable td:nth-child(9) {
+  text-align: center;
+}
+
+.studentTable td:nth-child(2),
+.studentTable td:nth-child(3) {
+  font-weight: 600;
+}
+
+.studentTable td:nth-child(2) {
+  color: #475569;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+
+.studentTable tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* TOP NAV */

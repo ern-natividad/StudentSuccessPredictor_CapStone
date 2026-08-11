@@ -111,6 +111,9 @@ export const api = {
   getStudentGrades: (studentId) => request(`/grades/${studentId}`),
   getMyGrades: () => request(`/grades/me`),
 
+  getMyPrediction: () => request("/predictions/me"),
+  getStudentPrediction: (studentId) => request(`/predictions/${studentId}`),
+
   createStudentGrade: (grade) =>
     request("/grades", {
       method: "POST",

@@ -5,6 +5,18 @@ import { getUserDirectory } from "../services/userDirectory";
 
 export const DashboardContext = createContext();
 
+const normalizeRiskLevel = (riskLevel) => {
+  const normalized = String(riskLevel || "").trim().toLowerCase();
+  const riskLevels = {
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    critical: "Critical",
+  };
+
+  return riskLevels[normalized] || "Low";
+};
+
 export const DashboardProvider = ({ children }) => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,24 +50,40 @@ export const DashboardProvider = ({ children }) => {
 
         const normalizedStudents = accounts
           .filter((account) => String(account.role).toLowerCase() === "student")
-          .map((account, index) => ({
-            student_id: account.id || `student-${index + 1}`,
-            full_name:
-              account.full_name ||
-              account.email?.split("@")[0] ||
-              `Student ${index + 1}`,
-            year_level: account.year_level ?? account.year ?? "N/A",
-            yearLevel: account.year_level ?? account.year ?? "N/A",
-            current_gpa: Number(account.current_gpa ?? 0),
-            predicted_gpa: Number(account.predicted_gpa ?? 0),
-            confidence_score: Number(account.confidence_score ?? 0),
-            risk_level: account.risk_level || "Low",
-            assignedSectionId: account.assignedSectionId || null,
-            assignedStaffId: account.assignedStaffId || null,
-            email: account.email || "",
-            account_locked: Boolean(account.account_locked),
-            created_at: account.created_at,
-          }));
+          .map((account, index) => {
+            // Supabase returns a one-to-many relation as an array. There is one
+            // student_info row per student account, so use its first record.
+            const studentInfo = Array.isArray(account.student_info)
+              ? account.student_info[0]
+              : account.student_info;
+
+            return {
+              // Keep the users-table UUID for API calls that require user_id,
+              // but display the official ID stored in student_info.student_id.
+              user_id: account.id,
+              student_id: studentInfo?.student_id || account.id || `student-${index + 1}`,
+              full_name:
+                account.full_name ||
+                account.email?.split("@")[0] ||
+                `Student ${index + 1}`,
+              year_level:
+                studentInfo?.year_level ?? account.year_level ?? account.year ?? "N/A",
+              yearLevel:
+                studentInfo?.year_level ?? account.year_level ?? account.year ?? "N/A",
+              current_gpa: Number(account.current_gpa ?? 0),
+              predicted_gpa: Number(account.predicted_gpa ?? 0),
+              confidence_score: Number(account.confidence_score ?? 0),
+              risk_level: normalizeRiskLevel(
+                studentInfo?.risk_level || account.risk_level,
+              ),
+              assignedSectionId: account.assignedSectionId || studentInfo?.section || null,
+              assignedStaffId: account.assignedStaffId || null,
+              department: studentInfo?.department || null,
+              email: account.email || "",
+              account_locked: Boolean(account.account_locked),
+              created_at: account.created_at,
+            };
+          });
 
         const normalizedStaffMembers = accounts
           .filter((account) => String(account.role).toLowerCase() === "staff")
@@ -153,7 +181,7 @@ export const DashboardProvider = ({ children }) => {
       filtered = filtered.filter(
         (s) =>
           s.full_name.toLowerCase().includes(q) ||
-          s.student_id.toLowerCase().includes(q),
+          String(s.student_id || "").toLowerCase().includes(q),
       );
     }
 

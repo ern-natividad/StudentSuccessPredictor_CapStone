@@ -1,48 +1,66 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 
 const StudentPrediction = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { students, directoryLoading, directoryError } = useDashboard();
-  const currentStudent = students.find(
-    (student) =>
-      student.email?.toLowerCase() === user.email?.toLowerCase() ||
-      student.full_name?.toLowerCase() === user.name?.toLowerCase(),
-  );
+  const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const studentData = currentStudent || students[0] || null;
-  const effectiveCurrentGpa = Number(studentData?.current_gpa ?? 0);
-  const effectivePredictedGpa = Number(studentData?.predicted_gpa ?? 0);
-  const hasLiveStudentMetrics = Boolean(
-    studentData && (studentData.current_gpa || studentData.predicted_gpa),
-  );
-  const successPercent = Math.min(
-    99,
-    Math.max(65, Math.round(effectivePredictedGpa * 24 || 0)),
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPrediction = async () => {
+      if (!isBackendAuthEnabled() || !user?.isAuthenticated) {
+        if (isMounted) {
+          setError("Sign in with backend authentication to view your grade prediction.");
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const result = await api.getMyPrediction();
+        if (isMounted) setPrediction(result.prediction);
+      } catch (requestError) {
+        if (isMounted) setError(requestError.message || "Unable to load your grade prediction.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadPrediction();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.isAuthenticated]);
+
+  const currentGpa = Number(prediction?.current_gpa ?? 0);
+  const predictedGpa = Number(prediction?.predicted_gpa ?? 0);
 
   return (
     <div className={styles.studentPredictionPage}>
       <div className={styles.pageHeaderSection}>
-        <h1 className={styles.pageTitle}>Engineering Program predictor</h1>
+        <h1 className={styles.pageTitle}>Engineering Program Predictor</h1>
         <p className={styles.pageDesc}>
-          Based on your academic profile and current performance indicators,
-          here is your personalized student dashboard summary.
+          Your forecast is generated from grades recorded by your academic staff.
         </p>
       </div>
 
-      {directoryLoading && <div className={styles.card}>Loading your profile…</div>}
-      {directoryError && <div className={styles.card}>{directoryError}</div>}
+      {loading && <div className={styles.card}>Loading your grade prediction…</div>}
+      {!loading && error && <div className={styles.card}>{error}</div>}
 
-      {!directoryLoading && !directoryError && hasLiveStudentMetrics ? (
+      {!loading && !error && prediction && (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "2rem",
             marginBottom: "2rem",
           }}
@@ -53,90 +71,44 @@ const StudentPrediction = () => {
               borderRadius: "16px",
               padding: "2rem",
               color: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
               minHeight: "200px",
             }}
           >
-            <div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "2rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "48px", fontWeight: "700" }}>
-                    {effectiveCurrentGpa.toFixed(2)}
-                  </div>
-                  <div
-                    style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
-                  >
-                    GRADUATION GRADE
-                  </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+              <div>
+                <div style={{ fontSize: "48px", fontWeight: 700 }}>{currentGpa.toFixed(2)}</div>
+                <div style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9 }}>CURRENT GWA</div>
+              </div>
+              <div>
+                <div style={{ fontSize: "48px", fontWeight: 700 }}>
+                  {prediction.success_probability}%
                 </div>
-                <div>
-                  <div style={{ fontSize: "48px", fontWeight: "700" }}>
-                    {successPercent}%
-                  </div>
-                  <div
-                    style={{ fontSize: "12px", fontWeight: "600", opacity: 0.9 }}
-                  >
-                    SUCCESS PROBABILITY
-                  </div>
+                <div style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9 }}>
+                  SUCCESS PROBABILITY
                 </div>
               </div>
             </div>
-            <div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  marginBottom: "8px",
-                }}
-              >
-                Student record loaded from the live dashboard dataset.
-              </div>
-              <div style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.5" }}>
-                Current prediction values are derived from the authenticated
-                student record in the dashboard context.
-              </div>
-            </div>
+            <p style={{ fontSize: "13px", lineHeight: 1.5, margin: "1.5rem 0 0" }}>
+              Based on {prediction.grade_count} recorded {prediction.grade_count === 1 ? "grade" : "grades"}.
+            </p>
           </div>
 
           <div className={styles.card}>
             <div className={styles.cardTitle}>Prediction Details</div>
             <div style={{ display: "grid", gap: "12px" }}>
-              <div>
-                <strong>Risk Level:</strong> {studentData?.risk_level || "N/A"}
-              </div>
-              <div>
-                <strong>Current GPA:</strong> {effectiveCurrentGpa.toFixed(2)}
-              </div>
-              <div>
-                <strong>Predicted GPA:</strong> {effectivePredictedGpa.toFixed(2)}
-              </div>
-              <div>
-                <strong>Confidence:</strong>{" "}
-                {Number(studentData?.confidence_score ?? 0)}%
-              </div>
+              <div><strong>Risk Level:</strong> {prediction.risk_level}</div>
+              <div><strong>Predicted GWA:</strong> {predictedGpa.toFixed(2)}</div>
+              <div><strong>Confidence:</strong> {prediction.confidence_score}%</div>
+              <div><strong>Grade trend:</strong> {prediction.trend > 0 ? "Declining" : prediction.trend < 0 ? "Improving" : "Stable"}</div>
             </div>
+            <p style={{ fontSize: "13px", lineHeight: 1.5, marginTop: "1rem" }}>{prediction.message}</p>
           </div>
         </div>
-      ) : !directoryLoading && !directoryError ? (
-        <div className={styles.card} style={{ marginBottom: "2rem" }}>
-          <div className={styles.cardTitle}>Prediction Details</div>
-          <div style={{ padding: "1rem 0" }}>
-            No live student prediction metrics are available yet.
-          </div>
-        </div>
-      ) : null}
+      )}
 
-      {/* AI Advising Card */}
       <div
+        role="button"
+        tabIndex={0}
         style={{
           background: "linear-gradient(135deg, #8b0000 0%, #6b0000 100%)",
           borderRadius: "16px",
@@ -145,41 +117,21 @@ const StudentPrediction = () => {
           textAlign: "center",
           marginTop: "2rem",
           cursor: "pointer",
-          transition: "transform 0.2s, box-shadow 0.2s",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
         }}
         onClick={() => navigate("/modules/ai-advising")}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-4px)";
-          e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.25)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") navigate("/modules/ai-advising");
         }}
       >
-        <div
-          style={{
-            fontSize: "14px",
-            fontWeight: "600",
-            marginBottom: "0.5rem",
-            opacity: 0.9,
-          }}
-        >
-          <i className="fas fa-lightbulb" style={{ marginRight: "8px" }}></i>
+        <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "0.5rem", opacity: 0.9 }}>
           Need Academic Guidance?
         </div>
-        <div
-          style={{
-            fontSize: "16px",
-            fontWeight: "700",
-            marginBottom: "0.5rem",
-          }}
-        >
+        <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "0.5rem" }}>
           Access AI Academic Advising
         </div>
         <div style={{ fontSize: "13px", opacity: 0.9 }}>
-          Get personalized recommendations to improve your academic performance
+          Get personalized recommendations to improve your academic performance.
         </div>
       </div>
     </div>
