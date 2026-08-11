@@ -3,7 +3,6 @@
 - Add a backend logic to the Pre-Enrollment Module
 - Add a backend logic to the Curriculum Manager Module
 - Add a backend logic to the Performance Forecasting Module
-- Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin) 
 
 
 🟡 *In Progress*
