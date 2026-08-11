@@ -114,9 +114,6 @@ const AIAcademicAdvisingModule = () => {
             <button type="button" className={styles.aiComposerPlus}>
               +
             </button>
-            <button type="button" className={styles.aiComposerAttach}>
-              ⌁
-            </button>
             <input
               className={styles.aiComposerInput}
               value={query}
