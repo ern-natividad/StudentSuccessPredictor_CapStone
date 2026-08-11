@@ -9,6 +9,7 @@
 🟡 *In Progress*
 - Add linear regression model (neural network)
 - Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
+- Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin) 
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
