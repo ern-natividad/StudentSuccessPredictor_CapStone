@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
+import { useToast } from "../../../components/Common/Toast";
+import { supabase } from "../../../lib/supabaseClient";
+import { getPublishedCurricula } from "../../../services/curriculumService";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -16,20 +19,46 @@ const moduleLinks = [
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
 ];
 
-const STORAGE_KEY = "CURRICULA";
-
 const CurriculumViewer = () => {
-  const [curricula, setCurricula] = useState([]);
+  const toast = useToast();
+  const [published, setPublished] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filterProgram, setFilterProgram] = useState("");
 
+  const loadCurricula = async () => {
+    try {
+      setLoading(true);
+      setPublished(await getPublishedCurricula());
+    } catch (err) {
+      console.error("Failed to load curricula:", err);
+      toast.error(err.message || "Failed to load curricula.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) setCurricula(JSON.parse(raw));
+    loadCurricula();
+
+    // Reflect Curriculum Manager (admin) changes live, without a manual refresh.
+    const subscription = supabase
+      .channel("public:curricula_viewer")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "curricula" },
+        () => {
+          loadCurricula();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
-  const published = curricula.filter((c) => c.status === "Published");
   const visible = filterProgram
-    ? published.filter((c) => (c.programs || []).includes(filterProgram))
+    ? published.filter((c) => c.program === filterProgram)
     : published;
 
   const coursesByYear = (courses) => {
@@ -218,7 +247,11 @@ const CurriculumViewer = () => {
           </div>
         </div>
 
-        {visible.length === 0 ? (
+        {loading ? (
+          <div className={styles.placeholderChart} style={{ marginTop: 16 }}>
+            Loading curricula…
+          </div>
+        ) : visible.length === 0 ? (
           <div className={styles.placeholderChart} style={{ marginTop: 16 }}>
             No curricula available.
           </div>
@@ -242,8 +275,8 @@ const CurriculumViewer = () => {
                       {c.title} — {c.academicYear}
                     </div>
                     <div className={styles.moduleSubtitle}>
-                      Program: {(c.programs || []).join(", ")} | Total Units:{" "}
-                      {c.totalUnits || (c.courses ? c.courses.length : 0)}
+                      Department: {c.department} | Program: {c.program} |
+                      Total Units: {c.courses ? c.courses.length : 0}
                     </div>
                   </div>
                   <div style={{ minWidth: 220 }}>

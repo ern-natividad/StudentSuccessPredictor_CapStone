@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  getAllCurricula,
+  createCurriculum,
+  updateCurriculum,
+  deleteCurriculum,
+  approveCurriculum,
+} from "../../../services/curriculumService";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -16,8 +24,6 @@ const moduleLinks = [
   },
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
 ];
-
-const STORAGE_KEY = "CURRICULA";
 
 const PROGRAM_OPTIONS = [
   "Civil Engineering",
@@ -41,12 +47,15 @@ const readFilesAsDataUrl = (files) => {
 
 const CurriculumManager = () => {
   const toast = useToast();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [academicYear, setAcademicYear] = useState("2025-2026");
-  const [programs, setPrograms] = useState([]);
+  const [department, setDepartment] = useState("Engineering");
+  const [program, setProgram] = useState(PROGRAM_OPTIONS[0]);
   const [status, setStatus] = useState("Draft");
   const [attachments, setAttachments] = useState([]);
   const [curricula, setCurricula] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [courses, setCourses] = useState([]);
 
@@ -65,25 +74,28 @@ const CurriculumManager = () => {
   });
   const [editingCourseIdx, setEditingCourseIdx] = useState(null);
 
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      setCurricula(JSON.parse(raw));
-    } else {
-      setCurricula([]);
+  const loadCurricula = async () => {
+    try {
+      setLoading(true);
+      setCurricula(await getAllCurricula());
+    } catch (err) {
+      console.error("Failed to load curricula:", err);
+      toast.error(err.message || "Failed to load curricula.");
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const save = (next) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setCurricula(next);
   };
+
+  useEffect(() => {
+    loadCurricula();
+  }, []);
 
   const resetForm = () => {
     setTitle("");
     setAcademicYear("2025-2026");
     setCourses([]);
-    setPrograms([]);
+    setDepartment("Engineering");
+    setProgram(PROGRAM_OPTIONS[0]);
     setStatus("Draft");
     setAttachments([]);
     setEditingId(null);
@@ -169,54 +181,53 @@ const CurriculumManager = () => {
     );
   };
 
-  const handleAddOrUpdate = () => {
+  const handleAddOrUpdate = async () => {
     if (!title.trim()) return;
 
-    if (editingId) {
-      // update with versioning
-      const next = curricula.map((c) => {
-        if (c.id !== editingId) return c;
+    try {
+      if (editingId) {
+        const c = curricula.find((x) => x.id === editingId);
+        if (!c) return;
+
         const versionEntry = {
           versionedAt: new Date().toISOString(),
           title: c.title,
           academicYear: c.academicYear,
           courses: c.courses,
-          programs: c.programs,
+          department: c.department,
+          program: c.program,
           attachments: c.attachments || [],
           status: c.status,
         };
-        const updated = {
-          ...c,
+
+        await updateCurriculum(editingId, {
           title: title.trim(),
           academicYear,
           courses,
-          programs,
+          department,
+          program,
           attachments: [...(c.attachments || []), ...attachments],
           status,
-          updatedAt: new Date().toISOString(),
           versions: [versionEntry, ...(c.versions || [])],
-        };
-        return updated;
-      });
-      save(next);
-      resetForm();
-      return;
-    }
+        });
+      } else {
+        await createCurriculum({
+          title: title.trim(),
+          academicYear,
+          courses,
+          department,
+          program,
+          attachments,
+          status,
+        });
+      }
 
-    const entry = {
-      id: `CURR-${Date.now()}`,
-      title: title.trim(),
-      academicYear,
-      courses,
-      programs,
-      attachments,
-      status,
-      createdAt: new Date().toISOString(),
-      versions: [],
-    };
-    const next = [entry, ...curricula];
-    save(next);
-    resetForm();
+      await loadCurricula();
+      resetForm();
+    } catch (err) {
+      console.error("Failed to save curriculum:", err);
+      toast.error(err.message || "Failed to save curriculum.");
+    }
   };
 
   const handleEdit = (id) => {
@@ -226,35 +237,35 @@ const CurriculumManager = () => {
     setTitle(c.title || "");
     setAcademicYear(c.academicYear || "2025-2026");
     setCourses(c.courses || []);
-    setPrograms(c.programs || []);
+    setDepartment(c.department || "Engineering");
+    setProgram(c.program || PROGRAM_OPTIONS[0]);
     setAttachments(c.attachments || []);
     setStatus(c.status || "Draft");
     resetCourseForm();
   };
 
-  const handleDelete = (id) => {
-    const next = curricula.filter((c) => c.id !== id);
-    save(next);
+  const handleDelete = async (id) => {
+    try {
+      await deleteCurriculum(id);
+      await loadCurricula();
+    } catch (err) {
+      console.error("Failed to delete curriculum:", err);
+      toast.error(err.message || "Failed to delete curriculum.");
+    }
   };
 
-  const handleApprove = (id, approver = "admin") => {
-    const next = curricula.map((c) =>
-      c.id === id
-        ? {
-            ...c,
-            status: "Published",
-            approvedBy: approver,
-            approvedAt: new Date().toISOString(),
-          }
-        : c,
-    );
-    save(next);
-  };
-
-  const toggleProgram = (prog) => {
-    setPrograms((prev) =>
-      prev.includes(prog) ? prev.filter((p) => p !== prog) : [...prev, prog],
-    );
+  const handleApprove = async (id) => {
+    if (!user?.id) {
+      toast.error("Unable to determine the current admin's account.");
+      return;
+    }
+    try {
+      await approveCurriculum(id, user.id);
+      await loadCurricula();
+    } catch (err) {
+      console.error("Failed to approve curriculum:", err);
+      toast.error(err.message || "Failed to approve curriculum.");
+    }
   };
 
   const downloadAttachment = (att) => {
@@ -299,23 +310,26 @@ const CurriculumManager = () => {
             </select>
           </div>
           <div className={styles.formField}>
-            <label className={styles.formLabel}>Visibility (Programs)</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <label className={styles.formLabel}>Department</label>
+            <input
+              className={styles.formInput}
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            />
+          </div>
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Program</label>
+            <select
+              className={styles.formSelect}
+              value={program}
+              onChange={(e) => setProgram(e.target.value)}
+            >
               {PROGRAM_OPTIONS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={
-                    programs.includes(p)
-                      ? styles.primaryButton
-                      : styles.secondaryButton
-                  }
-                  onClick={() => toggleProgram(p)}
-                >
+                <option key={p} value={p}>
                   {p}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
           <div className={styles.formField} style={{ gridColumn: "1 / -1" }}>
             <label className={styles.formLabel}>Add Courses</label>
@@ -668,7 +682,9 @@ const CurriculumManager = () => {
 
       <div className={styles.moduleCard}>
         <div className={styles.moduleTitleSmall}>Published Curricula</div>
-        {curricula.length === 0 ? (
+        {loading ? (
+          <div className={styles.placeholderChart}>Loading curricula…</div>
+        ) : curricula.length === 0 ? (
           <div className={styles.placeholderChart}>
             No curricula published yet.
           </div>
@@ -679,7 +695,8 @@ const CurriculumManager = () => {
                 <tr>
                   <th>Title</th>
                   <th>Acad. Year</th>
-                  <th>Programs</th>
+                  <th>Department</th>
+                  <th>Program</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -689,10 +706,11 @@ const CurriculumManager = () => {
                   <tr key={c.id}>
                     <td>{c.title}</td>
                     <td>{c.academicYear}</td>
-                    <td>{(c.programs || []).join(", ")}</td>
+                    <td>{c.department}</td>
+                    <td>{c.program}</td>
                     <td>
                       {c.status}
-                      {c.approvedBy ? ` — Approved by ${c.approvedBy}` : ""}
+                      {c.approvedByName ? ` — Approved by ${c.approvedByName}` : ""}
                     </td>
                     <td>
                       <button
