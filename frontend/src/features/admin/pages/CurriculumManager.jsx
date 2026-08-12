@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
+import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -39,6 +40,7 @@ const readFilesAsDataUrl = (files) => {
 };
 
 const CurriculumManager = () => {
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [academicYear, setAcademicYear] = useState("2025-2026");
   const [programs, setPrograms] = useState([]);
@@ -106,7 +108,7 @@ const CurriculumManager = () => {
 
   const handleAddOrUpdateCourse = () => {
     if (!courseForm.code.trim() || !courseForm.title.trim()) {
-      alert("Course code and title are required");
+      toast.error("Course code and title are required");
       return;
     }
     if (editingCourseIdx !== null) {

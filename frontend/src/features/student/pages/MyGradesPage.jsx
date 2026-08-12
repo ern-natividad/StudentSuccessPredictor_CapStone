@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { api } from "../../../services/api";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const MyGradesPage = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const [gradeRecords, setGradeRecords] = useState([]);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [gradeError, setGradeError] = useState("");
@@ -19,7 +21,9 @@ const MyGradesPage = () => {
         const result = await api.getMyGrades();
         setGradeRecords(result.grades || []);
       } catch (error) {
-        setGradeError(error.message || "Unable to load grades.");
+        const message = error.message || "Unable to load grades.";
+        setGradeError(message);
+        toast.error(message);
       } finally {
         setLoadingGrades(false);
       }
@@ -28,7 +32,7 @@ const MyGradesPage = () => {
     if (user?.isAuthenticated) {
       loadGrades();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const gradesBySemester = gradeRecords.reduce((grouped, record) => {
     const semester = record.semester || "Unknown";

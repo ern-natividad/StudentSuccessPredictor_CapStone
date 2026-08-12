@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const StudentManagementPage = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const {
     students,
     getStudentsForStaff,
@@ -43,7 +45,6 @@ const StudentManagementPage = () => {
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [isGradeHistoryModalOpen, setIsGradeHistoryModalOpen] = useState(false);
   const [semesterFilter, setSemesterFilter] = useState("");
-  const [gradeError, setGradeError] = useState("");
   const [isSavingGrade, setIsSavingGrade] = useState(false);
   const [gradeForm, setGradeForm] = useState({
     subject: "",
@@ -141,7 +142,6 @@ const StudentManagementPage = () => {
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeError("");
     setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
     setIsGradeModalOpen(true);
   };
@@ -167,13 +167,12 @@ const StudentManagementPage = () => {
       gradeForm.grade === "" ||
       gradeForm.grade === null
     ) {
-      setGradeError("Enter a subject and a grade from 1 to 5.");
+      toast.error("Enter a subject and a grade from 1 to 5.");
       return;
     }
 
     try {
       setIsSavingGrade(true);
-      setGradeError("");
       const payload = {
         user_id: selectedStudent.user_id,
         subject_name: gradeForm.subject.trim(),
@@ -189,8 +188,9 @@ const StudentManagementPage = () => {
         result.grade,
         ...studentGrades,
       ]);
+      toast.success("Grade record saved successfully.");
     } catch (error) {
-      setGradeError(error.message || "Unable to save the grade record.");
+      toast.error(error.message || "Unable to save the grade record.");
     } finally {
       setIsSavingGrade(false);
     }
@@ -532,9 +532,6 @@ const StudentManagementPage = () => {
             </div>
 
             <div style={{ display: "grid", gap: 16 }}>
-              {gradeError && (
-                <div style={{ color: "#b91c1c", fontSize: 14 }}>{gradeError}</div>
-              )}
               <div style={{ display: "grid", gap: 6 }}>
                 <label
                   style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "../../../hooks/useAuth"; 
+import { useAuth } from "../../../hooks/useAuth";
+import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
 import { getUserDirectory } from "../../../services/userDirectory";
 
 const AccountSettingsPage = () => {
   const authContext = useAuth();
+  const toast = useToast();
   const user = authContext.user;
   const updateUserFields = authContext.updateUserFields;
   
@@ -33,24 +35,35 @@ const AccountSettingsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(false);
-  
-  const [uiError, setUiError] = useState("");
-  const [uiSuccess, setUiSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Surfaces backend errors as toasts, adding a one-click re-login shortcut
+  // for session-expiry errors so users aren't stuck on a dead form.
+  const notifyError = useCallback(
+    (message) => {
+      const isSessionError = message.toLowerCase().includes("session");
+      toast.error(message, {
+        duration: isSessionError ? 8000 : 4000,
+        action: isSessionError
+          ? { label: "Re-Login", onClick: () => { window.location.href = "/login"; } }
+          : undefined,
+      });
+    },
+    [toast],
+  );
 
   // Reads only the approved, non-sensitive directory columns from Supabase.
   const loadManageableAccounts = useCallback(async () => {
     setFetchingUsers(true);
-    setUiError("");
     try {
       setManageableUsers(await getUserDirectory());
     } catch (err) {
       console.error("Failed to load users for deletion management:", err);
-      setUiError(err.message || "Could not load accounts from Supabase.");
+      notifyError(err.message || "Could not load accounts from Supabase.");
     } finally {
       setFetchingUsers(false);
     }
-  }, []);
+  }, [notifyError]);
 
   // Load accounts directly from Supabase when an administrator opens this page.
   useEffect(() => {
@@ -59,8 +72,6 @@ const AccountSettingsPage = () => {
 
   // 1. Initialize MFA Request
   const handleStartSetup = async () => {
-    setUiError("");
-    setUiSuccess("");
     setLoading(true);
     try {
       const res = await api.startMfaSetup();
@@ -68,7 +79,7 @@ const AccountSettingsPage = () => {
       setManualKey(res.manualEntryKey);
       setIsSettingUp(true);
     } catch (err) {
-      setUiError(err.message || "Failed to start MFA setup.");
+      notifyError(err.message || "Failed to start MFA setup.");
     } finally {
       setLoading(false);
     }
@@ -77,24 +88,22 @@ const AccountSettingsPage = () => {
   // 2. Confirm and Activate MFA
   const handleConfirmSetup = async (e) => {
     e.preventDefault();
-    setUiError("");
-    setUiSuccess("");
     setLoading(true);
     try {
       const res = await api.confirmMfaSetup(verificationCode);
       if (res && res.success) {
         setIsSettingUp(false);
         setVerificationCode("");
-        setUiSuccess("Google Authenticator enabled successfully!");
-        
+        toast.success("Google Authenticator enabled successfully!");
+
         if (updateUserFields) {
           updateUserFields({ two_factor_enabled: true, twoFactorEnabled: true });
         }
       } else {
-        setUiError("Failed to confirm setup. Please try scanning again.");
+        notifyError("Failed to confirm setup. Please try scanning again.");
       }
     } catch (err) {
-      setUiError(err.message || "Invalid validation code. Please try again.");
+      notifyError(err.message || "Invalid validation code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -103,20 +112,18 @@ const AccountSettingsPage = () => {
   // 3. Confirm and Deactivate MFA
   const handleDisableMfa = async (e) => {
     e.preventDefault();
-    setUiError("");
-    setUiSuccess("");
     setLoading(true);
     try {
       await api.disableMfa(disableCode);
       setShowDisableModal(false);
       setDisableCode("");
-      setUiSuccess("Two-Factor Authentication disabled safely.");
-      
+      toast.success("Two-Factor Authentication disabled safely.");
+
       if (updateUserFields) {
         updateUserFields({ two_factor_enabled: false, twoFactorEnabled: false });
       }
     } catch (err) {
-      setUiError(err.message || "Failed to disable. Check your verification code.");
+      notifyError(err.message || "Failed to disable. Check your verification code.");
     } finally {
       setLoading(false);
     }
@@ -133,20 +140,18 @@ const AccountSettingsPage = () => {
     e.preventDefault();
     if (!selectedUser) return;
 
-    setUiError("");
-    setUiSuccess("");
     setDeleteLoading(true);
 
     try {
       const res = await api.deleteAccount(selectedUser.id, token);
       setShowDeleteModal(false);
       setSelectedUser(null);
-      setUiSuccess(res?.message || "Account removed successfully.");
-      
+      toast.success(res?.message || "Account removed successfully.");
+
       // Refresh user table
       await loadManageableAccounts();
     } catch (err) {
-      setUiError(err.message || "Failed to delete account.");
+      notifyError(err.message || "Failed to delete account.");
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
@@ -158,19 +163,6 @@ const AccountSettingsPage = () => {
       <h2 style={{ color: "#800000", borderBottom: "2px solid #f0f0f0", paddingBottom: "0.5rem" }}>
         Security & Account Settings
       </h2>
-
-      {/* Global Alerts */}
-      {uiError && (
-        <div style={{ backgroundColor: "#ffebee", color: "#c62828", padding: "1rem", borderRadius: "4px", marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>{uiError}</span>
-          {uiError.includes("session") && (
-            <button onClick={() => window.location.href = "/login"} style={{ backgroundColor: "#c62828", color: "#fff", border: "none", padding: "0.4rem 0.8rem", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}>
-              Re-Login
-            </button>
-          )}
-        </div>
-      )}
-      {uiSuccess && <div style={{ backgroundColor: "#e8f5e9", color: "#2e7d32", padding: "1rem", borderRadius: "4px", marginBottom: "1rem" }}>{uiSuccess}</div>}
 
       {/* MFA Management Section */}
       <div style={{ background: "#fafafa", padding: "1.5rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginBottom: "1.5rem" }}>

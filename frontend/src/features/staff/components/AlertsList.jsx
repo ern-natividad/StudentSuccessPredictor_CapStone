@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const AlertsList = () => {
   const { directoryLoading: contextLoading, directoryError: contextError } = useDashboard();
-  
+  const toast = useToast();
+
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,7 +85,9 @@ const AlertsList = () => {
       setAlerts(generatedAlerts);
     } catch (err) {
       console.error("Error fetching alerts from student_info:", err);
-      setError(err.message || "Failed to load account alerts.");
+      const message = err.message || "Failed to load account alerts.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -111,6 +115,7 @@ const AlertsList = () => {
 
   const handleAcknowledge = (id) => {
     setAcknowledgedIds((prev) => new Set(prev).add(id));
+    toast.success("Alert acknowledged.");
   };
 
   const getAlertIcon = (severity) => {

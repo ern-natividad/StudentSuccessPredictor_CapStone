@@ -1,16 +1,17 @@
 import { useState } from "react";
-import axios from "axios"; 
+import axios from "axios";
 import styles from "../../styles/Modules.module.css";
 import { useAuth } from "../../../hooks/useAuth";
+import { useToast } from "../Common/Toast";
 
 const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
   const { updateUserFields } = useAuth(); // 💡 Added: Pull the field updater from AuthContext
+  const toast = useToast();
   const [step, setStep] = useState("idle"); // idle | qr | done | confirm_disable
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
   const [manualEntryKey, setManualEntryKey] = useState("");
   const [code, setCode] = useState(""); // Used for enabling setup
   const [disableCode, setDisableCode] = useState(""); // Used for security confirmation during disable
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Helper to quickly grab token
@@ -20,7 +21,6 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
   };
 
   const startSetup = async () => {
-    setError("");
     setLoading(true);
     try {
       const response = await axios.post("http://localhost:5001/api/mfa/setup/start", {}, getAuthHeader());
@@ -29,7 +29,7 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
       setStep("qr");
     } catch (err) {
       const serverMessage = err.response?.data?.message || err.message;
-      setError(serverMessage);
+      toast.error(serverMessage || "Failed to start MFA setup.");
     } finally {
       setLoading(false);
     }
@@ -37,22 +37,22 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
 
   const confirmSetup = async () => {
     if (!code) {
-      setError("Please enter the 6-digit verification code.");
+      toast.error("Please enter the 6-digit verification code.");
       return;
     }
-    setError("");
     setLoading(true);
     try {
       await axios.post("http://localhost:5001/api/mfa/setup/confirm", { code }, getAuthHeader());
-      
+
       // 💡 FIX: Sync the AuthContext state permanently for page reloads
       updateUserFields({ twoFactorEnabled: true });
-      
+
       setStep("done");
+      toast.success("Two-factor authentication enabled successfully.");
       onChanged?.(true);
     } catch (err) {
       const serverMessage = err.response?.data?.message || err.message;
-      setError(serverMessage || "Invalid verification code. Please try again.");
+      toast.error(serverMessage || "Invalid verification code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,24 +60,24 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
 
   const disable = async () => {
     if (!disableCode) {
-      setError("Please enter your current authentication code to disable protection.");
+      toast.error("Please enter your current authentication code to disable protection.");
       return;
     }
-    
-    setError("");
+
     setLoading(true);
     try {
       await axios.post("http://localhost:5001/api/mfa/disable", { code: disableCode }, getAuthHeader());
-      
+
       // 💡 FIX: Sync the AuthContext state permanently for page reloads
       updateUserFields({ twoFactorEnabled: false });
 
       setStep("idle");
-      setDisableCode(""); 
+      setDisableCode("");
+      toast.success("Two-factor authentication disabled.");
       onChanged?.(false);
     } catch (err) {
       const serverMessage = err.response?.data?.message || err.message;
-      setError(serverMessage || "Invalid verification code. Please try again.");
+      toast.error(serverMessage || "Invalid verification code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -86,8 +86,6 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
   return (
     <div className={styles.moduleCard}>
       <div className={styles.moduleTitleSmall}>Two-Factor Authentication</div>
-
-      {error && <div className={styles.alertBanner}>{error}</div>}
 
       {twoFactorEnabled ? (
         <>
@@ -122,7 +120,7 @@ const MfaSetup = ({ twoFactorEnabled, onChanged }) => {
                 </button>
                 <button 
                   className={styles.secondaryButton} 
-                  onClick={() => { setStep("idle"); setError(""); setDisableCode(""); }}
+                  onClick={() => { setStep("idle"); setDisableCode(""); }}
                   disabled={loading}
                 >
                   Cancel
