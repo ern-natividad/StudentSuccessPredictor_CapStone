@@ -24,6 +24,40 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState("");
   const [pendingMfa, setPendingMfa] = useState(null);
 
+  // Rehydrate the full profile (including two_factor_enabled) from the backend on reload.
+  // storeUserSession() only persists name/role to localStorage, so without this the MFA
+  // status - and any other server-derived field - would always reset to its default on refresh.
+  useEffect(() => {
+    const token = sessionStorage.getItem("authToken");
+    if (!isBackendAuthEnabled() || !token) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await api.getMe();
+        if (cancelled) return;
+        storeUserSession(profile.fullName || profile.email, profile.role);
+        setUser({
+          id: profile.id,
+          name: profile.fullName || profile.email,
+          role: profile.role,
+          email: profile.email,
+          isAuthenticated: true,
+          twoFactorEnabled: profile.twoFactorEnabled,
+        });
+      } catch {
+        if (cancelled) return;
+        sessionStorage.removeItem("authToken");
+        clearUserSession();
+        setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const applyBackendSession = ({ token, user: backendUser }) => {
     sessionStorage.setItem("authToken", token);
     storeUserSession(backendUser.fullName || backendUser.email, backendUser.role);
