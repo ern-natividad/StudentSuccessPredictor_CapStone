@@ -12,6 +12,7 @@ import {
 } from "chart.js";
 import { Doughnut, Line } from "react-chartjs-2";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
@@ -27,7 +28,8 @@ ChartJS.register(
 );
 
 const DashboardOverview = () => {
-  const { alerts, students } = useDashboard();
+  const { students } = useDashboard();
+  const { alerts, loading: alertsLoading } = useEarlyAlerts();
 
   const safeStudents = Array.isArray(students) ? students : [];
 
@@ -269,6 +271,16 @@ const DashboardOverview = () => {
         <div className={styles.card}>
           <div className={styles.cardTitle}>Recent Alerts</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {alertsLoading && (
+              <div style={{ fontSize: "0.875rem", color: "#a89870" }}>
+                Loading alerts…
+              </div>
+            )}
+            {!alertsLoading && alerts.length === 0 && (
+              <div style={{ fontSize: "0.875rem", color: "#a89870" }}>
+                No recent alerts.
+              </div>
+            )}
             {alerts.slice(0, 4).map((alert, idx) => (
               <div key={idx} className={styles.alertItem}>
                 <div className={`${styles.alertIcon} ${styles[alert.sev]}`}>
