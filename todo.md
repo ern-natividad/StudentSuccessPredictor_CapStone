@@ -8,7 +8,7 @@
 🟡 *In Progress*
 - Add linear regression model (neural network)
 - Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
-- Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin) 
+- Fixing the section in UI and Database (Staff & Student)
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
@@ -20,6 +20,7 @@
 - Fix UI for the AI Advising Module AIAcademicAdvisingModule.jsx
 - Fix "Not Found" Error in Student Management Page route to MyGradesPage
 - Connected early alerts module to the student list module
+- Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin)
 
 **SYSTEM IMPORTANT FEATURES**
 - AI Academic and Advising Module
