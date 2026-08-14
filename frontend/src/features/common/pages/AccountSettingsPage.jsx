@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
@@ -9,23 +9,23 @@ const AccountSettingsPage = () => {
   const toast = useToast();
   const user = authContext.user;
   const updateUserFields = authContext.updateUserFields;
-  
-  // Extract token from context or fallback to the same session sources the backend auth flow uses
+
+  // Extract token from context or fallback session sources
   const token =
     authContext.token ||
     user?.token ||
     sessionStorage.getItem("authToken") ||
     localStorage.getItem("token") ||
     localStorage.getItem("accessToken");
-  
+
   const isMfaEnabled = user?.two_factor_enabled || user?.twoFactorEnabled || false;
-  
+
   // Setup & Disable States
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [manualKey, setManualKey] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  
+
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disableCode, setDisableCode] = useState("");
 
@@ -37,8 +37,12 @@ const AccountSettingsPage = () => {
   const [fetchingUsers, setFetchingUsers] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Surfaces backend errors as toasts, adding a one-click re-login shortcut
-  // for session-expiry errors so users aren't stuck on a dead form.
+  // --- NEW STATES FOR SEARCH, FILTER, AND PAGINATION ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const notifyError = useCallback(
     (message) => {
       const isSessionError = message.toLowerCase().includes("session");
@@ -52,7 +56,6 @@ const AccountSettingsPage = () => {
     [toast],
   );
 
-  // Reads only the approved, non-sensitive directory columns from Supabase.
   const loadManageableAccounts = useCallback(async () => {
     setFetchingUsers(true);
     try {
@@ -65,12 +68,39 @@ const AccountSettingsPage = () => {
     }
   }, [notifyError]);
 
-  // Load accounts directly from Supabase when an administrator opens this page.
   useEffect(() => {
     if (user?.role === "admin") loadManageableAccounts();
   }, [user?.role, loadManageableAccounts]);
 
-  // 1. Initialize MFA Request
+  // Reset pagination to page 1 whenever search or role filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
+
+  // 1. Filter users based on Name/Email search query & Role filter
+  const filteredUsers = useMemo(() => {
+    return manageableUsers.filter((u) => {
+      const name = (u.full_name || u.fullName || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const term = searchQuery.toLowerCase().trim();
+
+      const matchesSearch = name.includes(term) || email.includes(term);
+
+      const userRole = (u.role || "").toLowerCase();
+      const matchesRole =
+        roleFilter === "all" ? true : userRole === roleFilter.toLowerCase();
+
+      return matchesSearch && matchesRole;
+    });
+  }, [manageableUsers, searchQuery, roleFilter]);
+
+  // 2. Paginate filtered data (10 per page limit)
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE) || 1;
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredUsers, currentPage]);
+
   const handleStartSetup = async () => {
     setLoading(true);
     try {
@@ -85,7 +115,6 @@ const AccountSettingsPage = () => {
     }
   };
 
-  // 2. Confirm and Activate MFA
   const handleConfirmSetup = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -109,7 +138,6 @@ const AccountSettingsPage = () => {
     }
   };
 
-  // 3. Confirm and Deactivate MFA
   const handleDisableMfa = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -129,13 +157,11 @@ const AccountSettingsPage = () => {
     }
   };
 
-  // 4. Open Delete Modal for specific target
   const handleOpenDeleteModal = (userItem) => {
     setSelectedUser(userItem);
     setShowDeleteModal(true);
   };
 
-  // 5. Submit Account Deletion
   const handleConfirmDeleteAccount = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -148,7 +174,6 @@ const AccountSettingsPage = () => {
       setSelectedUser(null);
       toast.success(res?.message || "Account removed successfully.");
 
-      // Refresh user table
       await loadManageableAccounts();
     } catch (err) {
       notifyError(err.message || "Failed to delete account.");
@@ -245,7 +270,7 @@ const AccountSettingsPage = () => {
         )}
       </div>
 
-      {/* ADMIN-ONLY: Remove Account Section (Table Layout) */}
+      {/* ADMIN-ONLY: Remove Account Section */}
       {user?.role === 'admin' && (
         <div style={{ background: "#fafafa", padding: "1.5rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderTop: "3px solid #800000" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -262,6 +287,43 @@ const AccountSettingsPage = () => {
             >
               {fetchingUsers ? "Refreshing..." : "Refresh Table"}
             </button>
+          </div>
+
+          {/* SEARCH & FILTER CONTROLS */}
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            {/* 1. Search Bar */}
+            <input
+              type="text"
+              placeholder="Search name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: "1 1 200px",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                fontSize: "13px"
+              }}
+            />
+
+            {/* 2. Dropdown Filter for Roles */}
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              style={{
+                padding: "0.5rem 0.75rem",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                fontSize: "13px",
+                backgroundColor: "#fff",
+                cursor: "pointer"
+              }}
+            >
+              <option value="all">All Roles</option>
+              <option value="student">Student</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
 
           {/* User Table */}
@@ -282,14 +344,14 @@ const AccountSettingsPage = () => {
                       Loading accounts...
                     </td>
                   </tr>
-                ) : manageableUsers.length === 0 ? (
+                ) : paginatedUsers.length === 0 ? (
                   <tr>
                     <td colSpan="4" style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-                      No registered accounts found.
+                      No matching accounts found.
                     </td>
                   </tr>
                 ) : (
-                  manageableUsers.map((u) => {
+                  paginatedUsers.map((u) => {
                     const name = u.full_name || u.fullName || u.email?.split("@")[0] || "User";
                     return (
                       <tr key={u.id} style={{ borderBottom: "1px solid #eee", fontSize: "14px" }}>
@@ -330,6 +392,64 @@ const AccountSettingsPage = () => {
               </tbody>
             </table>
           </div>
+
+          {/* 3. PAGINATION CONTROLS */}
+          {!fetchingUsers && filteredUsers.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", fontSize: "13px", color: "#555" }}>
+              <div>
+                Showing <strong>{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</strong> to <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)}</strong> of <strong>{filteredUsers.length}</strong> accounts
+              </div>
+              <div style={{ display: "flex", gap: "0.25rem" }}>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "0.3rem 0.6rem",
+                    border: "1px solid #ccc",
+                    backgroundColor: currentPage === 1 ? "#f5f5f5" : "#fff",
+                    color: currentPage === 1 ? "#999" : "#333",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    borderRadius: "4px"
+                  }}
+                >
+                  Prev
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{
+                      padding: "0.3rem 0.6rem",
+                      border: "1px solid #ccc",
+                      backgroundColor: currentPage === pageNum ? "#800000" : "#fff",
+                      color: currentPage === pageNum ? "#fff" : "#333",
+                      cursor: "pointer",
+                      borderRadius: "4px",
+                      fontWeight: currentPage === pageNum ? "bold" : "normal"
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: "0.3rem 0.6rem",
+                    border: "1px solid #ccc",
+                    backgroundColor: currentPage === totalPages ? "#f5f5f5" : "#fff",
+                    color: currentPage === totalPages ? "#999" : "#333",
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                    borderRadius: "4px"
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
