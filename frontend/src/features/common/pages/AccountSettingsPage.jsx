@@ -184,8 +184,8 @@ const AccountSettingsPage = () => {
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto", fontFamily: "sans-serif" }}>
-      <h2 style={{ color: "#800000", borderBottom: "2px solid #f0f0f0", paddingBottom: "0.5rem" }}>
+    <div style={{ padding: "2rem", width: "100%", maxWidth: "100%", fontFamily: "sans-serif" }}>
+      <h2 style={{ color: "#800000", borderBottom: "2px solid #f0f0f0", paddingBottom: "0.5rem", marginTop: 0 }}>
         Security & Account Settings
       </h2>
 
@@ -236,12 +236,12 @@ const AccountSettingsPage = () => {
               Scan this QR code using Google Authenticator or use the manual key <strong>{manualKey}</strong>:
             </p>
             
-            <div style={{ textAlign: "center", margin: "1rem 0" }}>
+            <div style={{ textAlign: "left", margin: "1rem 0" }}>
               {qrCodeUrl && <img src={qrCodeUrl} alt="MFA QR Enrollment Code" style={{ maxWidth: "180px" }} />}
             </div>
 
             <form onSubmit={handleConfirmSetup}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "300px" }}>
                 <label style={{ fontSize: "13px", fontWeight: "bold" }}>Enter 6-Digit Code:</label>
                 <input 
                   type="text" 
@@ -299,6 +299,7 @@ const AccountSettingsPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 flex: "1 1 200px",
+                maxWidth: "320px",
                 padding: "0.5rem 0.75rem",
                 borderRadius: "4px",
                 border: "1px solid #ccc",
