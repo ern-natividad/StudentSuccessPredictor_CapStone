@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import styles from "../../../styles/Modules.module.css";
 
@@ -37,6 +37,15 @@ const quickPrompts = [
 const AIAcademicAdvisingModule = () => {
   const [messages, setMessages] = useState(initialMessages);
   const [query, setQuery] = useState("");
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleAsk = (promptText = query) => {
     const cleanedPrompt = (promptText || "").trim();
@@ -94,7 +103,6 @@ const AIAcademicAdvisingModule = () => {
               <div className={styles.aiChatEyebrow}>Academic Advising AI</div>
               <div className={styles.aiChatTitle}>How can I help today?</div>
             </div>
-            <div className={styles.aiChatStatus}>Online</div>
           </div>
 
           <div className={styles.chatWindow}>
@@ -108,12 +116,10 @@ const AIAcademicAdvisingModule = () => {
                 {message.text}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className={styles.aiComposer}>
-            <button type="button" className={styles.aiComposerPlus}>
-              +
-            </button>
             <input
               className={styles.aiComposerInput}
               value={query}
