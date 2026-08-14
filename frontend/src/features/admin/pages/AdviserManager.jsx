@@ -178,35 +178,55 @@ const AdviserManager = () => {
             Add Teacher
           </button>
         </div>
-        <div className={commonStyles.tableWrapper} style={{ marginTop: 12 }}>
-          <table className={commonStyles.table}>
+        <div className={commonStyles.tableWrapper} style={{ marginTop: 12, overflowX: "auto" }}>
+          <table
+            className={commonStyles.table}
+            style={{ width: "100%", borderCollapse: "collapse" }}
+          >
             <thead className={commonStyles.tableHead}>
-              <tr>
-                <th>Name</th>
-                <th>Section</th>
-                <th>Year Assigned</th>
-                <th>Role</th>
-                <th>Students</th>
-                <th>Action</th>
+              <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "25%" }}>Name</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Section</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Year Assigned</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "20%" }}>Role</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Students</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {directoryLoading && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 16, textAlign: "center" }}>
+                  <td colSpan={6} style={{ padding: 20, textAlign: "center" }}>
                     Loading staff…
                   </td>
                 </tr>
               )}
               {sectionOverviewRows.map((row) => (
-                <tr key={row.id} className={commonStyles.tableRow}>
-                  <td>{row.name}</td>
-                  <td>{row.section}</td>
-                  <td>{row.yearAssigned || "N/A"}</td>
-                  <td>{row.role}</td>
-                  <td>{row.students}</td>
-                  <td>
-                    <div className={styles.tableActionGroup}>
+                <tr
+                  key={row.id}
+                  className={commonStyles.tableRow}
+                  style={{ borderBottom: "1px solid #f1f5f9" }}
+                >
+                  <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                    {row.name}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    {row.section}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    {row.yearAssigned || "N/A"}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "left" }}>
+                    {row.role}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                    {row.students}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    <div
+                      className={styles.tableActionGroup}
+                      style={{ justifyContent: "center", display: "flex", gap: "8px" }}
+                    >
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(row)}
@@ -231,7 +251,7 @@ const AdviserManager = () => {
               ))}
               {!directoryLoading && sectionOverviewRows.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 16, textAlign: "center" }}>
+                  <td colSpan={6} style={{ padding: 20, textAlign: "center" }}>
                     No staff accounts found.
                   </td>
                 </tr>
@@ -291,37 +311,55 @@ const AdviserManager = () => {
                 ×
               </button>
             </div>
-            <div className={commonStyles.tableWrapper} style={{ marginTop: 20 }}>
-              <table className={commonStyles.table}>
+            <div className={commonStyles.tableWrapper} style={{ marginTop: 20, overflowX: "auto" }}>
+              <table
+                className={commonStyles.table}
+                style={{ width: "100%", borderCollapse: "collapse" }}
+              >
                 <thead className={commonStyles.tableHead}>
-                  <tr>
-                    <th>Student ID</th>
-                    <th>Name</th>
-                    <th>Section</th>
-                    <th>Year Level</th>
-                    <th>Subject Code</th>
-                    <th>Schedule</th>
-                    <th>Grade</th>
+                  <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                    <th style={{ padding: "12px 16px", textAlign: "left", width: "14%" }}>Student ID</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", width: "24%" }}>Name</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Section</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Year Level</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Subject Code</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Schedule</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Grade</th>
                   </tr>
                 </thead>
                 <tbody>
                   {viewSectionStudents.map((student) => (
-                    <tr key={student.student_id} className={commonStyles.tableRow}>
-                      <td>{student.student_id}</td>
-                      <td>{student.full_name}</td>
-                      <td>
-                        {getSectionById(student.assignedSectionId)?.name ||
-                          "Unassigned"}
+                    <tr
+                      key={student.student_id}
+                      className={commonStyles.tableRow}
+                      style={{ borderBottom: "1px solid #f1f5f9" }}
+                    >
+                      <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                        {student.student_id}
                       </td>
-                      <td>{student.yearLevel}</td>
-                      <td>{student.grade_records?.[0]?.subject || "N/A"}</td>
-                      <td>{student.grade_records?.[0]?.semester || "TBA"}</td>
-                      <td>{student.grade_records?.[0]?.grade || "N/A"}</td>
+                      <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "500" }}>
+                        {student.full_name}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {getSectionById(student.assignedSectionId)?.name || "Unassigned"}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {student.yearLevel}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {student.grade_records?.[0]?.subject || "N/A"}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {student.grade_records?.[0]?.semester || "TBA"}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                        {student.grade_records?.[0]?.grade || "N/A"}
+                      </td>
                     </tr>
                   ))}
                   {viewSectionStudents.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ padding: 16, textAlign: "center" }}>
+                      <td colSpan={7} style={{ padding: 20, textAlign: "center" }}>
                         No students assigned to this section.
                       </td>
                     </tr>
