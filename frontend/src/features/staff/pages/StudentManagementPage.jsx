@@ -443,31 +443,58 @@ const StudentManagementPage = () => {
             </label>
 
             {gradesLoading ? (
-              <p>Loading grade history…</p>
+              <p style={{ marginTop: 16 }}>Loading grade history…</p>
             ) : gradesError ? (
-              <p style={{ color: "#b91c1c" }}>{gradesError}</p>
+              <p style={{ color: "#b91c1c", marginTop: 16 }}>{gradesError}</p>
             ) : filteredStudentGrades.length === 0 ? (
-              <p>No grade history found for this semester.</p>
+              <p style={{ marginTop: 16 }}>No grade history found for this semester.</p>
             ) : (
-              <div className={commonStyles.tableWrapper} style={{ marginTop: 16 }}>
-                <table className={commonStyles.table}>
+              <div
+                className={commonStyles.tableWrapper}
+                style={{ marginTop: 16, overflowX: "auto" }}
+              >
+                <table
+                  className={commonStyles.table}
+                  style={{ width: "100%", borderCollapse: "collapse" }}
+                >
+                  <colgroup>
+                    <col style={{ width: "30%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "25%" }} />
+                    <col style={{ width: "18%" }} />
+                  </colgroup>
                   <thead className={commonStyles.tableHead}>
-                    <tr>
-                      <th>Subject</th>
-                      <th>Semester</th>
-                      <th>Grade</th>
-                      <th>Remarks</th>
-                      <th>Date</th>
+                    <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                      <th style={{ padding: "12px 16px", textAlign: "left" }}>Subject</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Semester</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Grade</th>
+                      <th style={{ padding: "12px 16px", textAlign: "left" }}>Remarks</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudentGrades.map((record) => (
-                      <tr key={record.id} className={commonStyles.tableRow}>
-                        <td>{record.subject_name}</td>
-                        <td>{record.semester}</td>
-                        <td>{record.grade}</td>
-                        <td>{record.remarks || "-"}</td>
-                        <td>{new Date(record.created_at).toLocaleDateString()}</td>
+                      <tr
+                        key={record.id}
+                        className={commonStyles.tableRow}
+                        style={{ borderBottom: "1px solid #f1f5f9" }}
+                      >
+                        <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                          {record.subject_name}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          {record.semester}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                          {record.grade}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "left" }}>
+                          {record.remarks || "-"}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          {new Date(record.created_at).toLocaleDateString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -589,6 +616,7 @@ const StudentManagementPage = () => {
                 >
                   Remarks
                 </label>
+                
                 <textarea
                   placeholder="Remarks"
                   value={gradeForm.remarks}
