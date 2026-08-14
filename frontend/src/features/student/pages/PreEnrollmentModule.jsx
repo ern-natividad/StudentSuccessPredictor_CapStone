@@ -132,23 +132,11 @@ const PreEnrollmentModule = () => {
 
   return (
     <ModuleShell
-      title=""
-      description=""
+      title="Pre-Enrollment Degree Recommendation Module"
+      description="Assist admission personnel in recommending the most suitable engineering degree program for incoming applicants based on their academic profile, CET components, and non-academic activities."
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
     >
-
-      <div className={styles.headerCard}>
-        <h1 className={styles.headerCardTitle}>
-          Pre-Enrollment Degree Recommendation Module
-        </h1>
-        <p className={styles.headerCardDescription}>
-          Assist admission personnel in recommending the most suitable
-          engineering degree program for incoming applicants based on their
-          academic profile, CET components, and non-academic activities.
-        </p>
-      </div>
-
       <div className={styles.sectionGrid}>
         <div className={styles.moduleCard}>
           <div className={styles.moduleTitleSmall}>Applicant Information</div>
