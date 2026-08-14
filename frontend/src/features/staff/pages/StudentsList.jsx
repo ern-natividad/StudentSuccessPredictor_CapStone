@@ -103,38 +103,70 @@ const StudentsList = () => {
           </select>
         </div>
 
-        <table className={commonStyles.table}>
-          <thead className={commonStyles.tableHead}>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Year</th>
-              <th>Current GPA</th>
-              <th>Predicted GPA</th>
-              <th>Confidence</th>
-              <th>Risk Level</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.map((student) => (
-              <tr key={student.student_id} className={commonStyles.tableRow}>
-                <td>{student.student_id}</td>
-                <td>{student.full_name}</td>
-                <td>{student.yearLevel || "N/A"}</td>
-                <td>{Number(student.current_gpa ?? 0).toFixed(2)}</td>
-                <td>{Number(student.predicted_gpa ?? 0).toFixed(2)}</td>
-                <td>{Number(student.confidence_score ?? 0)}%</td>
-                <td>
-                  <span
-                    className={`${commonStyles.riskBadge} ${commonStyles["riskBadge." + (student.risk_level || "low").toLowerCase()]}`}
-                  >
-                    {student.risk_level || "Low"}
-                  </span>
-                </td>
+        {/* Scrollable container for smaller screens */}
+        <div style={{ overflowX: "auto" }}>
+          <table
+            className={commonStyles.table}
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              textAlign: "left",
+            }}
+          >
+            <thead className={commonStyles.tableHead}>
+              <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "12%" }}>ID</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "26%" }}>Name</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Year</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Current GPA</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Predicted GPA</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Confidence</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Risk Level</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredStudents.map((student) => {
+                const riskKey = (student.risk_level || "low").toLowerCase();
+                return (
+                  <tr
+                    key={student.student_id}
+                    className={commonStyles.tableRow}
+                    style={{ borderBottom: "1px solid #f1f5f9" }}
+                  >
+                    <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                      {student.student_id}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "500" }}>
+                      {student.full_name}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      {student.yearLevel || "N/A"}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                      {Number(student.current_gpa ?? 0).toFixed(2)}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                      {Number(student.predicted_gpa ?? 0).toFixed(2)}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                      {Number(student.confidence_score ?? 0)}%
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <span
+                        className={`${commonStyles.riskBadge} ${
+                          commonStyles[`riskBadge${riskKey.charAt(0).toUpperCase() + riskKey.slice(1)}`] || ""
+                        }`}
+                        style={{ display: "inline-block", textAlign: "center" }}
+                      >
+                        {student.risk_level || "Low"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {directoryLoading && <div className={commonStyles.emptyState}>Loading students…</div>}
         {!directoryLoading && filteredStudents.length === 0 && (
