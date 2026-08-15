@@ -3,6 +3,8 @@ import { useDashboard } from "../../../hooks/useDashboard";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
+const STORAGE_KEY_REMOVED_ROWS = "adviser_overview_removed_ids";
+
 const AdviserManager = () => {
   const {
     sections,
@@ -25,18 +27,40 @@ const AdviserManager = () => {
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
   const [newTeacherRole, setNewTeacherRole] = useState("Adviser");
   const [newTeacherSectionId, setNewTeacherSectionId] = useState(
-    sections[0]?.id || "",
+    sections[0]?.id || ""
   );
   const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
 
+  // Confirmation modal state for row removal
+  const [rowToDelete, setRowToDelete] = useState(null);
+
+  // Initialize removed row IDs from localStorage for persistence across reloads
+  const [removedRowIds, setRemovedRowIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_REMOVED_ROWS);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync removed row IDs to localStorage whenever updated
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_REMOVED_ROWS, JSON.stringify(removedRowIds));
+    } catch (e) {
+      console.error("Failed to save removed rows to storage:", e);
+    }
+  }, [removedRowIds]);
+
   const selectedRow = useMemo(
     () => sections.find((section) => section.id === selectedEditRowId) || null,
-    [sections, selectedEditRowId],
+    [sections, selectedEditRowId]
   );
 
   const selectedStaff = useMemo(
     () => getStaffById(selectedRow?.adviserId),
-    [getStaffById, selectedRow],
+    [getStaffById, selectedRow]
   );
 
   useEffect(() => {
@@ -46,14 +70,15 @@ const AdviserManager = () => {
       setEditRole(
         selectedStaff?.title?.toLowerCase().includes("adviser")
           ? "Adviser"
-          : "Subject Teacher",
+          : "Subject Teacher"
       );
     }
   }, [selectedRow, selectedStaff, staffMembers]);
 
   const sectionOverviewRows = useMemo(() => {
+    let rows = [];
     if (sections.length === 0) {
-      return staffMembers.map((staff) => ({
+      rows = staffMembers.map((staff) => ({
         id: staff.id,
         name: staff.full_name,
         section:
@@ -63,41 +88,45 @@ const AdviserManager = () => {
         yearAssigned: staff.assignedYearLevel || "N/A",
         role: staff.title || "Academic Adviser",
         students: students.filter(
-          (student) => student.assignedStaffId === staff.id,
+          (student) => student.assignedStaffId === staff.id
         ).length,
         adviserId: staff.id,
       }));
+    } else {
+      rows = sections.map((section) => {
+        const adviser = getStaffById(section.adviserId);
+        const sectionStudents = students.filter(
+          (student) => student.assignedSectionId === section.id
+        );
+        return {
+          id: section.id,
+          name: adviser?.full_name || "Unassigned",
+          section: section.name,
+          yearAssigned: adviser?.assignedYearLevel || "N/A",
+          role: adviser?.title?.toLowerCase().includes("adviser")
+            ? "Adviser"
+            : "Subject Teacher",
+          students: sectionStudents.length,
+          adviserId: section.adviserId,
+        };
+      });
     }
 
-    return sections.map((section) => {
-      const adviser = getStaffById(section.adviserId);
-      const sectionStudents = students.filter(
-        (student) => student.assignedSectionId === section.id,
-      );
-      return {
-        id: section.id,
-        name: adviser?.full_name || "Unassigned",
-        section: section.name,
-        yearAssigned: adviser?.assignedYearLevel || "N/A",
-        role: adviser?.title?.toLowerCase().includes("adviser")
-          ? "Adviser"
-          : "Subject Teacher",
-        students: sectionStudents.length,
-        adviserId: section.adviserId,
-      };
-    });
+    // Filter out rows saved as removed in localStorage
+    return rows.filter((row) => !removedRowIds.includes(row.id));
   }, [
     sections,
     staffMembers,
     students,
     getStaffById,
     staffSectionAssignments,
+    removedRowIds,
   ]);
 
   const viewSectionStudents = useMemo(
     () =>
       students.filter((student) => student.assignedStaffId === viewSectionId),
-    [students, viewSectionId],
+    [students, viewSectionId]
   );
 
   const handleOpenEdit = (row) => {
@@ -119,8 +148,22 @@ const AdviserManager = () => {
     setIsAddModalOpen(false);
   };
 
+  // Trigger confirmation modal for row removal
+  const handlePromptRemove = (row) => {
+    setRowToDelete(row);
+  };
+
+  // Confirmed removal logic
+  const handleConfirmRemove = () => {
+    if (rowToDelete) {
+      setRemovedRowIds((prev) => [...prev, rowToDelete.id]);
+      setRowToDelete(null);
+    }
+  };
+
   const handleSaveEdit = () => {
     if (!selectedEditRowId || !editStaffId) return;
+
     updateStaffRole(editStaffId, editRole);
     setStaffSectionAssignments((currentAssignments) => ({
       ...currentAssignments,
@@ -131,17 +174,31 @@ const AdviserManager = () => {
       updateSectionAdviser(editSectionId, editStaffId);
     }
 
+    // Restore visibility if previously removed from overview
+    setRemovedRowIds((prev) =>
+      prev.filter(
+        (id) => id !== selectedEditRowId && id !== editSectionId && id !== editStaffId
+      )
+    );
+
     setSelectedEditRowId(null);
   };
 
   const handleSaveNewTeacher = () => {
     if (!newTeacherStaffId || !newTeacherRole || !newTeacherSectionId) return;
+
     updateStaffRole(newTeacherStaffId, newTeacherRole);
     setStaffSectionAssignments((currentAssignments) => ({
       ...currentAssignments,
       [newTeacherStaffId]: newTeacherSectionId,
     }));
     updateSectionAdviser(newTeacherSectionId, newTeacherStaffId);
+
+    // Restore visibility if previously removed from overview
+    setRemovedRowIds((prev) =>
+      prev.filter((id) => id !== newTeacherStaffId && id !== newTeacherSectionId)
+    );
+
     setIsAddModalOpen(false);
   };
 
@@ -168,14 +225,23 @@ const AdviserManager = () => {
             style={{
               padding: "10px 18px",
               minWidth: 160,
-              background: "#fff",
-              color: "#8b0000",
-              border: "1px solid #8b0000",
+              background: "#8b0000",
+              color: "#ffffff",
+              border: "none",
               borderRadius: 8,
+              fontWeight: "600",
               cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
+              transition: "all 0.15s ease",
             }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#700000")}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#8b0000")}
           >
-            Add Teacher
+            <i className="fas fa-plus" aria-hidden="true" /> Add Teacher
           </button>
         </div>
         <div className={commonStyles.tableWrapper} style={{ marginTop: 12, overflowX: "auto" }}>
@@ -189,8 +255,8 @@ const AdviserManager = () => {
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Section</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Year Assigned</th>
                 <th style={{ padding: "12px 16px", textAlign: "left", width: "20%" }}>Role</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Students</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Action</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Students</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -245,14 +311,24 @@ const AdviserManager = () => {
                       >
                         <i className="fas fa-users" aria-hidden="true" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePromptRemove(row)}
+                        className={styles.tableActionButton}
+                        aria-label={`Remove ${row.name} from overview table`}
+                        title="Remove from table"
+                        style={{ color: "#ef4444" }}
+                      >
+                        <i className="fas fa-trash-can" aria-hidden="true" />
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
               {!directoryLoading && sectionOverviewRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 20, textAlign: "center" }}>
-                    No staff accounts found.
+                  <td colSpan={6} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
+                    No adviser records displayed.
                   </td>
                 </tr>
               )}
@@ -261,12 +337,112 @@ const AdviserManager = () => {
         </div>
       </div>
 
+      {/* Delete/Remove Confirmation Modal */}
+      {rowToDelete ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 1100,
+          }}
+          onClick={() => setRowToDelete(null)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "12px",
+              width: "min(480px, 100%)",
+              padding: "28px 32px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "1.35rem",
+                fontWeight: "700",
+                color: "#700000",
+              }}
+            >
+              Confirm Account Removal
+            </h2>
+
+            <p
+              style={{
+                margin: "0 0 24px 0",
+                color: "#475569",
+                fontSize: "1.05rem",
+                lineHeight: "1.5",
+              }}
+            >
+              Are you sure you want to remove <strong>{rowToDelete.name}</strong> from the section overview display?
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#800000",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
+              >
+                Yes, Remove Account
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRowToDelete(null)}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#cccccc",
+                  color: "#1e293b",
+                  fontWeight: "500",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8b8b8")}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cccccc")}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* View Assigned Students Modal */}
       {viewSectionId ? (
         <div
           style={{
             position: "fixed",
             inset: 0,
             background: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -285,8 +461,8 @@ const AdviserManager = () => {
               width: "min(980px, 100%)",
               maxHeight: "90vh",
               overflowY: "auto",
-              padding: 24,
-              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.18)",
+              padding: 28,
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -305,6 +481,7 @@ const AdviserManager = () => {
                   background: "transparent",
                   border: "none",
                   fontSize: 22,
+                  color: "#64748b",
                   cursor: "pointer",
                 }}
               >
@@ -359,7 +536,7 @@ const AdviserManager = () => {
                   ))}
                   {viewSectionStudents.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ padding: 20, textAlign: "center" }}>
+                      <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
                         No students assigned to this section.
                       </td>
                     </tr>
@@ -371,45 +548,70 @@ const AdviserManager = () => {
         </div>
       ) : null}
 
+      {/* Edit Section Assignment & Add Teacher Modals */}
       {selectedEditRowId || isAddModalOpen ? (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.5)",
+            background: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: 20,
             zIndex: 1000,
           }}
+          onClick={handleCloseModal}
         >
           <div
             style={{
-              background: "#fff",
-              borderRadius: 16,
-              width: "min(620px, 100%)",
-              padding: 24,
-              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.18)",
+              background: "#ffffff",
+              borderRadius: "16px",
+              width: "min(560px, 100%)",
+              padding: "28px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              border: "1px solid #e2e8f0",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 20,
+                alignItems: "flex-start",
+                marginBottom: "24px",
+                paddingBottom: "16px",
+                borderBottom: "1px solid #f1f5f9",
               }}
             >
-              <div>
-                <h2 style={{ margin: 0 }}>
-                  {isAddModalOpen ? "Add Teacher" : "Edit Section Assignment"}
-                </h2>
-                <p style={{ margin: "8px 0 0", color: "#64748B" }}>
-                  {isAddModalOpen
-                    ? "Choose an existing staff account from the user directory and assign a role and section."
-                    : "Change the staff role and the section they handle."}
-                </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fdf2f2",
+                    color: "#8b0000",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  <i className={isAddModalOpen ? "fas fa-user-plus" : "fas fa-user-pen"} />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "700", color: "#0f172a" }}>
+                    {isAddModalOpen ? "Add Teacher" : "Edit Section Assignment"}
+                  </h2>
+                  <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.85rem" }}>
+                    {isAddModalOpen
+                      ? "Select a staff member from directory to assign role and section."
+                      : "Modify role or section assigned to this staff member."}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -417,26 +619,40 @@ const AdviserManager = () => {
                 style={{
                   background: "transparent",
                   border: "none",
-                  fontSize: 18,
+                  fontSize: "20px",
+                  color: "#94a3b8",
                   cursor: "pointer",
+                  padding: "4px",
+                  lineHeight: 1,
+                  borderRadius: "6px",
                 }}
+                onMouseOver={(e) => (e.currentTarget.style.color = "#0f172a")}
+                onMouseOut={(e) => (e.currentTarget.style.color = "#94a3b8")}
               >
                 ×
               </button>
             </div>
 
-            <div style={{ display: "grid", gap: 16 }}>
+            {/* Modal Body */}
+            <div style={{ display: "grid", gap: "18px" }}>
               {isAddModalOpen ? (
-                <div style={{ display: "grid", gap: 6 }}>
-                  <label
-                    style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
-                  >
-                    Staff account
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                    Staff Account
                   </label>
                   <select
                     value={newTeacherStaffId}
                     onChange={(e) => setNewTeacherStaffId(e.target.value)}
-                    style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                    style={{
+                      padding: "0.65rem 0.85rem",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.9rem",
+                      color: "#0f172a",
+                      backgroundColor: "#ffffff",
+                      outline: "none",
+                      width: "100%",
+                    }}
                   >
                     <option value="">Select a staff account</option>
                     {staffMembers.map((staff) => (
@@ -447,16 +663,23 @@ const AdviserManager = () => {
                   </select>
                 </div>
               ) : (
-                <div style={{ display: "grid", gap: 6 }}>
-                  <label
-                    style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
-                  >
-                    Staff
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                    Staff Member
                   </label>
                   <select
                     value={editStaffId}
                     onChange={(e) => setEditStaffId(e.target.value)}
-                    style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                    style={{
+                      padding: "0.65rem 0.85rem",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.9rem",
+                      color: "#0f172a",
+                      backgroundColor: "#ffffff",
+                      outline: "none",
+                      width: "100%",
+                    }}
                   >
                     {staffMembers.map((staff) => (
                       <option key={staff.id} value={staff.id}>
@@ -467,11 +690,9 @@ const AdviserManager = () => {
                 </div>
               )}
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label
-                  style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
-                >
-                  Role
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                  Role Assignment
                 </label>
                 <select
                   value={isAddModalOpen ? newTeacherRole : editRole}
@@ -480,18 +701,25 @@ const AdviserManager = () => {
                       ? setNewTeacherRole(e.target.value)
                       : setEditRole(e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
                 >
                   <option value="Adviser">Adviser</option>
                   <option value="Subject Teacher">Subject Teacher</option>
                 </select>
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label
-                  style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
-                >
-                  Section
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                  Assigned Section
                 </label>
                 <select
                   value={isAddModalOpen ? newTeacherSectionId : editSectionId}
@@ -500,11 +728,20 @@ const AdviserManager = () => {
                       ? setNewTeacherSectionId(e.target.value)
                       : setEditSectionId(e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
                 >
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
+                  <option value="A">Section A</option>
+                  <option value="B">Section B</option>
+                  <option value="C">Section C</option>
                   {sections.map((section) => (
                     <option key={section.id} value={section.id}>
                       {section.name}
@@ -513,19 +750,33 @@ const AdviserManager = () => {
                 </select>
               </div>
 
+              {/* Modal Actions */}
               <div
-                style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "flex-end",
+                  marginTop: "12px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #f1f5f9",
+                }}
               >
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   style={{
-                    padding: "10px 16px",
-                    borderRadius: 10,
+                    padding: "0.55rem 1.1rem",
+                    borderRadius: "8px",
                     border: "1px solid #cbd5e1",
-                    background: "#fff",
+                    background: "#ffffff",
+                    color: "#475569",
+                    fontWeight: "600",
+                    fontSize: "0.875rem",
                     cursor: "pointer",
+                    transition: "all 0.15s ease",
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
                 >
                   Cancel
                 </button>
@@ -534,10 +785,22 @@ const AdviserManager = () => {
                   onClick={
                     isAddModalOpen ? handleSaveNewTeacher : handleSaveEdit
                   }
-                  className={commonStyles.primaryButton}
-                  style={{ padding: "10px 16px" }}
+                  style={{
+                    padding: "0.55rem 1.25rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "#8b0000",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    fontSize: "0.875rem",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#700000")}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#8b0000")}
                 >
-                  Save
+                  {isAddModalOpen ? "Add Teacher" : "Save Changes"}
                 </button>
               </div>
             </div>

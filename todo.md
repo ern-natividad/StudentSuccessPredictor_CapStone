@@ -9,6 +9,7 @@
 - Add linear regression model (neural network)
 - Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
 - Fixing the section in UI and Database (Staff & Student)
+- Fixing Add Teacher backend and supabase connection
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
