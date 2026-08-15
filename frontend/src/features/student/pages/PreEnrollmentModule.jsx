@@ -26,35 +26,32 @@ const moduleLinks = [
 const initialForm = {
   applicantId: "",
   fullName: "",
+  sex: "",
+  age: "",
+  strand: "",
+  gwa: "",
+  cetMath: "",
+  cetScience: "",
+  cetEnglish: "",
+  cetReading: "",
+  cetAbstract: "",
+  eat: "",
+  screening: "",
+  extracurriculars: "",
+  leadershipRole: "",
+  socioeconomicCategory: "",
+  specialSkills: "",
 };
 
 const PreEnrollmentModule = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    applicantId: initialForm.applicantId,
-    fullName: "",
-    sex: "",
-    age: "",
-    strand: "",
-    gwa: "",
-    cetMath: "",
-    cetScience: "",
-    cetEnglish: "",
-    cetReading: "",
-    cetAbstract: "",
-    eat: "",
-    screening: "",
-    extracurriculars: "",
-    leadershipRole: "",
-    socioeconomicCategory: "",
-    specialSkills: "",
-  });
+  const [formData, setFormData] = useState(initialForm);
   const [recommendation, setRecommendation] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredHistory = useMemo(() => {
-    const query = searchTerm.toLowerCase();
+    const query = searchTerm.toLowerCase().trim();
     if (!query) return [];
     return [];
   }, [searchTerm]);
@@ -68,25 +65,7 @@ const PreEnrollmentModule = () => {
   };
 
   const handleResetForm = () => {
-    setFormData({
-      ...initialForm,
-      applicantId: formData.applicantId,
-      sex: "",
-      age: "",
-      strand: "",
-      gwa: "",
-      cetMath: "",
-      cetScience: "",
-      cetEnglish: "",
-      cetReading: "",
-      cetAbstract: "",
-      eat: "",
-      screening: "",
-      extracurriculars: "",
-      leadershipRole: "",
-      socioeconomicCategory: "",
-      specialSkills: "",
-    });
+    setFormData(initialForm);
     setRecommendation(null);
   };
 
@@ -98,17 +77,22 @@ const PreEnrollmentModule = () => {
     const abstract = parseFloat(formData.cetAbstract) || 0;
 
     // Weight correlations for engineering specializations
-    const ceScore = Math.round(math * 0.45 + science * 0.35 + abstract * 0.2);
-    const eeScore = Math.round(math * 0.40 + science * 0.40 + abstract * 0.2);
-    const cpeScore = Math.round(math * 0.40 + abstract * 0.35 + science * 0.25);
-    const ieScore = Math.round(math * 0.30 + english * 0.25 + reading * 0.20 + abstract * 0.25);
+    const ceScore = Math.min(99, Math.round(math * 0.45 + science * 0.35 + abstract * 0.2));
+    const eeScore = Math.min(99, Math.round(math * 0.40 + science * 0.40 + abstract * 0.2));
+    const cpeScore = Math.min(99, Math.round(math * 0.40 + abstract * 0.35 + science * 0.25));
+    const ieScore = Math.min(99, Math.round(math * 0.30 + english * 0.25 + reading * 0.20 + abstract * 0.25));
+
+    const programScores = [
+      { name: "BS Civil Engineering", confidence: ceScore },
+      { name: "BS Electrical Engineering", confidence: eeScore },
+      { name: "BS Computer Engineering", confidence: cpeScore },
+      { name: "BS Industrial Engineering", confidence: ieScore },
+    ].sort((a, b) => b.confidence - a.confidence);
 
     const normalizedApplicant = normalizeApplicantPayload({
       ...formData,
       cet: Math.round((math + science + english + reading + abstract) / 5),
     });
-
-    console.log("Normalized applicant payload:", normalizedApplicant);
 
     setRecommendation({
       applicant: normalizedApplicant,
@@ -118,7 +102,9 @@ const PreEnrollmentModule = () => {
       strengths: [
         math >= 80 ? "High Mathematics Proficiency" : "Quantitative Aptitude",
         science >= 80 ? "Strong Science Core" : "Scientific Literacy",
-        formData.leadershipRole !== "None" ? "Demonstrated Leadership" : "Teamwork Ability",
+        formData.leadershipRole && formData.leadershipRole !== "None"
+          ? "Demonstrated Leadership"
+          : "Teamwork & Collaboration",
       ],
       improvementAreas: [
         english < 75 || reading < 75 ? "Technical Communication Skills" : "Engineering Interview Depth",
@@ -126,8 +112,11 @@ const PreEnrollmentModule = () => {
       ],
       remarks:
         "Applicant demonstrates high correlation in heavily quantitative engineering tracks alongside active involvement in non-academic activities.",
-      confidence: programScores[0].confidence,
     });
+  };
+
+  const handleExportPDF = () => {
+    window.print();
   };
 
   return (
@@ -137,10 +126,14 @@ const PreEnrollmentModule = () => {
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
     >
-      <div className={styles.sectionGrid}>
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Applicant Information</div>
-          <div className={styles.formGrid}>
+      <div className={styles.sectionGrid} style={{ gap: "1.25rem" }}>
+        {/* Left Column: Input Form */}
+        <div className={styles.moduleCard} style={{ padding: "1.25rem" }}>
+          <div className={styles.moduleTitleSmall} style={{ marginBottom: "0.75rem" }}>
+            Applicant Profile & CET Scores
+          </div>
+
+          <div className={styles.formGrid} style={{ gap: "0.75rem" }}>
             <div className={styles.formField}>
               <label className={styles.formLabel}>Applicant ID</label>
               <input
@@ -148,22 +141,21 @@ const PreEnrollmentModule = () => {
                 name="applicantId"
                 value={formData.applicantId}
                 onChange={handleChange}
+                placeholder="e.g. APP-2026-001"
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>Name</label>
+              <label className={styles.formLabel}>Full Name</label>
               <input
                 className={styles.formInput}
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Enter applicant name"
+                placeholder="Enter full name"
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>
-                Senior High School Strand
-              </label>
+              <label className={styles.formLabel}>Senior High Strand</label>
               <select
                 className={styles.formSelect}
                 name="strand"
@@ -178,16 +170,17 @@ const PreEnrollmentModule = () => {
               </select>
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>Senior High School GWA</label>
+              <label className={styles.formLabel}>SHS Overall GWA</label>
               <input
                 className={styles.formInput}
                 name="gwa"
                 value={formData.gwa}
                 onChange={handleChange}
+                placeholder="e.g. 92.5"
               />
             </div>
 
-            {/* Correlated CET Component Fields */}
+            {/* CET Subtest Components */}
             <div className={styles.formField}>
               <label className={styles.formLabel}>CET - Mathematics</label>
               <input
@@ -196,7 +189,7 @@ const PreEnrollmentModule = () => {
                 name="cetMath"
                 value={formData.cetMath}
                 onChange={handleChange}
-                placeholder="e.g. 85"
+                placeholder="0 - 100"
               />
             </div>
             <div className={styles.formField}>
@@ -207,29 +200,29 @@ const PreEnrollmentModule = () => {
                 name="cetScience"
                 value={formData.cetScience}
                 onChange={handleChange}
-                placeholder="e.g. 88"
+                placeholder="0 - 100"
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>CET - English Proficiency</label>
+              <label className={styles.formLabel}>CET - English</label>
               <input
                 type="number"
                 className={styles.formInput}
                 name="cetEnglish"
                 value={formData.cetEnglish}
                 onChange={handleChange}
-                placeholder="e.g. 80"
+                placeholder="0 - 100"
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>CET - Reading Comprehension</label>
+              <label className={styles.formLabel}>CET - Reading Comp.</label>
               <input
                 type="number"
                 className={styles.formInput}
                 name="cetReading"
                 value={formData.cetReading}
                 onChange={handleChange}
-                placeholder="e.g. 82"
+                placeholder="0 - 100"
               />
             </div>
             <div className={styles.formField}>
@@ -240,37 +233,37 @@ const PreEnrollmentModule = () => {
                 name="cetAbstract"
                 value={formData.cetAbstract}
                 onChange={handleChange}
-                placeholder="e.g. 90"
+                placeholder="0 - 100"
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>
-                Engineering Aptitude Test (EAT) Score
-              </label>
+              <label className={styles.formLabel}>EAT Score</label>
               <input
                 className={styles.formInput}
                 name="eat"
                 value={formData.eat}
                 onChange={handleChange}
+                placeholder="Engineering Aptitude"
               />
             </div>
             <div className={styles.formField} style={{ gridColumn: "span 2" }}>
-              <label className={styles.formLabel}>
-                Interview Screening Score
-              </label>
+              <label className={styles.formLabel}>Interview Screening Score</label>
               <input
                 className={styles.formInput}
                 name="screening"
                 value={formData.screening}
                 onChange={handleChange}
+                placeholder="Screening score"
               />
             </div>
           </div>
 
-          {/* Non-Academic Data Section */}
-          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
-            <div className={styles.moduleTitleSmall}>Non-Academic Profile</div>
-            <div className={styles.formGrid}>
+          {/* Non-Academic Profile Section */}
+          <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #e2e8f0" }}>
+            <div className={styles.moduleTitleSmall} style={{ marginBottom: "0.75rem" }}>
+              Non-Academic Profile
+            </div>
+            <div className={styles.formGrid} style={{ gap: "0.75rem" }}>
               <div className={styles.formField}>
                 <label className={styles.formLabel}>Extracurricular Involvement</label>
                 <select
@@ -279,7 +272,7 @@ const PreEnrollmentModule = () => {
                   value={formData.extracurriculars}
                   onChange={handleChange}
                 >
-                  <option value="">Select extracurricular involvement</option>
+                  <option value="">Select involvement</option>
                   <option value="Robotics Club">Robotics Club</option>
                   <option value="Science & Math Club">Science & Math Club</option>
                   <option value="Student Council">Student Council</option>
@@ -297,7 +290,7 @@ const PreEnrollmentModule = () => {
                   value={formData.leadershipRole}
                   onChange={handleChange}
                 >
-                  <option value="">Select leadership experience</option>
+                  <option value="">Select leadership role</option>
                   <option value="President / Student Head">President / Student Head</option>
                   <option value="Officer">Officer</option>
                   <option value="Committee Member">Committee Member</option>
@@ -313,7 +306,7 @@ const PreEnrollmentModule = () => {
                   value={formData.socioeconomicCategory}
                   onChange={handleChange}
                 >
-                  <option value="">Select socioeconomic category</option>
+                  <option value="">Select category</option>
                   <option value="Low Income">Low Income</option>
                   <option value="Lower Middle Income">Lower Middle Income</option>
                   <option value="Middle Income">Middle Income</option>
@@ -322,135 +315,240 @@ const PreEnrollmentModule = () => {
               </div>
 
               <div className={styles.formField}>
-                <label className={styles.formLabel}>Special Skills / Certifications</label>
+                <label className={styles.formLabel}>Special Skills / Certs</label>
                 <input
                   className={styles.formInput}
                   name="specialSkills"
                   value={formData.specialSkills}
                   onChange={handleChange}
-                  placeholder="e.g. Basic Python, CAD, Electronics"
+                  placeholder="e.g. Python, CAD, Electronics"
                 />
               </div>
             </div>
           </div>
 
-          <div className={styles.buttonGroup}>
-            <button className={styles.primaryButton} onClick={handleRecommend}>
+          <div
+            className={styles.buttonGroup}
+            style={{ marginTop: "1.25rem", display: "flex", gap: "0.75rem" }}
+          >
+            <button
+              className={styles.primaryButton}
+              onClick={handleRecommend}
+              style={{
+                flex: 2,
+                backgroundColor: "#800000",
+                color: "#ffffff",
+                padding: "0.6rem 1rem",
+                borderRadius: "6px",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
               Recommend Degree Programs
             </button>
             <button
               className={styles.secondaryButton}
               onClick={handleResetForm}
+              style={{
+                flex: 1,
+                backgroundColor: "#f1f5f9",
+                color: "#475569",
+                padding: "0.6rem 1rem",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                cursor: "pointer",
+                fontWeight: "500",
+              }}
             >
               Reset Form
             </button>
           </div>
         </div>
 
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Recommendation Summary</div>
+        {/* Right Column: Recommendation Summary */}
+        <div className={styles.moduleCard} style={{ padding: "1.25rem" }}>
+          <div className={styles.moduleTitleSmall} style={{ marginBottom: "0.75rem" }}>
+            Recommendation Summary
+          </div>
+
           {recommendation ? (
-            <>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div className={styles.metricGrid}>
                 {recommendation.programs.map((program) => (
-                  <div key={program.name} className={styles.metricCard}>
-                    <div className={styles.metricLabel}>{program.name}</div>
-                    <div className={styles.metricValue}>
+                  <div
+                    key={program.name}
+                    className={styles.metricCard}
+                    style={{
+                      padding: "0.85rem",
+                      borderRadius: "8px",
+                      background: "#fafafa",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div className={styles.metricLabel} style={{ fontWeight: "600", fontSize: "13px" }}>
+                      {program.name}
+                    </div>
+                    <div
+                      className={styles.metricValue}
+                      style={{ color: "#800000", fontSize: "22px", fontWeight: "700", marginTop: "4px" }}
+                    >
                       {program.confidence}%
                     </div>
-                    <div className={styles.metricSubtext}>Match confidence</div>
+                    <div className={styles.metricSubtext} style={{ fontSize: "11px", color: "#64748b" }}>
+                      Match confidence
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className={styles.moduleCardSmall}>
-                <div className={styles.moduleTitleSmall}>
-                  Why this recommendation?
+
+              <div
+                className={styles.moduleCardSmall}
+                style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "6px" }}
+              >
+                <div className={styles.moduleTitleSmall} style={{ fontSize: "12px", color: "#475569" }}>
+                  Assessment Rationale
                 </div>
-                <p className={styles.moduleSubtitle}>
+                <p className={styles.moduleSubtitle} style={{ margin: "4px 0 0", fontSize: "13px" }}>
                   {recommendation.explanation}
                 </p>
               </div>
 
-              {/* Display Non-Academic Insights in Summary */}
-              <div className={styles.infoBlock}>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Academic Strengths</span>
-                  <span className={styles.infoValue}>
+              <div className={styles.infoBlock} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div className={styles.infoRow} style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span className={styles.infoLabel} style={{ fontWeight: "600", fontSize: "13px", color: "#64748b" }}>
+                    Academic Strengths:
+                  </span>
+                  <span className={styles.infoValue} style={{ fontSize: "13px", color: "#1e293b" }}>
                     {recommendation.strengths.join(", ")}
                   </span>
                 </div>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Non-Academic Profile</span>
-                  <span className={styles.infoValue}>
-                    {formData.extracurriculars} ({formData.leadershipRole})
+                <div className={styles.infoRow} style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span className={styles.infoLabel} style={{ fontWeight: "600", fontSize: "13px", color: "#64748b" }}>
+                    Non-Academic Profile:
+                  </span>
+                  <span className={styles.infoValue} style={{ fontSize: "13px", color: "#1e293b" }}>
+                    {formData.extracurriculars || "None"} ({formData.leadershipRole || "Member"})
                   </span>
                 </div>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>
-                    Areas for Improvement
+                <div className={styles.infoRow} style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span className={styles.infoLabel} style={{ fontWeight: "600", fontSize: "13px", color: "#64748b" }}>
+                    Areas for Growth:
                   </span>
-                  <span className={styles.infoValue}>
+                  <span className={styles.infoValue} style={{ fontSize: "13px", color: "#1e293b" }}>
                     {recommendation.improvementAreas.join(", ")}
                   </span>
                 </div>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Admission Remarks</span>
-                  <span className={styles.infoValue}>
+                <div className={styles.infoRow} style={{ display: "flex", flexDirection: "column", gap: "2px", marginTop: "4px" }}>
+                  <span className={styles.infoLabel} style={{ fontWeight: "600", fontSize: "13px", color: "#64748b" }}>
+                    Admission Remarks:
+                  </span>
+                  <span className={styles.infoValue} style={{ fontSize: "13px", color: "#334155" }}>
                     {recommendation.remarks}
                   </span>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
-            <div className={styles.placeholderChart}>
-              <div>
-                Submit applicant details to reveal top engineering program
-                recommendations.
-              </div>
+            <div
+              className={styles.placeholderChart}
+              style={{
+                padding: "3rem 1.5rem",
+                textAlign: "center",
+                color: "#94a3b8",
+                border: "2px dashed #e2e8f0",
+                borderRadius: "8px",
+              }}
+            >
+              <div>Submit applicant details to calculate engineering program recommendations.</div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Admin Recommendation History Table */}
       {user && user.role === "admin" ? (
-        <div className={styles.moduleCard}>
-          <div className={styles.moduleTitleSmall}>Recommendation History</div>
-          <div className={styles.buttonGroup}>
+        <div className={styles.moduleCard} style={{ marginTop: "1.25rem", padding: "1.25rem" }}>
+          <div className={styles.moduleTitleSmall} style={{ marginBottom: "0.75rem" }}>
+            Recommendation History & Audits
+          </div>
+
+          <div
+            className={styles.buttonGroup}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "1rem",
+              marginBottom: "1rem",
+            }}
+          >
             <input
               type="search"
               className={styles.formInput}
-              placeholder="Search previous recommendations"
+              placeholder="Search history by applicant ID or name..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              style={{ maxWidth: "360px", padding: "0.5rem 0.75rem" }}
             />
-            <button className={styles.secondaryButton}>
+
+            {/* System-styled PDF Export Button */}
+            <button
+              onClick={handleExportPDF}
+              style={{
+                backgroundColor: "#800000",
+                color: "#ffffff",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "6px",
+                fontWeight: "600",
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                transition: "background-color 0.2s ease",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#660000")}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               Export Report (PDF)
             </button>
           </div>
+
           <div className={styles.tableWrapper}>
             {filteredHistory.length === 0 ? (
-              <div className={styles.placeholderChart}>
-                <div>No recommendation history is available yet.</div>
+              <div
+                className={styles.placeholderChart}
+                style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}
+              >
+                <div>No recommendation history records available for export.</div>
               </div>
             ) : (
-              <table className={styles.moduleTable}>
+              <table className={styles.moduleTable} style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr>
-                    <th>Applicant ID</th>
-                    <th>Name</th>
-                    <th>Program</th>
-                    <th>Confidence</th>
-                    <th>Status</th>
+                  <tr style={{ background: "#f8fafc", textAlign: "left", fontSize: "13px" }}>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Applicant ID</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Name</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Program</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Confidence</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody className={styles.tableStriped}>
                   {filteredHistory.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.id}</td>
-                      <td>{item.name}</td>
-                      <td>{item.program}</td>
-                      <td>{item.confidence}%</td>
-                      <td>{item.status}</td>
+                    <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9", fontSize: "13px" }}>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.id}</td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.name}</td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.program}</td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.confidence}%</td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.status}</td>
                     </tr>
                   ))}
                 </tbody>
