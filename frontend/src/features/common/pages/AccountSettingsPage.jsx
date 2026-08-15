@@ -37,7 +37,7 @@ const AccountSettingsPage = () => {
   const [fetchingUsers, setFetchingUsers] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // --- NEW STATES FOR SEARCH, FILTER, AND PAGINATION ---
+  // SEARCH, FILTER, AND PAGINATION
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,12 +72,11 @@ const AccountSettingsPage = () => {
     if (user?.role === "admin") loadManageableAccounts();
   }, [user?.role, loadManageableAccounts]);
 
-  // Reset pagination to page 1 whenever search or role filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, roleFilter]);
 
-  // 1. Filter users based on Name/Email search query & Role filter
+  // Filter users based on Search query & Role filter
   const filteredUsers = useMemo(() => {
     return manageableUsers.filter((u) => {
       const name = (u.full_name || u.fullName || "").toLowerCase();
@@ -94,7 +93,7 @@ const AccountSettingsPage = () => {
     });
   }, [manageableUsers, searchQuery, roleFilter]);
 
-  // 2. Paginate filtered data (10 per page limit)
+  // Paginate filtered data
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE) || 1;
   const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -157,7 +156,17 @@ const AccountSettingsPage = () => {
     }
   };
 
+  // Prevent self-deletion before opening modal
   const handleOpenDeleteModal = (userItem) => {
+    const isSelf =
+      userItem.id === user?.id ||
+      (userItem.email && userItem.email.toLowerCase() === user?.email?.toLowerCase());
+
+    if (isSelf) {
+      toast.error("You cannot delete your own active admin account.");
+      return;
+    }
+
     setSelectedUser(userItem);
     setShowDeleteModal(true);
   };
@@ -165,6 +174,18 @@ const AccountSettingsPage = () => {
   const handleConfirmDeleteAccount = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
+
+    // Defense-in-depth check
+    const isSelf =
+      selectedUser.id === user?.id ||
+      (selectedUser.email && selectedUser.email.toLowerCase() === user?.email?.toLowerCase());
+
+    if (isSelf) {
+      toast.error("Operation aborted: You cannot delete your own active account.");
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+      return;
+    }
 
     setDeleteLoading(true);
 
@@ -291,7 +312,6 @@ const AccountSettingsPage = () => {
 
           {/* SEARCH & FILTER CONTROLS */}
           <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            {/* 1. Search Bar */}
             <input
               type="text"
               placeholder="Search name or email..."
@@ -307,7 +327,6 @@ const AccountSettingsPage = () => {
               }}
             />
 
-            {/* 2. Dropdown Filter for Roles */}
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -354,9 +373,29 @@ const AccountSettingsPage = () => {
                 ) : (
                   paginatedUsers.map((u) => {
                     const name = u.full_name || u.fullName || u.email?.split("@")[0] || "User";
+                    const isSelf =
+                      u.id === user?.id ||
+                      (u.email && u.email.toLowerCase() === user?.email?.toLowerCase());
+
                     return (
-                      <tr key={u.id} style={{ borderBottom: "1px solid #eee", fontSize: "14px" }}>
-                        <td style={{ padding: "0.75rem 1rem", fontWeight: "600" }}>{name}</td>
+                      <tr key={u.id} style={{ borderBottom: "1px solid #eee", fontSize: "14px", backgroundColor: isSelf ? "#fafafa" : "transparent" }}>
+                        <td style={{ padding: "0.75rem 1rem", fontWeight: "600" }}>
+                          {name}
+                          {isSelf && (
+                            <span style={{
+                              marginLeft: "8px",
+                              padding: "0.15rem 0.4rem",
+                              backgroundColor: "#e8e8e8",
+                              color: "#800000",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              fontWeight: "bold",
+                              textTransform: "uppercase"
+                            }}>
+                              You
+                            </span>
+                          )}
+                        </td>
                         <td style={{ padding: "0.75rem 1rem", color: "#555" }}>{u.email}</td>
                         <td style={{ padding: "0.75rem 1rem" }}>
                           <span style={{ 
@@ -373,17 +412,20 @@ const AccountSettingsPage = () => {
                         <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
                           <button
                             onClick={() => handleOpenDeleteModal(u)}
+                            disabled={isSelf}
+                            title={isSelf ? "You cannot delete your own active account" : "Remove Account"}
                             style={{
-                              backgroundColor: "#800000",
-                              color: "#fff",
+                              backgroundColor: isSelf ? "#cccccc" : "#800000",
+                              color: isSelf ? "#666666" : "#ffffff",
                               border: "none",
                               padding: "0.4rem 0.8rem",
                               borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "12px"
+                              cursor: isSelf ? "not-allowed" : "pointer",
+                              fontSize: "12px",
+                              opacity: isSelf ? 0.7 : 1
                             }}
                           >
-                            Remove Account
+                            {isSelf ? "Current Account" : "Remove Account"}
                           </button>
                         </td>
                       </tr>
@@ -394,7 +436,7 @@ const AccountSettingsPage = () => {
             </table>
           </div>
 
-          {/* 3. PAGINATION CONTROLS */}
+          {/* PAGINATION CONTROLS */}
           {!fetchingUsers && filteredUsers.length > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", fontSize: "13px", color: "#555" }}>
               <div>
