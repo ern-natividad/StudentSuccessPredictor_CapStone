@@ -70,35 +70,35 @@ const AuditLogsPage = () => {
       </p>
 
       <div className={styles.card}>
-        {/* Aesthetic Date Filter Bar */}
+        {/* Medium-Sized Date Filter Bar */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
-            gap: "1rem",
-            marginBottom: "1.25rem",
-            padding: "0.75rem 1rem",
+            gap: "1.25rem",
+            marginBottom: "1.5rem",
+            padding: "0.9rem 1.25rem",
             backgroundColor: "#f8fafc",
-            borderRadius: "8px",
+            borderRadius: "10px",
             border: "1px solid #e2e8f0",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
             <span
               style={{
-                fontSize: "0.85rem",
-                fontWeight: "600",
+                fontSize: "0.95rem",
+                fontWeight: "700",
                 color: "#800000",
                 display: "flex",
                 alignItems: "center",
-                gap: "0.4rem",
+                gap: "0.5rem",
               }}
             >
               <svg
-                width="15"
-                height="15"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -114,8 +114,8 @@ const AuditLogsPage = () => {
               Filter Date Range
             </span>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <label htmlFor="startDate" style={{ fontSize: "0.8rem", color: "#64748b" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <label htmlFor="startDate" style={{ fontSize: "0.875rem", fontWeight: "600", color: "#475569" }}>
                 From:
               </label>
               <input
@@ -124,19 +124,19 @@ const AuditLogsPage = () => {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 style={{
-                  padding: "0.35rem 0.6rem",
-                  fontSize: "0.825rem",
+                  padding: "0.5rem 0.85rem",
+                  fontSize: "0.9rem",
                   border: "1px solid #cbd5e1",
-                  borderRadius: "6px",
-                  color: "#1e293b",
+                  borderRadius: "8px",
+                  color: "#0f172a",
                   backgroundColor: "#ffffff",
                   outline: "none",
                 }}
               />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <label htmlFor="endDate" style={{ fontSize: "0.8rem", color: "#64748b" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <label htmlFor="endDate" style={{ fontSize: "0.875rem", fontWeight: "600", color: "#475569" }}>
                 To:
               </label>
               <input
@@ -145,11 +145,11 @@ const AuditLogsPage = () => {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 style={{
-                  padding: "0.35rem 0.6rem",
-                  fontSize: "0.825rem",
+                  padding: "0.5rem 0.85rem",
+                  fontSize: "0.9rem",
                   border: "1px solid #cbd5e1",
-                  borderRadius: "6px",
-                  color: "#1e293b",
+                  borderRadius: "8px",
+                  color: "#0f172a",
                   backgroundColor: "#ffffff",
                   outline: "none",
                 }}
@@ -161,13 +161,13 @@ const AuditLogsPage = () => {
             <button
               onClick={handleClearFilters}
               style={{
-                fontSize: "0.775rem",
+                fontSize: "0.85rem",
                 fontWeight: "600",
                 color: "#800000",
                 background: "#ffffff",
                 border: "1px solid #800000",
-                padding: "0.3rem 0.65rem",
-                borderRadius: "6px",
+                padding: "0.45rem 0.85rem",
+                borderRadius: "8px",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
