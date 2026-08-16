@@ -25,12 +25,19 @@ const moduleLinks = [
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
 ];
 
-const PROGRAM_OPTIONS = [
+const INITIAL_PROGRAM_OPTIONS = [
   "Civil Engineering",
   "Electrical Engineering",
   "Industrial Engineering",
   "Computer Engineering",
   "Mechanical Engineering",
+];
+
+const INITIAL_ACADEMIC_YEARS = [
+  "2024-2025",
+  "2025-2026",
+  "2026-2027",
+  "2027-2028",
 ];
 
 const readFilesAsDataUrl = (files) => {
@@ -48,16 +55,31 @@ const readFilesAsDataUrl = (files) => {
 const CurriculumManager = () => {
   const toast = useToast();
   const { user } = useAuth();
+
+  // Dynamic state for dropdown options
+  const [academicYearOptions, setAcademicYearOptions] = useState(INITIAL_ACADEMIC_YEARS);
+  const [programOptions, setProgramOptions] = useState(INITIAL_PROGRAM_OPTIONS);
+
+  // Form field states
   const [title, setTitle] = useState("");
-  const [academicYear, setAcademicYear] = useState("2025-2026");
+  const [academicYear, setAcademicYear] = useState(INITIAL_ACADEMIC_YEARS[1]);
   const [department, setDepartment] = useState("Engineering");
-  const [program, setProgram] = useState(PROGRAM_OPTIONS[0]);
+  const [program, setProgram] = useState(INITIAL_PROGRAM_OPTIONS[0]);
   const [status, setStatus] = useState("Draft");
   const [attachments, setAttachments] = useState([]);
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [courses, setCourses] = useState([]);
+
+  // Modal State for custom prompt
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "", // 'academicYear' or 'program'
+    title: "",
+    placeholder: "",
+    inputValue: "",
+  });
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -77,7 +99,20 @@ const CurriculumManager = () => {
   const loadCurricula = async () => {
     try {
       setLoading(true);
-      setCurricula(await getAllCurricula());
+      const data = await getAllCurricula();
+      setCurricula(data);
+
+      if (Array.isArray(data)) {
+        const fetchedAYs = data.map((c) => c.academicYear).filter(Boolean);
+        const fetchedPrograms = data.map((c) => c.program).filter(Boolean);
+
+        setAcademicYearOptions((prev) =>
+          Array.from(new Set([...prev, ...fetchedAYs]))
+        );
+        setProgramOptions((prev) =>
+          Array.from(new Set([...prev, ...fetchedPrograms]))
+        );
+      }
     } catch (err) {
       console.error("Failed to load curricula:", err);
       toast.error(err.message || "Failed to load curricula.");
@@ -90,12 +125,72 @@ const CurriculumManager = () => {
     loadCurricula();
   }, []);
 
+  // Dropdown Selection Handlers
+  const handleAcademicYearChange = (e) => {
+    const val = e.target.value;
+    if (val === "ADD_NEW_AY") {
+      setModalConfig({
+        isOpen: true,
+        type: "academicYear",
+        title: "Add Academic Year",
+        placeholder: "e.g., 2028-2029",
+        inputValue: "",
+      });
+    } else {
+      setAcademicYear(val);
+    }
+  };
+
+  const handleProgramChange = (e) => {
+    const val = e.target.value;
+    if (val === "ADD_NEW_PROGRAM") {
+      setModalConfig({
+        isOpen: true,
+        type: "program",
+        title: "Add Program",
+        placeholder: "e.g., Software Engineering",
+        inputValue: "",
+      });
+    } else {
+      setProgram(val);
+    }
+  };
+
+  // Modal Submit Handler
+  const handleModalSubmit = (e) => {
+    e.preventDefault();
+    const val = modalConfig.inputValue.trim();
+
+    if (!val) {
+      toast.error("Value cannot be empty.");
+      return;
+    }
+
+    if (modalConfig.type === "academicYear") {
+      if (!academicYearOptions.includes(val)) {
+        setAcademicYearOptions((prev) => [...prev, val]);
+      }
+      setAcademicYear(val);
+    } else if (modalConfig.type === "program") {
+      if (!programOptions.includes(val)) {
+        setProgramOptions((prev) => [...prev, val]);
+      }
+      setProgram(val);
+    }
+
+    closeModal();
+  };
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false, inputValue: "" }));
+  };
+
   const resetForm = () => {
     setTitle("");
-    setAcademicYear("2025-2026");
+    setAcademicYear(academicYearOptions[0] || "2025-2026");
     setCourses([]);
     setDepartment("Engineering");
-    setProgram(PROGRAM_OPTIONS[0]);
+    setProgram(programOptions[0] || INITIAL_PROGRAM_OPTIONS[0]);
     setStatus("Draft");
     setAttachments([]);
     setEditingId(null);
@@ -182,7 +277,10 @@ const CurriculumManager = () => {
   };
 
   const handleAddOrUpdate = async () => {
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.error("Curriculum title is required");
+      return;
+    }
 
     try {
       if (editingId) {
@@ -233,12 +331,20 @@ const CurriculumManager = () => {
   const handleEdit = (id) => {
     const c = curricula.find((x) => x.id === id);
     if (!c) return;
+
+    if (c.academicYear && !academicYearOptions.includes(c.academicYear)) {
+      setAcademicYearOptions((prev) => [...prev, c.academicYear]);
+    }
+    if (c.program && !programOptions.includes(c.program)) {
+      setProgramOptions((prev) => [...prev, c.program]);
+    }
+
     setEditingId(c.id);
     setTitle(c.title || "");
-    setAcademicYear(c.academicYear || "2025-2026");
+    setAcademicYear(c.academicYear || academicYearOptions[0]);
     setCourses(c.courses || []);
     setDepartment(c.department || "Engineering");
-    setProgram(c.program || PROGRAM_OPTIONS[0]);
+    setProgram(c.program || programOptions[0]);
     setAttachments(c.attachments || []);
     setStatus(c.status || "Draft");
     resetCourseForm();
@@ -285,67 +391,138 @@ const CurriculumManager = () => {
       menuItems={moduleLinks}
     >
       <div className={styles.moduleCard}>
-        <div className={styles.moduleTitleSmall}>
+        <div className={styles.moduleTitleSmall} style={{ marginBottom: "16px" }}>
           {editingId ? "Edit Curriculum" : "Create Curriculum"}
         </div>
-        <div className={styles.formGrid}>
-          <div className={styles.formField}>
-            <label className={styles.formLabel}>Curriculum Title</label>
-            <input
-              className={styles.formInput}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+
+        {/* Section 1: Curriculum General Information */}
+        <div style={{ marginBottom: "20px" }}>
+          <div
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              color: "#475569",
+              marginBottom: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: "#800000",
+                display: "inline-block",
+              }}
             />
+            General Information
           </div>
-          <div className={styles.formField}>
-            <label className={styles.formLabel}>Academic Year</label>
-            <select
-              className={styles.formSelect}
-              value={academicYear}
-              onChange={(e) => setAcademicYear(e.target.value)}
-            >
-              <option>2025-2026</option>
-              <option>2026-2027</option>
-              <option>2027-2028</option>
-            </select>
-          </div>
-          <div className={styles.formField}>
-            <label className={styles.formLabel}>Department</label>
-            <input
-              className={styles.formInput}
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            />
-          </div>
-          <div className={styles.formField}>
-            <label className={styles.formLabel}>Program</label>
-            <select
-              className={styles.formSelect}
-              value={program}
-              onChange={(e) => setProgram(e.target.value)}
-            >
-              {PROGRAM_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Curriculum Title</label>
+              <input
+                className={styles.formInput}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., BSCE Curriculum 2026"
+              />
+            </div>
+
+            {/* Dropdown with Add Option for Academic Year */}
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Academic Year</label>
+              <select
+                className={styles.formSelect}
+                value={academicYear}
+                onChange={handleAcademicYearChange}
+              >
+                {academicYearOptions.map((ay) => (
+                  <option key={ay} value={ay}>
+                    {ay}
+                  </option>
+                ))}
+                <option value="ADD_NEW_AY" style={{ fontWeight: "bold", color: "#800000" }}>
+                  + Add New Academic Year...
                 </option>
-              ))}
-            </select>
+              </select>
+            </div>
+
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Department</label>
+              <input
+                className={styles.formInput}
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+            </div>
+
+            {/* Dropdown with Add Option for Program */}
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Program</label>
+              <select
+                className={styles.formSelect}
+                value={program}
+                onChange={handleProgramChange}
+              >
+                {programOptions.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+                <option value="ADD_NEW_PROGRAM" style={{ fontWeight: "bold", color: "#800000" }}>
+                  + Add New Program...
+                </option>
+              </select>
+            </div>
           </div>
+        </div>
+
+        <hr
+          style={{
+            border: "none",
+            borderTop: "1px dashed #cbd5e1",
+            margin: "24px 0",
+          }}
+        />
+
+        {/* Section 2: Add Courses Section */}
+        <div style={{ marginBottom: "20px" }}>
           <div className={styles.formField} style={{ gridColumn: "1 / -1" }}>
-            <label className={styles.formLabel}>Add Courses</label>
             <div
               style={{
-                border: "1px solid #ddd",
-                padding: 12,
-                borderRadius: 4,
-                backgroundColor: "#fafafa",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+              }}
+            >
+              <div>
+                <label className={styles.formLabel} style={{ fontSize: "1rem", fontWeight: "700", color: "#1e293b" }}>
+                  Add Course to Curriculum
+                </label>
+                <p style={{ margin: "2px 0 0 0", fontSize: "0.825rem", color: "#64748b" }}>
+                  Define individual subjects and courses to include under this curriculum structure.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                border: "1px solid #e2e8f0",
+                padding: "20px",
+                borderRadius: "8px",
+                backgroundColor: "#f8fafc",
+                boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.03)",
               }}
             >
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr 1fr",
-                  gap: 8,
+                  gap: 12,
                   marginBottom: 12,
                 }}
               >
@@ -427,11 +604,12 @@ const CurriculumManager = () => {
                   </select>
                 </div>
               </div>
+
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
-                  gap: 8,
+                  gap: 12,
                   marginBottom: 12,
                 }}
               >
@@ -537,7 +715,8 @@ const CurriculumManager = () => {
                   />
                 </div>
               </div>
-              <div className={styles.formField} style={{ marginBottom: 12 }}>
+
+              <div className={styles.formField} style={{ marginBottom: 16 }}>
                 <label
                   className={styles.formLabel}
                   style={{ fontSize: "0.85em" }}
@@ -557,6 +736,7 @@ const CurriculumManager = () => {
                   }
                 />
               </div>
+
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
@@ -576,9 +756,11 @@ const CurriculumManager = () => {
                 )}
               </div>
             </div>
+
+            {/* Added Courses Table */}
             {courses.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: "#334155" }}>
                   Courses Added ({courses.length})
                 </div>
                 <div className={styles.tableWrapper}>
@@ -607,6 +789,7 @@ const CurriculumManager = () => {
                             <button
                               className={styles.secondaryButton}
                               onClick={() => handleEditCourse(idx)}
+                              style={{ marginRight: "6px" }}
                             >
                               Edit
                             </button>
@@ -625,7 +808,18 @@ const CurriculumManager = () => {
               </div>
             )}
           </div>
+        </div>
 
+        <hr
+          style={{
+            border: "none",
+            borderTop: "1px dashed #cbd5e1",
+            margin: "24px 0",
+          }}
+        />
+
+        {/* Section 3: Final Publication & Attachments */}
+        <div className={styles.formGrid} style={{ marginTop: "16px" }}>
           <div className={styles.formField}>
             <label className={styles.formLabel}>Status</label>
             <select
@@ -670,7 +864,9 @@ const CurriculumManager = () => {
             )}
           </div>
         </div>
-        <div className={styles.buttonGroup}>
+
+        {/* Bottom Submission Action Buttons */}
+        <div className={styles.buttonGroup} style={{ marginTop: "24px" }}>
           <button className={styles.primaryButton} onClick={handleAddOrUpdate}>
             {editingId ? "Save Changes" : "Post Curriculum"}
           </button>
@@ -680,6 +876,7 @@ const CurriculumManager = () => {
         </div>
       </div>
 
+      {/* Published Curricula List */}
       <div className={styles.moduleCard}>
         <div className={styles.moduleTitleSmall}>Published Curricula</div>
         {loading ? (
@@ -716,12 +913,14 @@ const CurriculumManager = () => {
                       <button
                         className={styles.secondaryButton}
                         onClick={() => handleEdit(c.id)}
+                        style={{ marginRight: "6px" }}
                       >
                         Edit
                       </button>
                       <button
                         className={styles.secondaryButton}
                         onClick={() => handleDelete(c.id)}
+                        style={{ marginRight: "6px" }}
                       >
                         Delete
                       </button>
@@ -741,6 +940,112 @@ const CurriculumManager = () => {
           </div>
         )}
       </div>
+
+      {/* CUSTOM MODAL matching design standard */}
+      {modalConfig.isOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(3px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+          onClick={closeModal}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              padding: "28px 32px",
+              width: "100%",
+              maxWidth: "460px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 16px 0",
+                color: "#800000",
+                fontSize: "1.4rem",
+                fontWeight: "700",
+              }}
+            >
+              {modalConfig.title}
+            </h2>
+            <form onSubmit={handleModalSubmit}>
+              <div style={{ marginBottom: "20px" }}>
+                <input
+                  type="text"
+                  autoFocus
+                  className={styles.formInput}
+                  placeholder={modalConfig.placeholder}
+                  value={modalConfig.inputValue}
+                  onChange={(e) =>
+                    setModalConfig((prev) => ({
+                      ...prev,
+                      inputValue: e.target.value,
+                    }))
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.95rem",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <button
+                  type="submit"
+                  style={{
+                    backgroundColor: "#800000",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "10px 20px",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Save Option
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  style={{
+                    backgroundColor: "#cbd5e1",
+                    color: "#334155",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "10px 20px",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </ModuleShell>
   );
 };
