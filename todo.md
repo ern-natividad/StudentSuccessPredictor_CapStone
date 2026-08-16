@@ -2,7 +2,7 @@
 🔴 *To be Fixed*
 **ADMIN**
 - Pre-Enrollment Degree Recommendation Module (No Backend and Criteria for Recommendation)
-- Fix Add Teacher backend and supabase connection
+- Fix section for teacher backend and supabase connection
 - Academic Performance Forecasting and Early Warning Module (Backend and Connection to other module)
 
 **STAFF**
