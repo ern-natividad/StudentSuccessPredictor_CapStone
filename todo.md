@@ -8,6 +8,8 @@
 **STAFF**
 - Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
 - Fix the section in UI and Database (Staff & Student)
+- fix student Management: Manage Grade button
+- Screening page no backend and metrix yet
 
 **STUDENTS**
 - 
