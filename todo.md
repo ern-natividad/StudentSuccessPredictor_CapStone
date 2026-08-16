@@ -1,15 +1,27 @@
 **TODO LIST**
 🔴 *To be Fixed*
-- Add a backend logic to the Pre-Enrollment Module
-- Add a backend logic to the Curriculum Manager Module
-- Add a backend logic to the Performance Forecasting Module
+**ADMIN**
+- Pre-Enrollment Degree Recommendation Module (No Backend and Criteria for Recommendation)
+- Fix Add Teacher backend and supabase connection
+- Academic Performance Forecasting and Early Warning Module (Backend and Connection to other module)
+
+**STAFF**
+- Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
+- Fix the section in UI and Database (Staff & Student)
+
+**STUDENTS**
+- 
+- 
+
+**ALL ROLES**
+- AI Academic and Advising Module (not responsive yet)
+
 
 
 🟡 *In Progress*
-- Add linear regression model (neural network)
-- Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
-- Fixing the section in UI and Database (Staff & Student)
-- Fixing Add Teacher backend and supabase connection
+- 
+
+
 
 🟢 *Done*
 - Fix confirmation modal UX (Button color)
