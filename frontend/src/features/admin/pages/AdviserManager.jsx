@@ -389,13 +389,15 @@ const AdviserManager = () => {
                 display: "flex",
                 gap: "12px",
                 alignItems: "center",
+                width: "100%",
               }}
             >
               <button
                 type="button"
                 onClick={handleConfirmRemove}
                 style={{
-                  padding: "10px 20px",
+                  flex: 1,
+                  padding: "10px 16px",
                   borderRadius: "6px",
                   border: "none",
                   background: "#800000",
@@ -403,6 +405,7 @@ const AdviserManager = () => {
                   fontWeight: "600",
                   fontSize: "0.95rem",
                   cursor: "pointer",
+                  textAlign: "center",
                   transition: "background-color 0.15s ease",
                 }}
                 onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
@@ -415,14 +418,16 @@ const AdviserManager = () => {
                 type="button"
                 onClick={() => setRowToDelete(null)}
                 style={{
-                  padding: "10px 24px",
+                  flex: 1,
+                  padding: "10px 16px",
                   borderRadius: "6px",
                   border: "none",
                   background: "#cccccc",
                   color: "#1e293b",
-                  fontWeight: "500",
+                  fontWeight: "600",
                   fontSize: "0.95rem",
                   cursor: "pointer",
+                  textAlign: "center",
                   transition: "background-color 0.15s ease",
                 }}
                 onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8b8b8")}

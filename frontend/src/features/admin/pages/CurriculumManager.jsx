@@ -72,7 +72,7 @@ const CurriculumManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [courses, setCourses] = useState([]);
 
-  // Modal State for custom prompt
+  // Modal State for custom prompt (Add AY / Add Program)
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
     type: "", // 'academicYear' or 'program'
@@ -80,6 +80,9 @@ const CurriculumManager = () => {
     placeholder: "",
     inputValue: "",
   });
+
+  // State for Curriculum Deletion Modal
+  const [curriculumToDelete, setCurriculumToDelete] = useState(null);
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -350,13 +353,22 @@ const CurriculumManager = () => {
     resetCourseForm();
   };
 
-  const handleDelete = async (id) => {
+  // Open curriculum delete confirmation modal
+  const handlePromptDelete = (c) => {
+    setCurriculumToDelete(c);
+  };
+
+  // Confirmed curriculum deletion
+  const handleConfirmDelete = async () => {
+    if (!curriculumToDelete) return;
     try {
-      await deleteCurriculum(id);
+      await deleteCurriculum(curriculumToDelete.id);
       await loadCurricula();
     } catch (err) {
       console.error("Failed to delete curriculum:", err);
       toast.error(err.message || "Failed to delete curriculum.");
+    } finally {
+      setCurriculumToDelete(null);
     }
   };
 
@@ -919,7 +931,7 @@ const CurriculumManager = () => {
                       </button>
                       <button
                         className={styles.secondaryButton}
-                        onClick={() => handleDelete(c.id)}
+                        onClick={() => handlePromptDelete(c)}
                         style={{ marginRight: "6px" }}
                       >
                         Delete
@@ -941,7 +953,7 @@ const CurriculumManager = () => {
         )}
       </div>
 
-      {/* CUSTOM MODAL matching design standard */}
+      {/* CUSTOM MODAL for Add Academic Year / Add Program */}
       {modalConfig.isOpen && (
         <div
           style={{
@@ -1007,21 +1019,27 @@ const CurriculumManager = () => {
                 style={{
                   display: "flex",
                   gap: "12px",
-                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  width: "100%",
                 }}
               >
                 <button
                   type="submit"
                   style={{
+                    flex: 1,
                     backgroundColor: "#800000",
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "8px",
-                    padding: "10px 20px",
+                    padding: "10px 16px",
                     fontWeight: "600",
                     fontSize: "0.9rem",
                     cursor: "pointer",
+                    textAlign: "center",
+                    transition: "background-color 0.15s ease",
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
                 >
                   Save Option
                 </button>
@@ -1029,20 +1047,130 @@ const CurriculumManager = () => {
                   type="button"
                   onClick={closeModal}
                   style={{
+                    flex: 1,
                     backgroundColor: "#cbd5e1",
                     color: "#334155",
                     border: "none",
                     borderRadius: "8px",
-                    padding: "10px 20px",
+                    padding: "10px 16px",
                     fontWeight: "600",
                     fontSize: "0.9rem",
                     cursor: "pointer",
+                    textAlign: "center",
+                    transition: "background-color 0.15s ease",
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8c5d6")}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cbd5e1")}
                 >
                   Cancel
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CURRICULUM CONFIRMATION MODAL */}
+      {curriculumToDelete && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(3px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 9999,
+          }}
+          onClick={() => setCurriculumToDelete(null)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "12px",
+              width: "min(480px, 100%)",
+              padding: "28px 32px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "1.35rem",
+                fontWeight: "700",
+                color: "#800000",
+              }}
+            >
+              Confirm Curriculum Deletion
+            </h2>
+
+            <p
+              style={{
+                margin: "0 0 24px 0",
+                color: "#475569",
+                fontSize: "1.05rem",
+                lineHeight: "1.5",
+              }}
+            >
+              Are you sure you want to permanently delete the curriculum for{" "}
+              <strong>{curriculumToDelete.title}</strong>? This action cannot be undone.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#800000",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
+              >
+                Yes, Delete Curriculum
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurriculumToDelete(null)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#cccccc",
+                  color: "#1e293b",
+                  fontWeight: "600",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8b8b8")}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cccccc")}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
