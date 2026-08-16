@@ -26,9 +26,7 @@ const AdviserManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
   const [newTeacherRole, setNewTeacherRole] = useState("Adviser");
-  const [newTeacherSectionId, setNewTeacherSectionId] = useState(
-    sections[0]?.id || ""
-  );
+  const [newTeacherSectionId, setNewTeacherSectionId] = useState("");
   const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
 
   // Confirmation modal state for row removal
@@ -78,20 +76,27 @@ const AdviserManager = () => {
   const sectionOverviewRows = useMemo(() => {
     let rows = [];
     if (sections.length === 0) {
-      rows = staffMembers.map((staff) => ({
-        id: staff.id,
-        name: staff.full_name,
-        section:
+      rows = staffMembers.map((staff) => {
+        const assignedSec =
           staffSectionAssignments[staff.id] ||
           staff.assignedSection ||
-          "Unassigned",
-        yearAssigned: staff.assignedYearLevel || "N/A",
-        role: staff.title || "Academic Adviser",
-        students: students.filter(
-          (student) => student.assignedStaffId === staff.id
-        ).length,
-        adviserId: staff.id,
-      }));
+          "Unassigned";
+        const sectionObj = getSectionById(assignedSec);
+
+        return {
+          id: staff.id,
+          name: staff.full_name,
+          section: sectionObj ? sectionObj.name : assignedSec,
+          yearAssigned: staff.assignedYearLevel || "N/A",
+          role: staff.title || "Academic Adviser",
+          students: students.filter(
+            (student) =>
+              student.assignedStaffId === staff.id ||
+              student.assignedSectionId === assignedSec
+          ).length,
+          adviserId: staff.id,
+        };
+      });
     } else {
       rows = sections.map((section) => {
         const adviser = getStaffById(section.adviserId);
@@ -110,6 +115,30 @@ const AdviserManager = () => {
           adviserId: section.adviserId,
         };
       });
+
+      // Include staff who have custom assignments outside default section lists
+      staffMembers.forEach((staff) => {
+        const customSec = staffSectionAssignments[staff.id];
+        if (
+          customSec &&
+          !sections.some((sec) => sec.adviserId === staff.id || sec.id === customSec)
+        ) {
+          const secObj = getSectionById(customSec);
+          rows.push({
+            id: staff.id,
+            name: staff.full_name,
+            section: secObj ? secObj.name : customSec,
+            yearAssigned: staff.assignedYearLevel || "N/A",
+            role: staff.title || "Academic Adviser",
+            students: students.filter(
+              (student) =>
+                student.assignedStaffId === staff.id ||
+                student.assignedSectionId === customSec
+            ).length,
+            adviserId: staff.id,
+          });
+        }
+      });
     }
 
     // Filter out rows saved as removed in localStorage
@@ -119,13 +148,18 @@ const AdviserManager = () => {
     staffMembers,
     students,
     getStaffById,
+    getSectionById,
     staffSectionAssignments,
     removedRowIds,
   ]);
 
   const viewSectionStudents = useMemo(
     () =>
-      students.filter((student) => student.assignedStaffId === viewSectionId),
+      students.filter(
+        (student) =>
+          student.assignedStaffId === viewSectionId ||
+          student.assignedSectionId === viewSectionId
+      ),
     [students, viewSectionId]
   );
 
@@ -139,7 +173,7 @@ const AdviserManager = () => {
   const handleOpenAddModal = () => {
     setNewTeacherStaffId(staffMembers[0]?.id || "");
     setNewTeacherRole("Adviser");
-    setNewTeacherSectionId(sections[0]?.id || "");
+    setNewTeacherSectionId(sections[0]?.id || "A");
     setIsAddModalOpen(true);
   };
 
@@ -164,20 +198,25 @@ const AdviserManager = () => {
   const handleSaveEdit = () => {
     if (!selectedEditRowId || !editStaffId) return;
 
-    updateStaffRole(editStaffId, editRole);
+    if (updateStaffRole) {
+      updateStaffRole(editStaffId, editRole);
+    }
     setStaffSectionAssignments((currentAssignments) => ({
       ...currentAssignments,
       [editStaffId]: editSectionId,
     }));
 
-    if (editSectionId) {
+    if (editSectionId && updateSectionAdviser) {
       updateSectionAdviser(editSectionId, editStaffId);
     }
 
     // Restore visibility if previously removed from overview
     setRemovedRowIds((prev) =>
       prev.filter(
-        (id) => id !== selectedEditRowId && id !== editSectionId && id !== editStaffId
+        (id) =>
+          id !== selectedEditRowId &&
+          id !== editSectionId &&
+          id !== editStaffId
       )
     );
 
@@ -187,16 +226,24 @@ const AdviserManager = () => {
   const handleSaveNewTeacher = () => {
     if (!newTeacherStaffId || !newTeacherRole || !newTeacherSectionId) return;
 
-    updateStaffRole(newTeacherStaffId, newTeacherRole);
+    if (updateStaffRole) {
+      updateStaffRole(newTeacherStaffId, newTeacherRole);
+    }
+
     setStaffSectionAssignments((currentAssignments) => ({
       ...currentAssignments,
       [newTeacherStaffId]: newTeacherSectionId,
     }));
-    updateSectionAdviser(newTeacherSectionId, newTeacherStaffId);
+
+    if (updateSectionAdviser) {
+      updateSectionAdviser(newTeacherSectionId, newTeacherStaffId);
+    }
 
     // Restore visibility if previously removed from overview
     setRemovedRowIds((prev) =>
-      prev.filter((id) => id !== newTeacherStaffId && id !== newTeacherSectionId)
+      prev.filter(
+        (id) => id !== newTeacherStaffId && id !== newTeacherSectionId
+      )
     );
 
     setIsAddModalOpen(false);
