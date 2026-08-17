@@ -3,55 +3,79 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
+import { upsertStudentInfo } from "../../../services/studentInfoService";
+import { AUTH_ROLES } from "../../../utils/constants";
+import {
+  getStaffSectionLabel,
+  getStudentSectionValue,
+} from "../../../utils/adviserAssignmentUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
+
+const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
+const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
+
+const createEmptyStudentInfoForm = () => ({
+  student_id: "",
+  department: "",
+  section: "",
+  year_level: YEAR_LEVEL_OPTIONS[0],
+  risk_level: "Low",
+});
+
+const getStudentSectionLabel = (student, getSectionById) =>
+  getStaffSectionLabel(getStudentSectionValue(student), getSectionById);
 
 const StudentManagementPage = () => {
   const { user } = useAuth();
   const toast = useToast();
   const {
     students,
+    staffMembers,
     getStudentsForStaff,
     getSectionById,
     updateStudentGradeRecord,
+    updateStudentInfoRecord,
     directoryLoading,
     directoryError,
   } = useDashboard();
 
-  const currentStaff = useMemo(() => {
+  const loggedInStaff = useMemo(() => {
     if (!user || user.role !== "staff") return null;
+
     return (
-      students.find(
-        (student) =>
-          student.assignedStaffId &&
-          student.assignedStaffId.toLowerCase() ===
-            (user.email || "").toLowerCase(),
+      staffMembers.find(
+        (staff) =>
+          staff.id === user.id ||
+          staff.email?.toLowerCase() === (user.email || "").toLowerCase(),
       ) || null
     );
-  }, [students, user]);
+  }, [staffMembers, user]);
 
   const staffStudentList = useMemo(() => {
-    if (!user || user.role !== "staff") return [];
-    return getStudentsForStaff(user.email || "staff-1");
-  }, [getStudentsForStaff, user]);
+    if (!loggedInStaff) return [];
+    return getStudentsForStaff(loggedInStaff.id);
+  }, [getStudentsForStaff, loggedInStaff]);
 
-  const displayStudentList = useMemo(() => {
-    const list =
-      staffStudentList.length > 0 ? staffStudentList : students.slice(0, 5);
-    return list.slice(0, 5);
-  }, [staffStudentList, students]);
+  const displayStudentList = useMemo(
+    () => staffStudentList,
+    [staffStudentList],
+  );
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
+  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [isGradeHistoryModalOpen, setIsGradeHistoryModalOpen] = useState(false);
   const [semesterFilter, setSemesterFilter] = useState("");
   const [isSavingGrade, setIsSavingGrade] = useState(false);
+  const [isSavingStudentInfo, setIsSavingStudentInfo] = useState(false);
   const [gradeForm, setGradeForm] = useState({
     subject: "",
     semester: "1S",
     grade: "",
     remarks: "",
   });
+  const [studentInfoForm, setStudentInfoForm] = useState(createEmptyStudentInfoForm);
   const [studentGrades, setStudentGrades] = useState([]);
   const [gradesLoading, setGradesLoading] = useState(false);
   const [gradesError, setGradesError] = useState("");
@@ -118,8 +142,7 @@ const StudentManagementPage = () => {
       displayStudentList.map((student, rowIndex) => ({
         ...student,
         rowIndex: rowIndex + 1,
-        sectionName:
-          getSectionById(student.assignedSectionId)?.name || "Unassigned",
+        sectionName: getStudentSectionLabel(student, getSectionById),
         subjectCode: student.grade_records?.[0]?.subject || "UXD1712",
         schedule:
           [
@@ -148,6 +171,64 @@ const StudentManagementPage = () => {
 
   const closeGradeModal = () => {
     setIsGradeModalOpen(false);
+  };
+
+  const openEditStudentModal = (studentId) => {
+    const student = displayStudentList.find(
+      (entry) => entry.student_id === studentId,
+    );
+    if (!student) return;
+
+    setSelectedStudentId(studentId);
+    setStudentInfoForm({
+      student_id: student.student_id || "",
+      department: student.department || "",
+      section: student.section || student.assignedSectionId || "",
+      year_level: student.yearLevel || student.year_level || YEAR_LEVEL_OPTIONS[0],
+      risk_level: student.risk_level || "Low",
+    });
+    setIsEditStudentModalOpen(true);
+  };
+
+  const closeEditStudentModal = () => {
+    setIsEditStudentModalOpen(false);
+  };
+
+  const handleStudentInfoChange = (field, value) => {
+    setStudentInfoForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveStudentInfo = async () => {
+    if (!selectedStudent) return;
+
+    if (!studentInfoForm.student_id.trim()) {
+      toast.error("Student ID is required.");
+      return;
+    }
+
+    try {
+      setIsSavingStudentInfo(true);
+      const updatedInfo = await upsertStudentInfo(selectedStudent.user_id, {
+        student_id: studentInfoForm.student_id,
+        department: studentInfoForm.department,
+        section: studentInfoForm.section,
+        year_level: studentInfoForm.year_level,
+        risk_level: studentInfoForm.risk_level,
+      });
+
+      updateStudentInfoRecord(selectedStudent.student_id, updatedInfo);
+
+      if (updatedInfo.student_id !== selectedStudent.student_id) {
+        setSelectedStudentId(updatedInfo.student_id);
+      }
+
+      setIsEditStudentModalOpen(false);
+      toast.success("Student information updated.");
+    } catch (error) {
+      toast.error(error.message || "Unable to update student information.");
+    } finally {
+      setIsSavingStudentInfo(false);
+    }
   };
 
   const openGradeHistoryModal = (studentId) => {
@@ -199,8 +280,8 @@ const StudentManagementPage = () => {
   const summaryStats = useMemo(() => {
     const sectionNames = new Set(
       displayStudentList
-        .map((student) => getSectionById(student.assignedSectionId)?.name)
-        .filter(Boolean),
+        .map((student) => getStudentSectionLabel(student, getSectionById))
+        .filter((name) => name && name !== "Unassigned"),
     );
 
     const averageGrade =
@@ -291,7 +372,7 @@ const StudentManagementPage = () => {
               <col style={{ width: "12%" }} />
               <col style={{ width: "15%" }} />
               <col style={{ width: "7%" }} />
-              <col style={{ width: "8%" }} />
+              <col style={{ width: "10%" }} />
             </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
@@ -346,13 +427,25 @@ const StudentManagementPage = () => {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          openEditStudentModal(row.student_id);
+                        }}
+                        className={styles.tableActionButton}
+                        aria-label={`Edit student info for ${row.full_name}`}
+                        title="Edit student info"
+                      >
+                        <i className="fas fa-pen-to-square" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           openGradeModal(row.student_id);
                         }}
                         className={styles.tableActionButton}
-                        aria-label={`Manage grades for ${row.full_name}`}
-                        title="Manage grades"
+                        aria-label={`Add grade for ${row.full_name}`}
+                        title="Add grade"
                       >
-                        <i className="fas fa-pen-to-square" aria-hidden="true" />
+                        <i className="fas fa-plus" aria-hidden="true" />
                       </button>
                     </div>
                   </td>
@@ -538,7 +631,7 @@ const StudentManagementPage = () => {
               }}
             >
               <div>
-                <h2 style={{ margin: 0 }}>Manage Grades</h2>
+                <h2 style={{ margin: 0 }}>Add Grade</h2>
                 <p style={{ margin: "8px 0 0", color: "#64748B" }}>
                   Add a new grade record for {selectedStudent.full_name}.
                 </p>
@@ -654,6 +747,179 @@ const StudentManagementPage = () => {
                   style={{ padding: "10px 16px" }}
                 >
                   {isSavingGrade ? "Saving..." : "Save Grade Record"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isEditStudentModalOpen && selectedStudent ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1000,
+          }}
+          onClick={closeEditStudentModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-student-title"
+            style={{
+              width: "min(660px, 100%)",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 20,
+              }}
+            >
+              <div>
+                <h2 id="edit-student-title" style={{ margin: 0 }}>
+                  Edit Student Info
+                </h2>
+                <p style={{ margin: "8px 0 0", color: "#64748B" }}>
+                  Update profile details for {selectedStudent.full_name}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditStudentModal}
+                aria-label="Close edit student info"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 16 }}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Student ID
+                </label>
+                <input
+                  type="text"
+                  value={studentInfoForm.student_id}
+                  onChange={(e) =>
+                    handleStudentInfoChange("student_id", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={studentInfoForm.department}
+                  onChange={(e) =>
+                    handleStudentInfoChange("department", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Section
+                </label>
+                <input
+                  type="text"
+                  value={studentInfoForm.section}
+                  onChange={(e) =>
+                    handleStudentInfoChange("section", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Year Level
+                </label>
+                <select
+                  value={studentInfoForm.year_level}
+                  onChange={(e) =>
+                    handleStudentInfoChange("year_level", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  {YEAR_LEVEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Risk Level
+                </label>
+                <select
+                  value={studentInfoForm.risk_level}
+                  onChange={(e) =>
+                    handleStudentInfoChange("risk_level", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  {RISK_LEVEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
+              >
+                <button
+                  type="button"
+                  onClick={closeEditStudentModal}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveStudentInfo}
+                  disabled={isSavingStudentInfo}
+                  className={commonStyles.primaryButton}
+                  style={{ padding: "10px 16px" }}
+                >
+                  {isSavingStudentInfo ? "Saving..." : "Save Student Info"}
                 </button>
               </div>
             </div>

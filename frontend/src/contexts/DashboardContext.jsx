@@ -2,6 +2,7 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
+import { filterStudentsForAdviser } from "../utils/adviserAssignmentUtils";
 
 export const DashboardContext = createContext();
 
@@ -77,6 +78,7 @@ export const DashboardProvider = ({ children }) => {
                 studentInfo?.risk_level || account.risk_level,
               ),
               assignedSectionId: account.assignedSectionId || studentInfo?.section || null,
+              section: studentInfo?.section || null,
               assignedStaffId: account.assignedStaffId || null,
               department: studentInfo?.department || null,
               email: account.email || "",
@@ -201,9 +203,23 @@ export const DashboardProvider = ({ children }) => {
   );
 
   const getStudentsForStaff = useCallback(
-    (staffId) =>
-      students.filter((student) => student.assignedStaffId === staffId),
-    [students],
+    (staffIdentifier) => {
+      const staff = staffMembers.find(
+        (member) =>
+          member.id === staffIdentifier ||
+          member.email?.toLowerCase() ===
+            String(staffIdentifier || "").toLowerCase(),
+      );
+
+      if (!staff) return [];
+
+      return filterStudentsForAdviser(
+        students,
+        staff.assignedSection,
+        staff.assignedYearLevel,
+      );
+    },
+    [students, staffMembers],
   );
 
   const updateStudentGradeRecord = useCallback(
@@ -219,6 +235,24 @@ export const DashboardProvider = ({ children }) => {
     [setStudents],
   );
 
+  const updateStudentInfoRecord = useCallback((studentId, infoUpdates) => {
+    setStudents((prevStudents) =>
+      prevStudents.map((student) =>
+        student.student_id === studentId
+          ? {
+              ...student,
+              student_id: infoUpdates.student_id ?? student.student_id,
+              year_level: infoUpdates.year_level ?? student.year_level,
+              yearLevel: infoUpdates.year_level ?? student.yearLevel,
+              department: infoUpdates.department ?? student.department,
+              section: infoUpdates.section ?? student.section,
+              assignedSectionId: infoUpdates.section ?? student.assignedSectionId,
+              risk_level: infoUpdates.risk_level ?? student.risk_level,
+            }
+          : student,
+      ),
+    );
+  }, []);
 
   const updateStudentSectionAssignment = useCallback(
     (studentId, sectionId) => {
@@ -276,6 +310,22 @@ export const DashboardProvider = ({ children }) => {
     [setStaffMembers],
   );
 
+  const updateAdviserInfoRecord = useCallback((staffId, infoUpdates) => {
+    setStaffMembers((prevStaff) =>
+      prevStaff.map((staff) =>
+        staff.id === staffId
+          ? {
+              ...staff,
+              assignedSection:
+                infoUpdates.assigned_section ?? staff.assignedSection,
+              assignedYearLevel:
+                infoUpdates.year_level ?? staff.assignedYearLevel,
+            }
+          : staff,
+      ),
+    );
+  }, []);
+
   const addStaffMember = useCallback(
     (name, role, sectionId) => {
       const newStaffId = `staff-${Date.now()}`;
@@ -323,9 +373,11 @@ export const DashboardProvider = ({ children }) => {
     getStaffById,
     getStudentsForStaff,
     updateStudentGradeRecord,
+    updateStudentInfoRecord,
     updateStudentSectionAssignment,
     updateSectionAdviser,
     updateStaffRole,
+    updateAdviserInfoRecord,
     addStaffMember,
   };
 

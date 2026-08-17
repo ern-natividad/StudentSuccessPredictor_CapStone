@@ -1,11 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useToast } from "../../../components/Common/Toast";
+import { upsertAdviserInfo } from "../../../services/adviserInfoService";
+import { AUTH_ROLES } from "../../../utils/constants";
+import {
+  filterStudentsForAdviser,
+  getStaffSectionLabel,
+  getStudentSectionValue,
+} from "../../../utils/adviserAssignmentUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const STORAGE_KEY_REMOVED_ROWS = "adviser_overview_removed_ids";
+const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
+
+const countStudentsForAdviser = (
+  studentList,
+  adviserSection,
+  adviserYearLevel,
+) =>
+  filterStudentsForAdviser(studentList, adviserSection, adviserYearLevel).length;
 
 const AdviserManager = () => {
+  const toast = useToast();
   const {
     sections,
     staffMembers,
@@ -14,6 +31,7 @@ const AdviserManager = () => {
     getSectionById,
     updateSectionAdviser,
     updateStaffRole,
+    updateAdviserInfoRecord,
     directoryLoading,
     directoryError,
   } = useDashboard();
@@ -21,12 +39,17 @@ const AdviserManager = () => {
   const [selectedEditRowId, setSelectedEditRowId] = useState(null);
   const [viewSectionId, setViewSectionId] = useState(null);
   const [editStaffId, setEditStaffId] = useState(staffMembers[0]?.id || "");
-  const [editSectionId, setEditSectionId] = useState(sections[0]?.id || "");
+  const [editSectionId, setEditSectionId] = useState(sections[0]?.id || "A");
+  const [editYearAssigned, setEditYearAssigned] = useState(YEAR_LEVEL_OPTIONS[0]);
   const [editRole, setEditRole] = useState("Adviser");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
   const [newTeacherRole, setNewTeacherRole] = useState("Adviser");
-  const [newTeacherSectionId, setNewTeacherSectionId] = useState("");
+  const [newTeacherSectionId, setNewTeacherSectionId] = useState("A");
+  const [newTeacherYearAssigned, setNewTeacherYearAssigned] = useState(
+    YEAR_LEVEL_OPTIONS[0],
+  );
+  const [isSaving, setIsSaving] = useState(false);
   const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
 
   // Confirmation modal state for row removal
@@ -78,31 +101,30 @@ const AdviserManager = () => {
     if (sections.length === 0) {
       rows = staffMembers.map((staff) => {
         const assignedSec =
-          staffSectionAssignments[staff.id] ||
-          staff.assignedSection ||
-          "Unassigned";
-        const sectionObj = getSectionById(assignedSec);
+          staffSectionAssignments[staff.id] || staff.assignedSection || null;
 
         return {
           id: staff.id,
           name: staff.full_name,
-          section: sectionObj ? sectionObj.name : assignedSec,
+          section: getStaffSectionLabel(assignedSec, getSectionById),
           yearAssigned: staff.assignedYearLevel || "N/A",
           role: staff.title || "Academic Adviser",
-          students: students.filter(
-            (student) =>
-              student.assignedStaffId === staff.id ||
-              student.assignedSectionId === assignedSec
-          ).length,
+          students: countStudentsForAdviser(
+            students,
+            assignedSec,
+            staff.assignedYearLevel,
+          ),
           adviserId: staff.id,
         };
       });
     } else {
       rows = sections.map((section) => {
         const adviser = getStaffById(section.adviserId);
-        const sectionStudents = students.filter(
-          (student) => student.assignedSectionId === section.id
-        );
+        const adviserSection =
+          (adviser &&
+            (staffSectionAssignments[adviser.id] || adviser.assignedSection)) ||
+          section.id;
+
         return {
           id: section.id,
           name: adviser?.full_name || "Unassigned",
@@ -111,7 +133,11 @@ const AdviserManager = () => {
           role: adviser?.title?.toLowerCase().includes("adviser")
             ? "Adviser"
             : "Subject Teacher",
-          students: sectionStudents.length,
+          students: countStudentsForAdviser(
+            students,
+            adviserSection,
+            adviser?.assignedYearLevel,
+          ),
           adviserId: section.adviserId,
         };
       });
@@ -123,18 +149,17 @@ const AdviserManager = () => {
           customSec &&
           !sections.some((sec) => sec.adviserId === staff.id || sec.id === customSec)
         ) {
-          const secObj = getSectionById(customSec);
           rows.push({
             id: staff.id,
             name: staff.full_name,
-            section: secObj ? secObj.name : customSec,
+            section: getStaffSectionLabel(customSec, getSectionById),
             yearAssigned: staff.assignedYearLevel || "N/A",
             role: staff.title || "Academic Adviser",
-            students: students.filter(
-              (student) =>
-                student.assignedStaffId === staff.id ||
-                student.assignedSectionId === customSec
-            ).length,
+            students: countStudentsForAdviser(
+              students,
+              customSec,
+              staff.assignedYearLevel,
+            ),
             adviserId: staff.id,
           });
         }
@@ -153,27 +178,45 @@ const AdviserManager = () => {
     removedRowIds,
   ]);
 
-  const viewSectionStudents = useMemo(
-    () =>
-      students.filter(
-        (student) =>
-          student.assignedStaffId === viewSectionId ||
-          student.assignedSectionId === viewSectionId
-      ),
-    [students, viewSectionId]
-  );
+  const viewSectionStudents = useMemo(() => {
+    if (!viewSectionId) return [];
+
+    const adviser = staffMembers.find((staff) => staff.id === viewSectionId);
+    if (!adviser) return [];
+
+    const adviserSection =
+      staffSectionAssignments[adviser.id] || adviser.assignedSection;
+
+    return filterStudentsForAdviser(
+      students,
+      adviserSection,
+      adviser.assignedYearLevel,
+    );
+  }, [students, viewSectionId, staffMembers, staffSectionAssignments]);
 
   const handleOpenEdit = (row) => {
+    const staff = staffMembers.find((member) => member.id === row.adviserId);
+    const assignedSection =
+      staffSectionAssignments[row.adviserId] ||
+      staff?.assignedSection ||
+      (row.section === "Unassigned" ? "" : row.section);
+
     setSelectedEditRowId(row.id);
     setEditStaffId(row.adviserId || staffMembers[0]?.id || "");
-    setEditSectionId(row.section === "Unassigned" ? "" : row.section);
+    setEditSectionId(assignedSection || "A");
+    setEditYearAssigned(
+      staff?.assignedYearLevel && staff.assignedYearLevel !== "N/A"
+        ? staff.assignedYearLevel
+        : YEAR_LEVEL_OPTIONS[0],
+    );
     setEditRole(row.role);
   };
 
   const handleOpenAddModal = () => {
     setNewTeacherStaffId(staffMembers[0]?.id || "");
     setNewTeacherRole("Adviser");
-    setNewTeacherSectionId(sections[0]?.id || "A");
+    setNewTeacherSectionId("A");
+    setNewTeacherYearAssigned(YEAR_LEVEL_OPTIONS[0]);
     setIsAddModalOpen(true);
   };
 
@@ -195,58 +238,89 @@ const AdviserManager = () => {
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedEditRowId || !editStaffId) return;
 
-    if (updateStaffRole) {
-      updateStaffRole(editStaffId, editRole);
+    try {
+      setIsSaving(true);
+
+      if (updateStaffRole) {
+        updateStaffRole(editStaffId, editRole);
+      }
+
+      const updatedInfo = await upsertAdviserInfo(editStaffId, {
+        assigned_section: editSectionId,
+        year_level: editYearAssigned,
+      });
+
+      updateAdviserInfoRecord(editStaffId, updatedInfo);
+
+      setStaffSectionAssignments((currentAssignments) => ({
+        ...currentAssignments,
+        [editStaffId]: editSectionId,
+      }));
+
+      if (editSectionId && updateSectionAdviser) {
+        updateSectionAdviser(editSectionId, editStaffId);
+      }
+
+      setRemovedRowIds((prev) =>
+        prev.filter(
+          (id) =>
+            id !== selectedEditRowId &&
+            id !== editSectionId &&
+            id !== editStaffId,
+        ),
+      );
+
+      setSelectedEditRowId(null);
+      toast.success("Section assignment updated.");
+    } catch (error) {
+      toast.error(error.message || "Unable to save section assignment.");
+    } finally {
+      setIsSaving(false);
     }
-    setStaffSectionAssignments((currentAssignments) => ({
-      ...currentAssignments,
-      [editStaffId]: editSectionId,
-    }));
-
-    if (editSectionId && updateSectionAdviser) {
-      updateSectionAdviser(editSectionId, editStaffId);
-    }
-
-    // Restore visibility if previously removed from overview
-    setRemovedRowIds((prev) =>
-      prev.filter(
-        (id) =>
-          id !== selectedEditRowId &&
-          id !== editSectionId &&
-          id !== editStaffId
-      )
-    );
-
-    setSelectedEditRowId(null);
   };
 
-  const handleSaveNewTeacher = () => {
+  const handleSaveNewTeacher = async () => {
     if (!newTeacherStaffId || !newTeacherRole || !newTeacherSectionId) return;
 
-    if (updateStaffRole) {
-      updateStaffRole(newTeacherStaffId, newTeacherRole);
+    try {
+      setIsSaving(true);
+
+      if (updateStaffRole) {
+        updateStaffRole(newTeacherStaffId, newTeacherRole);
+      }
+
+      const updatedInfo = await upsertAdviserInfo(newTeacherStaffId, {
+        assigned_section: newTeacherSectionId,
+        year_level: newTeacherYearAssigned,
+      });
+
+      updateAdviserInfoRecord(newTeacherStaffId, updatedInfo);
+
+      setStaffSectionAssignments((currentAssignments) => ({
+        ...currentAssignments,
+        [newTeacherStaffId]: newTeacherSectionId,
+      }));
+
+      if (updateSectionAdviser) {
+        updateSectionAdviser(newTeacherSectionId, newTeacherStaffId);
+      }
+
+      setRemovedRowIds((prev) =>
+        prev.filter(
+          (id) => id !== newTeacherStaffId && id !== newTeacherSectionId,
+        ),
+      );
+
+      setIsAddModalOpen(false);
+      toast.success("Teacher assignment saved.");
+    } catch (error) {
+      toast.error(error.message || "Unable to save teacher assignment.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setStaffSectionAssignments((currentAssignments) => ({
-      ...currentAssignments,
-      [newTeacherStaffId]: newTeacherSectionId,
-    }));
-
-    if (updateSectionAdviser) {
-      updateSectionAdviser(newTeacherSectionId, newTeacherStaffId);
-    }
-
-    // Restore visibility if previously removed from overview
-    setRemovedRowIds((prev) =>
-      prev.filter(
-        (id) => id !== newTeacherStaffId && id !== newTeacherSectionId
-      )
-    );
-
-    setIsAddModalOpen(false);
   };
 
   return (
@@ -570,7 +644,10 @@ const AdviserManager = () => {
                         {student.full_name}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        {getSectionById(student.assignedSectionId)?.name || "Unassigned"}
+                        {getStaffSectionLabel(
+                          getStudentSectionValue(student),
+                          getSectionById,
+                        )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
                         {student.yearLevel}
@@ -802,6 +879,36 @@ const AdviserManager = () => {
                 </select>
               </div>
 
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                  Year Assigned
+                </label>
+                <select
+                  value={isAddModalOpen ? newTeacherYearAssigned : editYearAssigned}
+                  onChange={(e) =>
+                    isAddModalOpen
+                      ? setNewTeacherYearAssigned(e.target.value)
+                      : setEditYearAssigned(e.target.value)
+                  }
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
+                >
+                  {YEAR_LEVEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Modal Actions */}
               <div
                 style={{
@@ -837,6 +944,7 @@ const AdviserManager = () => {
                   onClick={
                     isAddModalOpen ? handleSaveNewTeacher : handleSaveEdit
                   }
+                  disabled={isSaving}
                   style={{
                     padding: "0.55rem 1.25rem",
                     borderRadius: "8px",
@@ -852,7 +960,11 @@ const AdviserManager = () => {
                   onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#700000")}
                   onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#8b0000")}
                 >
-                  {isAddModalOpen ? "Add Teacher" : "Save Changes"}
+                  {isSaving
+                    ? "Saving..."
+                    : isAddModalOpen
+                      ? "Add Teacher"
+                      : "Save Changes"}
                 </button>
               </div>
             </div>
