@@ -395,6 +395,22 @@ const CurriculumManager = () => {
     a.remove();
   };
 
+  // Inline style object for the icon action buttons matching the UI design
+  const iconButtonStyle = {
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    backgroundColor: "#ffffff",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    fontSize: "0.95rem",
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+  };
+
   return (
     <ModuleShell
       title="Curriculum Manager"
@@ -907,7 +923,7 @@ const CurriculumManager = () => {
                   <th>Department</th>
                   <th>Program</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th style={{ textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody className={styles.tableStriped}>
@@ -922,28 +938,82 @@ const CurriculumManager = () => {
                       {c.approvedByName ? ` — Approved by ${c.approvedByName}` : ""}
                     </td>
                     <td>
-                      <button
-                        className={styles.secondaryButton}
-                        onClick={() => handleEdit(c.id)}
-                        style={{ marginRight: "6px" }}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                        }}
                       >
-                        Edit
-                      </button>
-                      <button
-                        className={styles.secondaryButton}
-                        onClick={() => handlePromptDelete(c)}
-                        style={{ marginRight: "6px" }}
-                      >
-                        Delete
-                      </button>
-                      {c.status !== "Published" && (
+                        {/* Edit Button Icon */}
                         <button
-                          className={styles.primaryButton}
-                          onClick={() => handleApprove(c.id)}
+                          type="button"
+                          style={{
+                            ...iconButtonStyle,
+                            color: "#334155",
+                          }}
+                          onClick={() => handleEdit(c.id)}
+                          title="Edit Curriculum"
+                          aria-label={`Edit ${c.title}`}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f1f5f9";
+                            e.currentTarget.style.borderColor = "#cbd5e1";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                          }}
                         >
-                          Approve
+                          <i className="fas fa-pen-to-square" aria-hidden="true" />
                         </button>
-                      )}
+
+                        {/* Approve Button Icon */}
+                        {c.status !== "Published" && (
+                          <button
+                            type="button"
+                            style={{
+                              ...iconButtonStyle,
+                              color: "#16a34a",
+                            }}
+                            onClick={() => handleApprove(c.id)}
+                            title="Approve Curriculum"
+                            aria-label={`Approve ${c.title}`}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = "#f0fdf4";
+                              e.currentTarget.style.borderColor = "#bbf7d0";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e2e8f0";
+                            }}
+                          >
+                            <i className="fas fa-circle-check" aria-hidden="true" />
+                          </button>
+                        )}
+
+                        {/* Delete Button Icon */}
+                        <button
+                          type="button"
+                          style={{
+                            ...iconButtonStyle,
+                            color: "#ef4444",
+                          }}
+                          onClick={() => handlePromptDelete(c)}
+                          title="Delete Curriculum"
+                          aria-label={`Delete ${c.title}`}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = "#fef2f2";
+                            e.currentTarget.style.borderColor = "#fecaca";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                          }}
+                        >
+                          <i className="fas fa-trash-can" aria-hidden="true" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
