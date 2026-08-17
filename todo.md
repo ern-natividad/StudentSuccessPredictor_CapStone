@@ -7,7 +7,6 @@
 
 **STAFF**
 - Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
-- Fix the section in UI and Database (Staff & Student)
 - fix student Management: Manage Grade button
 - Screening page no backend and metrix yet
 
@@ -16,7 +15,6 @@
 
 **ALL ROLES**
 - AI Academic and Advising Module (not responsive yet)
-- Supabase table student_info (still saving the year_level as first year even though I set it to 4th Year)
 
 
 🟡 *In Progress*
@@ -37,6 +35,7 @@
 - Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin)
 - Engineering Program Predictor (New account says failed to fetch instead of No Prediction yet because of no existing data)
 - My Grades (Same with the engineering program predictor)
+- Fix the section in UI and Database (Staff & Student)
 
 **SYSTEM IMPORTANT FEATURES**
 - AI Academic and Advising Module
