@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { api } from "../../../services/api";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { api, isBackendAuthEnabled, isEmptyDataError } from "../../../services/api";
 import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
+
+const NO_GRADES_MESSAGE =
+  "No grade records are available yet. Your grades will appear here once academic staff record them.";
 
 const MyGradesPage = () => {
   const { user } = useAuth();
@@ -12,27 +14,44 @@ const MyGradesPage = () => {
   const [gradeRecords, setGradeRecords] = useState([]);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [gradeError, setGradeError] = useState("");
+  const [emptyMessage, setEmptyMessage] = useState("");
 
   useEffect(() => {
     const loadGrades = async () => {
       setLoadingGrades(true);
       setGradeError("");
+      setEmptyMessage("");
+
+      if (!isBackendAuthEnabled() || !user?.isAuthenticated) {
+        setGradeError("Sign in with backend authentication to view your grades.");
+        setLoadingGrades(false);
+        return;
+      }
+
       try {
         const result = await api.getMyGrades();
-        setGradeRecords(result.grades || []);
+        const grades = result.grades || [];
+        setGradeRecords(grades);
+        if (grades.length === 0) {
+          setEmptyMessage(NO_GRADES_MESSAGE);
+        }
       } catch (error) {
-        const message = error.message || "Unable to load grades.";
-        setGradeError(message);
-        toast.error(message);
+        if (isEmptyDataError(error)) {
+          setGradeRecords([]);
+          setEmptyMessage(NO_GRADES_MESSAGE);
+          setGradeError("");
+        } else {
+          const message = error.message || "Unable to load grades.";
+          setGradeError(message);
+          toast.error(message);
+        }
       } finally {
         setLoadingGrades(false);
       }
     };
 
-    if (user?.isAuthenticated) {
-      loadGrades();
-    }
-  }, [user, toast]);
+    loadGrades();
+  }, [user?.isAuthenticated, toast]);
 
   const gradesBySemester = gradeRecords.reduce((grouped, record) => {
     const semester = record.semester || "Unknown";
@@ -60,7 +79,7 @@ const MyGradesPage = () => {
         <div className={styles.contentCard}>{gradeError}</div>
       ) : gradeRecords.length === 0 ? (
         <div className={styles.contentCard}>
-          <p className={styles.pageSubtitle}>No grade records are available yet.</p>
+          <p className={styles.pageSubtitle}>{emptyMessage || NO_GRADES_MESSAGE}</p>
         </div>
       ) : (
         Object.keys(gradesBySemester).map((semester) => (

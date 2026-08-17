@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { api, isBackendAuthEnabled } from "../../../services/api";
+import { api, isBackendAuthEnabled, isEmptyDataError } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
+
+const NO_PREDICTION_MESSAGE =
+  "No prediction yet. Your forecast will appear once academic staff record your grades.";
 
 const StudentPrediction = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [prediction, setPrediction] = useState(null);
+  const [emptyMessage, setEmptyMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,10 +30,27 @@ const StudentPrediction = () => {
       try {
         setLoading(true);
         setError("");
+        setEmptyMessage("");
         const result = await api.getMyPrediction();
-        if (isMounted) setPrediction(result.prediction);
+        if (!isMounted) return;
+
+        if (result.prediction) {
+          setPrediction(result.prediction);
+          setEmptyMessage("");
+        } else {
+          setPrediction(null);
+          setEmptyMessage(result.message || NO_PREDICTION_MESSAGE);
+        }
       } catch (requestError) {
-        if (isMounted) setError(requestError.message || "Unable to load your grade prediction.");
+        if (!isMounted) return;
+
+        if (isEmptyDataError(requestError)) {
+          setPrediction(null);
+          setEmptyMessage(NO_PREDICTION_MESSAGE);
+          setError("");
+        } else {
+          setError(requestError.message || "Unable to load your grade prediction.");
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -55,6 +76,13 @@ const StudentPrediction = () => {
 
       {loading && <div className={styles.card}>Loading your grade prediction…</div>}
       {!loading && error && <div className={styles.card}>{error}</div>}
+      {!loading && !error && emptyMessage && (
+        <div className={styles.card}>
+          <p className={styles.pageDesc} style={{ margin: 0 }}>
+            {emptyMessage}
+          </p>
+        </div>
+      )}
 
       {!loading && !error && prediction && (
         <div

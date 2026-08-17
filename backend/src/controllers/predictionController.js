@@ -76,7 +76,11 @@ export const getStudentPrediction = async (req, res) => {
     .order("created_at", { ascending: true });
   if (gradesError) throw gradesError;
   if (!grades?.length) {
-    throw new HttpError(404, "Add at least one grade before requesting a prediction.");
+    return res.status(200).json({
+      student: { id: student.id, full_name: student.full_name },
+      prediction: null,
+      message: "No prediction yet. Your forecast will appear once academic staff record your grades.",
+    });
   }
 
   return res.status(200).json({

@@ -3,6 +3,25 @@ import axios from "axios";
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
 
+export const isEmptyDataError = (error) => {
+  if (!error) return false;
+  if (error.status === 404) return true;
+  if (error.isNetworkError) return true;
+
+  const message = (error.message || "").toLowerCase();
+  return (
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("network request failed") ||
+    message.includes("load failed") ||
+    message.includes("connection refused") ||
+    message.includes("no prediction") ||
+    message.includes("at least one grade") ||
+    message.includes("no grade") ||
+    message.includes("no record")
+  );
+};
+
 const request = async (path, options = {}) => {
   const token = sessionStorage.getItem("authToken");
   const headers = {
@@ -11,11 +30,21 @@ const request = async (path, options = {}) => {
     ...(options.headers || {}),
   };
 
-  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  } catch {
+    const error = new Error("Failed to fetch");
+    error.isNetworkError = true;
+    throw error;
+  }
+
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Something went wrong. Please try again.");
+    const error = new Error(data.error || "Something went wrong. Please try again.");
+    error.status = response.status;
+    throw error;
   }
 
   return data;

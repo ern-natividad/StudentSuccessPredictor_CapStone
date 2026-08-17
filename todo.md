@@ -12,8 +12,7 @@
 - Screening page no backend and metrix yet
 
 **STUDENTS**
-- Engineering Program Predictor (New account says failed to fetch instead of No Prediction yet because of no existing data)
-- My Grades (Same with the engineering program predictor)
+- 
 
 **ALL ROLES**
 - AI Academic and Advising Module (not responsive yet)
@@ -36,6 +35,8 @@
 - Fix "Not Found" Error in Student Management Page route to MyGradesPage
 - Connected early alerts module to the student list module
 - Connect Curriculum Module (Staff) to Manage Curriculum Module (Admin)
+- Engineering Program Predictor (New account says failed to fetch instead of No Prediction yet because of no existing data)
+- My Grades (Same with the engineering program predictor)
 
 **SYSTEM IMPORTANT FEATURES**
 - AI Academic and Advising Module
