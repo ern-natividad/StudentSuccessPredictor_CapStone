@@ -12,12 +12,12 @@
 - Screening page no backend and metrix yet
 
 **STUDENTS**
-- 
-- 
+- Engineering Program Predictor (New account says failed to fetch instead of No Prediction yet because of no existing data)
+- My Grades (Same with the engineering program predictor)
 
 **ALL ROLES**
 - AI Academic and Advising Module (not responsive yet)
-
+- Supabase table student_info (still saving the year_level as first year even though I set it to 4th Year)
 
 
 🟡 *In Progress*
