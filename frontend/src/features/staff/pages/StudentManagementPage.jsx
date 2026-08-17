@@ -6,6 +6,13 @@ import { api } from "../../../services/api";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
 import {
+  SEMESTER_FILTER_OPTIONS,
+  SEMESTER_FORM_OPTIONS,
+  SEMESTER_INFO_TEXT,
+  formatSemesterCode,
+  matchesSemesterFilter,
+} from "../../../utils/gradeSemesterUtils";
+import {
   getStaffSectionLabel,
   getStudentSectionValue,
 } from "../../../utils/adviserAssignmentUtils";
@@ -71,7 +78,7 @@ const StudentManagementPage = () => {
   const [isSavingStudentInfo, setIsSavingStudentInfo] = useState(false);
   const [gradeForm, setGradeForm] = useState({
     subject: "",
-    semester: "1S",
+    semester: "1",
     grade: "",
     remarks: "",
   });
@@ -90,21 +97,13 @@ const StudentManagementPage = () => {
     [displayStudentList, selectedStudentId],
   );
 
-  const filteredStudentGrades = useMemo(() => {
-    if (!semesterFilter) return studentGrades;
-
-    const semesterValues = {
-      "1S": ["1s", "1st semester"],
-      "2S": ["2s", "2nd semester"],
-      Summer: ["summer"],
-    };
-
-    return studentGrades.filter((record) =>
-      (semesterValues[semesterFilter] || []).includes(
-        String(record.semester || "").toLowerCase(),
+  const filteredStudentGrades = useMemo(
+    () =>
+      studentGrades.filter((record) =>
+        matchesSemesterFilter(record.semester, semesterFilter),
       ),
-    );
-  }, [semesterFilter, studentGrades]);
+    [semesterFilter, studentGrades],
+  );
 
   useEffect(() => {
     if (!selectedStudentId && displayStudentList.length > 0) {
@@ -114,7 +113,7 @@ const StudentManagementPage = () => {
 
   useEffect(() => {
     if (selectedStudent) {
-      setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
+      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
     }
   }, [selectedStudent]);
 
@@ -165,7 +164,7 @@ const StudentManagementPage = () => {
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
+    setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
     setIsGradeModalOpen(true);
   };
 
@@ -263,7 +262,7 @@ const StudentManagementPage = () => {
       };
       const result = await api.createStudentGrade(payload);
       setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
-      setGradeForm({ subject: "", semester: "1S", grade: "", remarks: "" });
+      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
       setIsGradeModalOpen(false);
       updateStudentGradeRecord(selectedStudent.student_id, [
         result.grade,
@@ -508,11 +507,25 @@ const StudentManagementPage = () => {
               </button>
             </div>
 
+            <div
+              style={{
+                marginTop: 20,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                fontSize: 12,
+                color: "#64748B",
+              }}
+            >
+              {SEMESTER_INFO_TEXT}
+            </div>
+
             <label
               style={{
                 display: "grid",
                 gap: 6,
-                marginTop: 20,
+                marginTop: 16,
                 maxWidth: 240,
               }}
             >
@@ -528,10 +541,11 @@ const StudentManagementPage = () => {
                   border: "1px solid #cbd5e1",
                 }}
               >
-                <option value="">All semesters</option>
-                <option value="1S">1st Semester</option>
-                <option value="2S">2nd Semester</option>
-                <option value="Summer">Summer</option>
+                {SEMESTER_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value || "all"} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -577,7 +591,7 @@ const StudentManagementPage = () => {
                           {record.subject_name}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          {record.semester}
+                          {formatSemesterCode(record.semester)}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
                           {record.grade}
@@ -680,9 +694,15 @@ const StudentManagementPage = () => {
                   }
                   style={{ padding: 12, borderRadius: 12, width: "100%" }}
                 >
-                  <option value="1S">1st Semester</option>
-                  <option value="2S">2nd Semester</option>
+                  {SEMESTER_FORM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "#64748B" }}>
+                  {SEMESTER_INFO_TEXT}
+                </p>
               </div>
 
               <div style={{ display: "grid", gap: 6 }}>

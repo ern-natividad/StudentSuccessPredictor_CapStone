@@ -288,7 +288,7 @@ export const addStudentGrade = asyncHandler(async (req, res) => {
     subject,
     subject_code: subject,
     subject_description: gradeRecord.description?.trim() || subject,
-    semester: gradeRecord.semester || "1S",
+    semester: gradeRecord.semester || "1",
     grade,
     remarks: gradeRecord.remarks?.trim() || "",
     recorded_at: new Date().toISOString(),

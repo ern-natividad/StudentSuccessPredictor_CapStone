@@ -9,6 +9,19 @@ const parseGrade = (value) => {
   return grade;
 };
 
+const normalizeSemester = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+
+  if (normalized === "1" || normalized === "1S") return "1";
+  if (normalized === "2" || normalized === "2S") return "2";
+  if (normalized === "S" || normalized === "SUMMER") return "S";
+
+  throw new HttpError(400, "Semester must be 1, 2, or S.");
+};
+
 const validateGradePayload = (payload) => {
   const subject_name = payload.subject_name?.trim();
   const semester = payload.semester?.trim();
@@ -17,7 +30,7 @@ const validateGradePayload = (payload) => {
   }
   return {
     subject_name,
-    semester,
+    semester: normalizeSemester(semester),
     grade: parseGrade(payload.grade),
     remarks: payload.remarks?.trim() || null,
   };
