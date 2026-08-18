@@ -14,7 +14,7 @@
 - 
 
 **ALL ROLES**
-- AI Academic and Advising Module (not responsive yet)
+- 
 
 
 🟡 *In Progress*
@@ -36,6 +36,8 @@
 - Engineering Program Predictor (New account says failed to fetch instead of No Prediction yet because of no existing data)
 - My Grades (Same with the engineering program predictor)
 - Fix the section in UI and Database (Staff & Student)
+- AI Academic and Advising Module (not responsive yet)
+
 
 **SYSTEM IMPORTANT FEATURES**
 - AI Academic and Advising Module
