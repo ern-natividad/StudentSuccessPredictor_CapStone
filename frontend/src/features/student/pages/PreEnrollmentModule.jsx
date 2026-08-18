@@ -145,13 +145,13 @@ const PreEnrollmentModule = () => {
               />
             </div>
             <div className={styles.formField}>
-              <label className={styles.formLabel}>Full Name</label>
+              <label className={styles.formLabel}>Name</label>
               <input
                 className={styles.formInput}
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Enter full name"
+                placeholder="Enter name"
               />
             </div>
             <div className={styles.formField}>

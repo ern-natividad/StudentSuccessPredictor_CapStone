@@ -6,7 +6,8 @@
   "description": "Express + Supabase backend adding account lockout, Google Authenticator MFA, and audit logging to HawkPredict.",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.2",
