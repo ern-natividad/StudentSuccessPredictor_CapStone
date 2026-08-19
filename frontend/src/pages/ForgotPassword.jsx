@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styles from "../styles/Auth.module.css";
 import engineeringLogo from "../assets/EngineeringLogo.jpg";
 import {
@@ -17,10 +17,13 @@ const STEPS = {
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialRole = location.state?.role || "student";
+  const initialEmail = location.state?.email || "";
   const [step, setStep] = useState(STEPS.REQUEST);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
-  const [userRole, setUserRole] = useState("student");
+  const [userRole, setUserRole] = useState(initialRole);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -118,8 +121,12 @@ const ForgotPassword = () => {
   };
 
   const handleBackToLogin = () => {
-    navigate(`/auth/${userRole}`);
+    navigate(`/auth/${userRole}`, {
+      state: { email, fromPasswordReset: true },
+    });
   };
+
+  const loginPath = `/auth/${userRole}`;
 
   return (
     <div className={styles.authScreen}>
@@ -145,9 +152,10 @@ const ForgotPassword = () => {
 
         <div className={styles.formPanel}>
           <Link
-            to="/auth"
+            to={loginPath}
             className={styles.backButton}
             style={{ textDecoration: "none" }}
+            state={{ email, fromPasswordReset: true }}
           >
             <i className="fas fa-arrow-left"></i>
             Back to sign in
@@ -358,7 +366,7 @@ const ForgotPassword = () => {
 
           <p className={styles.authSwitch}>
             Remembered your password?{" "}
-            <Link to="/auth" className={styles.formLink}>
+            <Link to={loginPath} className={styles.formLink} state={{ email }}>
               Sign in
             </Link>
           </p>

@@ -15,14 +15,20 @@ import {
 } from "../services/authService.js";
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password, accessCode } = req.body;
+  const { email, password, accessCode, role } = req.body;
   const meta = getRequestMeta(req);
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required." });
   }
 
-  const result = await loginWithPassword(email, password, accessCode, meta);
+  const result = await loginWithPassword(
+    email,
+    password,
+    accessCode,
+    meta,
+    role,
+  );
 
   if (result.requiresMfa) {
     return res.status(200).json({
@@ -172,7 +178,12 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
       .json({ error: "Target account identifier not found." });
   }
 
-  const user = await completePasswordReset(targetId, newPassword, meta);
+  const user = await completePasswordReset(
+    targetId,
+    newPassword,
+    meta,
+    email || identifier,
+  );
 
   return res.status(200).json({
     success: true,

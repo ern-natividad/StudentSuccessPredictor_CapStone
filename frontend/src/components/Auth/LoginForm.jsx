@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 import MfaVerify from "./MfaVerify";
@@ -8,21 +8,28 @@ import MfaVerify from "./MfaVerify";
 const LoginForm = ({ roleConfig, onSwitch }) => {
   const { login, error, setError, pendingMfa, completeMfaLogin, cancelMfa } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
   const [accessCode, setAccessCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    setAccessCode("");
+    setError("");
+  }, [roleConfig.id, location.key, setError]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const requiresAccessCode = ["admin", "staff"].includes(roleConfig.id);
-    if (requiresAccessCode && !accessCode.trim()) {
+    const trimmedAccessCode = accessCode.trim();
+    if (requiresAccessCode && !trimmedAccessCode) {
       setError("Please enter your role access code.");
       return;
     }
     setSubmitting(true);
-    const result = await login(email, password, roleConfig.id, accessCode);
+    const result = await login(email, password, roleConfig.id, trimmedAccessCode);
     setSubmitting(false);
     if (result === true) {
       navigate(getDashboardPath(roleConfig.id));
@@ -94,7 +101,10 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
                 setAccessCode(e.target.value);
                 setError("");
               }}
-              autoComplete="one-time-code"
+              autoComplete="off"
+              name="role-access-code"
+              data-1p-ignore="true"
+              data-lpignore="true"
               required
             />
           </div>
@@ -140,6 +150,7 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
           <Link
             to="/forgot-password"
             className={styles.fLink}
+            state={{ role: roleConfig.id, email }}
           >
             Forgot password?
           </Link>

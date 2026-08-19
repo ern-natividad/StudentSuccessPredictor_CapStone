@@ -112,9 +112,11 @@ const ensureUserProfileForAuthUser = async (userId) => {
  * Step 1 of login: validates email/password and lockout state.
  */
 const accessCodesMatch = (providedCode, configuredCode) => {
-  if (!providedCode || !configuredCode) return false;
-  const provided = Buffer.from(providedCode);
-  const configured = Buffer.from(configuredCode);
+  const normalizedProvided = String(providedCode || "").trim();
+  const normalizedConfigured = String(configuredCode || "").trim();
+  if (!normalizedProvided || !normalizedConfigured) return false;
+  const provided = Buffer.from(normalizedProvided);
+  const configured = Buffer.from(normalizedConfigured);
   return provided.length === configured.length && timingSafeEqual(provided, configured);
 };
 
@@ -125,7 +127,13 @@ const getRequiredAccessCode = (role) =>
       ? env.staffAccessCode
       : null;
 
-export const loginWithPassword = async (email, password, accessCode, meta = {}) => {
+export const loginWithPassword = async (
+  email,
+  password,
+  accessCode,
+  meta = {},
+  selectedRole = null,
+) => {
   const user = await findUserByEmail(email);
 
   if (!user) {
@@ -137,6 +145,21 @@ export const loginWithPassword = async (email, password, accessCode, meta = {}) 
       ...meta,
     });
     throw new HttpError(401, GENERIC_AUTH_ERROR);
+  }
+
+  if (selectedRole && user.role !== selectedRole) {
+    await recordAuditLog({
+      userId: user.id,
+      username: user.email,
+      action: AUDIT_ACTIONS.LOGIN_FAILED,
+      module: AUDIT_MODULES.AUTH,
+      description: `Login attempted on ${selectedRole} portal for ${user.role} account.`,
+      ...meta,
+    });
+    throw new HttpError(
+      401,
+      `This account is registered as ${user.role}. Please sign in using the ${user.role} portal.`,
+    );
   }
 
   const requiredAccessCode = getRequiredAccessCode(user.role);
@@ -503,7 +526,7 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
   }
 
   if (Date.now() > cachedData.expiresAt) {
-    otpCache.delete(normalizedEmail); // Clear expired entry
+    otpCache.delete(normalizedEmail);
     throw new HttpError(
       400,
       "Your verification code has expired. Please request a new one.",
@@ -519,8 +542,12 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
     throw new HttpError(404, "Target account identifier no longer exists.");
   }
 
-  // Clear OTP from cache after a successful verification
-  otpCache.delete(normalizedEmail);
+  otpCache.set(normalizedEmail, {
+    ...cachedData,
+    verified: true,
+    verifiedUserId: user.id,
+    verifiedAt: Date.now(),
+  });
 
   return {
     success: true,
@@ -532,12 +559,23 @@ export const verifyPasswordOtp = async (email, code, meta = {}) => {
 /**
  * Completes the password reset process inside Supabase and the user profile state cleanly.
  */
-export const completePasswordReset = async (userId, newPassword, meta = {}) => {
+export const completePasswordReset = async (userId, newPassword, meta = {}, email = null) => {
   if (!userId) {
     throw new HttpError(
       400,
       "Invalid or missing user identity session context.",
     );
+  }
+
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (normalizedEmail) {
+    const cachedData = otpCache.get(normalizedEmail);
+    if (!cachedData?.verified || cachedData.verifiedUserId !== userId) {
+      throw new HttpError(
+        400,
+        "Please verify your email code before resetting your password.",
+      );
+    }
   }
 
   const { data: user, error: userError } = await supabase
@@ -570,6 +608,10 @@ export const completePasswordReset = async (userId, newPassword, meta = {}) => {
 
   if (dbError) {
     throw dbError;
+  }
+
+  if (normalizedEmail) {
+    otpCache.delete(normalizedEmail);
   }
 
   await recordAuditLog({

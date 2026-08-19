@@ -14,7 +14,7 @@
 - 
 
 **ALL ROLES**
-- 
+- Set a New Password add view icon
 
 
 🟡 *In Progress*
