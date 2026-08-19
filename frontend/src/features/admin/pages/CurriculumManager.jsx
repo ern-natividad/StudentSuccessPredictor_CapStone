@@ -83,6 +83,7 @@ const CurriculumManager = () => {
 
   // State for Curriculum Deletion Modal
   const [curriculumToDelete, setCurriculumToDelete] = useState(null);
+  const [curriculumToView, setCurriculumToView] = useState(null);
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -395,7 +396,6 @@ const CurriculumManager = () => {
     a.remove();
   };
 
-  // Inline style object for the icon action buttons matching the UI design
   const iconButtonStyle = {
     width: "36px",
     height: "36px",
@@ -410,6 +410,54 @@ const CurriculumManager = () => {
     fontSize: "0.95rem",
     boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
   };
+
+  const applyIconHover = (event, colors) => {
+    event.currentTarget.style.backgroundColor = colors.background;
+    event.currentTarget.style.borderColor = colors.border;
+  };
+
+  const resetIconHover = (event) => {
+    event.currentTarget.style.backgroundColor = "#ffffff";
+    event.currentTarget.style.borderColor = "#e2e8f0";
+  };
+
+  const renderCourseActionButtons = (onEdit, onDelete, labelPrefix) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "8px",
+      }}
+    >
+      <button
+        type="button"
+        style={{ ...iconButtonStyle, color: "#334155" }}
+        onClick={onEdit}
+        title="Edit Course"
+        aria-label={`Edit ${labelPrefix}`}
+        onMouseOver={(event) =>
+          applyIconHover(event, { background: "#f1f5f9", border: "#cbd5e1" })
+        }
+        onMouseOut={resetIconHover}
+      >
+        <i className="fas fa-pen-to-square" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        style={{ ...iconButtonStyle, color: "#ef4444" }}
+        onClick={onDelete}
+        title="Delete Course"
+        aria-label={`Delete ${labelPrefix}`}
+        onMouseOver={(event) =>
+          applyIconHover(event, { background: "#fef2f2", border: "#fecaca" })
+        }
+        onMouseOut={resetIconHover}
+      >
+        <i className="fas fa-trash-can" aria-hidden="true" />
+      </button>
+    </div>
+  );
 
   return (
     <ModuleShell
@@ -814,19 +862,11 @@ const CurriculumManager = () => {
                           <td>{course.units}</td>
                           <td>{course.type}</td>
                           <td>
-                            <button
-                              className={styles.secondaryButton}
-                              onClick={() => handleEditCourse(idx)}
-                              style={{ marginRight: "6px" }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className={styles.secondaryButton}
-                              onClick={() => handleDeleteCourse(idx)}
-                            >
-                              Delete
-                            </button>
+                            {renderCourseActionButtons(
+                              () => handleEditCourse(idx),
+                              () => handleDeleteCourse(idx),
+                              `${course.code} ${course.title}`,
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -946,6 +986,28 @@ const CurriculumManager = () => {
                           gap: "8px",
                         }}
                       >
+                        {/* View Button Icon */}
+                        <button
+                          type="button"
+                          style={{
+                            ...iconButtonStyle,
+                            color: "#2563eb",
+                          }}
+                          onClick={() => setCurriculumToView(c)}
+                          title="View Curriculum"
+                          aria-label={`View ${c.title}`}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = "#eff6ff";
+                            e.currentTarget.style.borderColor = "#bfdbfe";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                          }}
+                        >
+                          <i className="fas fa-eye" aria-hidden="true" />
+                        </button>
+
                         {/* Edit Button Icon */}
                         <button
                           type="button"
@@ -1136,6 +1198,188 @@ const CurriculumManager = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW CURRICULUM MODAL */}
+      {curriculumToView && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(3px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 9999,
+          }}
+          onClick={() => setCurriculumToView(null)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              width: "min(920px, 100%)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "28px 32px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "16px",
+                marginBottom: "20px",
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "1.45rem",
+                    fontWeight: "700",
+                    color: "#800000",
+                  }}
+                >
+                  {curriculumToView.title}
+                </h2>
+                <div style={{ color: "#64748b", fontSize: "0.95rem" }}>
+                  {curriculumToView.academicYear} · {curriculumToView.department} ·{" "}
+                  {curriculumToView.program}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurriculumToView(null)}
+                style={{
+                  ...iconButtonStyle,
+                  color: "#64748b",
+                }}
+                title="Close"
+                aria-label="Close curriculum view"
+              >
+                <i className="fas fa-xmark" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "12px",
+                marginBottom: "20px",
+              }}
+            >
+              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
+                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Status</div>
+                <div style={{ fontWeight: 600, marginTop: 4 }}>{curriculumToView.status}</div>
+              </div>
+              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
+                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Courses</div>
+                <div style={{ fontWeight: 600, marginTop: 4 }}>
+                  {(curriculumToView.courses || []).length}
+                </div>
+              </div>
+              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
+                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Approved By</div>
+                <div style={{ fontWeight: 600, marginTop: 4 }}>
+                  {curriculumToView.approvedByName || "Not yet approved"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontWeight: 600, marginBottom: 10, color: "#334155" }}>
+              Courses ({curriculumToView.courses?.length || 0})
+            </div>
+            {(curriculumToView.courses || []).length > 0 ? (
+              <div className={styles.tableWrapper}>
+                <table className={styles.moduleTable}>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Title</th>
+                      <th>Year</th>
+                      <th>Sem</th>
+                      <th>Units</th>
+                      <th>Type</th>
+                      <th>Prerequisites</th>
+                    </tr>
+                  </thead>
+                  <tbody className={styles.tableStriped}>
+                    {curriculumToView.courses.map((course, idx) => (
+                      <tr key={idx}>
+                        <td>{course.code}</td>
+                        <td>{course.title}</td>
+                        <td>{course.yearLevel}</td>
+                        <td>{course.semester}</td>
+                        <td>{course.units}</td>
+                        <td>{course.type}</td>
+                        <td>{course.prerequisites || "None"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className={styles.placeholderChart}>No courses added yet.</div>
+            )}
+
+            {curriculumToView.attachments?.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontWeight: 600, marginBottom: 10, color: "#334155" }}>
+                  Attachments
+                </div>
+                {curriculumToView.attachments.map((attachment, index) => (
+                  <div key={index} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <div style={{ flex: 1 }}>{attachment.name}</div>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => downloadAttachment(attachment)}
+                      >
+                        Download
+                      </button>
+                    </div>
+                    <div>{previewAttachment(attachment)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginTop: "24px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setCurriculumToView(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  handleEdit(curriculumToView.id);
+                  setCurriculumToView(null);
+                }}
+              >
+                Edit Curriculum
+              </button>
+            </div>
           </div>
         </div>
       )}
