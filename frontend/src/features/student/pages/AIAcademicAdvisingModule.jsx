@@ -1,25 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import styles from "../../../styles/Modules.module.css";
+import { useAdvisingContext } from "../../../hooks/useAdvisingContext";
+import { ROLE_QUICK_PROMPTS } from "../../../utils/advisingSnapshot";
 
 const moduleLinks = [
   { key: "pre-enrollment", label: "Degree Recommendation", path: "/modules/pre-enrollment" },
   { key: "academic-performance", label: "Performance Forecasting", path: "/modules/academic-performance" },
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
-];
-
-const initialMessages = [
-  {
-    id: 1,
-    sender: "bot",
-    text: "Welcome back. I can help you review academic risk, suggest next steps, and prepare a student-specific advising plan.",
-  },
-];
-
-const quickPrompts = [
-  "Summarize this student's risk level",
-  "What should the student improve first?",
-  "Create a weekly advising plan",
 ];
 
 const getApiRoot = () => {
@@ -28,18 +16,36 @@ const getApiRoot = () => {
   return configured.replace(/\/api\/?$/, "");
 };
 
+const getAuthHeaders = () => {
+  const token = sessionStorage.getItem("authToken");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const formatGpa = (value) =>
+  value === null || value === undefined ? "—" : Number(value).toFixed(2);
+
 const AIAcademicAdvisingModule = () => {
-  const [messages, setMessages] = useState(initialMessages);
+  const {
+    role,
+    snapshot,
+    loading,
+    error,
+    welcomeMessage,
+    accessibleStudents,
+    selectedStudentUserId,
+    setSelectedStudentUserId,
+  } = useAdvisingContext();
+
+  const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Student snapshot profile passed into AI context
-  const studentSnapshot = {
-    studentId: "STU-2026-089",
-    riskLevel: "Medium",
-    focusAreas: "Attendance & Core Subjects (Calculus, Circuits)",
-  };
+  const quickPrompts = ROLE_QUICK_PROMPTS[role] || ROLE_QUICK_PROMPTS.student;
+  const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -49,11 +55,22 @@ const AIAcademicAdvisingModule = () => {
     scrollToBottom();
   }, [messages, isThinking]);
 
+  useEffect(() => {
+    if (loading) return;
+
+    setMessages([
+      {
+        id: 1,
+        sender: "bot",
+        text: welcomeMessage,
+      },
+    ]);
+  }, [contextKey, loading, welcomeMessage]);
+
   const handleAsk = async (promptText = query) => {
     const cleanedPrompt = (promptText || "").trim();
-    if (!cleanedPrompt || isThinking) return;
+    if (!cleanedPrompt || isThinking || loading || !snapshot) return;
 
-    // 1. Add user query to chat state
     const userMessage = {
       id: Date.now(),
       sender: "user",
@@ -71,13 +88,11 @@ const AIAcademicAdvisingModule = () => {
 
       const response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           message: cleanedPrompt,
           history: conversationHistory,
-          studentSnapshot: studentSnapshot,
+          studentSnapshot: snapshot,
         }),
       });
 
@@ -87,7 +102,6 @@ const AIAcademicAdvisingModule = () => {
         throw new Error(data.error || "Failed to receive AI response.");
       }
 
-      // 3. Append Gemini AI reply to chat state
       const botMessage = {
         id: Date.now() + 1,
         sender: "bot",
@@ -95,15 +109,15 @@ const AIAcademicAdvisingModule = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      console.error("AI Advising Communication Error:", error);
+    } catch (requestError) {
+      console.error("AI Advising Communication Error:", requestError);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           sender: "bot",
           text:
-            error.message ||
+            requestError.message ||
             "Unable to reach the AI server. Please verify that your backend server is running on port 5001.",
         },
       ]);
@@ -111,6 +125,9 @@ const AIAcademicAdvisingModule = () => {
       setIsThinking(false);
     }
   };
+
+  const sidebarTitle =
+    role === "student" ? "Your Academic Snapshot" : "Student Advising Snapshot";
 
   return (
     <ModuleShell
@@ -122,11 +139,56 @@ const AIAcademicAdvisingModule = () => {
       <div className={styles.aiChatLayout}>
         <aside className={styles.aiSidebar}>
           <div className={styles.aiSidebarLabel}>AI Advisor</div>
+
+          {(role === "staff" || role === "admin") && (
+            <div>
+              <div className={styles.aiSidebarTitle}>Select student</div>
+              <select
+                className={styles.aiSidebarSelect}
+                value={selectedStudentUserId}
+                disabled={loading || accessibleStudents.length === 0}
+                onChange={(event) => setSelectedStudentUserId(event.target.value)}
+              >
+                {accessibleStudents.length === 0 ? (
+                  <option value="">No students available</option>
+                ) : (
+                  accessibleStudents.map((student) => (
+                    <option key={student.user_id} value={student.user_id}>
+                      {student.full_name} ({student.student_id})
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
+
           <div className={styles.aiSidebarCard}>
-            <div className={styles.aiSidebarTitle}>Student Support Snapshot</div>
-            <div className={styles.aiSidebarMetric}>Risk: {studentSnapshot.riskLevel}</div>
-            <div className={styles.aiSidebarMetric}>Focus: {studentSnapshot.focusAreas}</div>
+            <div className={styles.aiSidebarTitle}>{sidebarTitle}</div>
+            {loading ? (
+              <div className={styles.aiSidebarMetric}>Loading student data...</div>
+            ) : error ? (
+              <div className={styles.aiSidebarMetric}>{error}</div>
+            ) : snapshot ? (
+              <>
+                <div className={styles.aiSidebarMetric}>
+                  Student: {snapshot.studentName} ({snapshot.studentId})
+                </div>
+                <div className={styles.aiSidebarMetric}>Risk: {snapshot.riskLevel}</div>
+                <div className={styles.aiSidebarMetric}>
+                  Current GWA: {formatGpa(snapshot.currentGpa)} | Predicted:{" "}
+                  {formatGpa(snapshot.predictedGpa)}
+                </div>
+                <div className={styles.aiSidebarMetric}>
+                  Grades on record: {snapshot.gradeCount}
+                </div>
+                <div className={styles.aiSidebarMetric}>Trend: {snapshot.trend}</div>
+                <div className={styles.aiSidebarMetric}>Focus: {snapshot.focusAreas}</div>
+              </>
+            ) : (
+              <div className={styles.aiSidebarMetric}>No advising data available.</div>
+            )}
           </div>
+
           <div className={styles.aiSidebarTitle}>Quick prompts</div>
           <div className={styles.aiQuickPromptList}>
             {quickPrompts.map((prompt) => (
@@ -134,7 +196,7 @@ const AIAcademicAdvisingModule = () => {
                 key={prompt}
                 type="button"
                 className={styles.aiQuickPrompt}
-                disabled={isThinking}
+                disabled={isThinking || loading || !snapshot}
                 onClick={() => handleAsk(prompt)}
               >
                 {prompt}
@@ -147,7 +209,11 @@ const AIAcademicAdvisingModule = () => {
           <div className={styles.aiChatHeader}>
             <div>
               <div className={styles.aiChatEyebrow}>Academic Advising AI</div>
-              <div className={styles.aiChatTitle}>How can I help today?</div>
+              <div className={styles.aiChatTitle}>
+                {role === "student"
+                  ? "How can I help with your academic plan?"
+                  : "How can I help with this student's plan?"}
+              </div>
             </div>
           </div>
 
@@ -164,8 +230,8 @@ const AIAcademicAdvisingModule = () => {
               </div>
             ))}
             {isThinking && (
-              <div 
-                className={`${styles.chatMessage} ${styles.chatBot}`} 
+              <div
+                className={`${styles.chatMessage} ${styles.chatBot}`}
                 style={{ fontStyle: "italic", opacity: 0.7 }}
               >
                 AI Adviser is typing...
@@ -179,10 +245,10 @@ const AIAcademicAdvisingModule = () => {
               className={styles.aiComposerInput}
               value={query}
               placeholder="Write a message here..."
-              disabled={isThinking}
+              disabled={isThinking || loading || !snapshot}
               onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
                   handleAsk();
                 }
               }}
@@ -190,7 +256,7 @@ const AIAcademicAdvisingModule = () => {
             <button
               type="button"
               className={styles.aiComposerSend}
-              disabled={isThinking || !query.trim()}
+              disabled={isThinking || loading || !snapshot || !query.trim()}
               onClick={() => handleAsk()}
             >
               ↑

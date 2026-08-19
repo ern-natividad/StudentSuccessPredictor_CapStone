@@ -102,6 +102,17 @@
   padding-top: var(--space-xs);
 }
 
+.aiSidebarSelect {
+  width: 100%;
+  margin-top: var(--space-xs);
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-neutral);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+}
+
 .aiQuickPromptList {
   display: flex;
   flex-direction: column;

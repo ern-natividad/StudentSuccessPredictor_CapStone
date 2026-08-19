@@ -5,6 +5,8 @@ import { env } from "./config/env.js";
 import apiRouter from "./routes/index.js";
 import { errorHandler, notFoundHandler, HttpError } from "./middleware/errorHandler.js";
 import { formatGeminiHistory } from "./utils/geminiChat.js";
+import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
+import { buildAdvisingSystemInstruction } from "./utils/advisingPrompt.js";
 
 const app = express();
 
@@ -18,7 +20,11 @@ app.use(express.json());
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 // AI Academic Advising Endpoint
-app.post("/api/v1/advising/chat", async (req, res, next) => {
+app.post(
+  "/api/v1/advising/chat",
+  requireAuth,
+  requireRole("admin", "staff", "student"),
+  async (req, res, next) => {
   try {
     const { message, history, studentSnapshot } = req.body;
 
@@ -26,19 +32,10 @@ app.post("/api/v1/advising/chat", async (req, res, next) => {
       return res.status(400).json({ error: "Message query is required." });
     }
 
-    const systemInstruction = `
-      You are an expert AI Academic Advisor for college engineering students.
-      Provide structured, actionable, and encouraging academic guidance.
-
-      CURRENT STUDENT SNAPSHOT:
-      - Risk Level: ${studentSnapshot?.riskLevel || "Medium"}
-      - Key Focus Areas: ${studentSnapshot?.focusAreas || "Attendance & Core Subjects"}
-
-      Guidelines:
-      1. Keep responses clear, concise, and structured (use bullet points where appropriate).
-      2. Tailor suggestions to the student's risk level and focus areas.
-      3. Encourage contacting their assigned human Academic Adviser for formal decisions.
-    `;
+    const systemInstruction = buildAdvisingSystemInstruction(
+      studentSnapshot || {},
+      req.user.role,
+    );
 
     const model = genAI.getGenerativeModel({
       model: env.geminiModel,
@@ -71,7 +68,8 @@ app.post("/api/v1/advising/chat", async (req, res, next) => {
 
     return next(error);
   }
-});
+  },
+);
 
 app.use("/api", apiRouter);
 
