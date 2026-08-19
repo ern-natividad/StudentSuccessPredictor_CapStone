@@ -26,6 +26,8 @@ const ForgotPassword = () => {
   const [userRole, setUserRole] = useState(initialRole);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordReqs, setPasswordReqs] = useState({
@@ -286,14 +288,29 @@ const ForgotPassword = () => {
                     <label className={styles.fLabel} htmlFor="newPassword">
                       New Password
                     </label>
-                    <input
-                      id="newPassword"
-                      type="password"
-                      className={styles.fInput}
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => handlePasswordChange(e.target.value)}
-                    />
+                    <div className={styles.fInputWrap}>
+                      <input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        className={styles.fInput}
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={(e) => handlePasswordChange(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className={styles.fEye}
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label={
+                          showNewPassword ? "Hide new password" : "Show new password"
+                        }
+                      >
+                        <i
+                          className={`fas fa-eye${showNewPassword ? "-slash" : ""}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                     <div className={styles.reqPills}>
                       <span
                         className={`${styles.reqPill} ${passwordReqs.length ? styles.ok : ""}`}
@@ -326,17 +343,34 @@ const ForgotPassword = () => {
                     <label className={styles.fLabel} htmlFor="confirmNewPassword">
                       Confirm New Password
                     </label>
-                    <input
-                      id="confirmNewPassword"
-                      type="password"
-                      className={styles.fInput}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setError("");
-                      }}
-                    />
+                    <div className={styles.fInputWrap}>
+                      <input
+                        id="confirmNewPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        className={styles.fInput}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError("");
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.fEye}
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={
+                          showConfirmPassword
+                            ? "Hide confirm password"
+                            : "Show confirm password"
+                        }
+                      >
+                        <i
+                          className={`fas fa-eye${showConfirmPassword ? "-slash" : ""}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                   </div>
 
                   <button type="submit" className={styles.btnGold} disabled={loading}>
