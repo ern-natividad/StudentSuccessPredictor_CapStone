@@ -255,11 +255,15 @@ const AIAcademicAdvisingModule = () => {
             />
             <button
               type="button"
-              className={styles.aiComposerSend}
-              disabled={isThinking || loading || !snapshot || !query.trim()}
+              className={`${styles.aiComposerSend} ${
+                isThinking ? styles.aiComposerSendLoading : ""
+              }`}
+              disabled={isThinking || loading || !snapshot || (!isThinking && !query.trim())}
+              aria-busy={isThinking}
+              aria-label={isThinking ? "Sending message" : "Send message"}
               onClick={() => handleAsk()}
             >
-              ↑
+              {!isThinking ? "↑" : null}
             </button>
           </div>
         </div>

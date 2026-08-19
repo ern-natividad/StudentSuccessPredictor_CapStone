@@ -220,6 +220,31 @@
   border: none;
 }
 
+.aiComposerSend:disabled {
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+.aiComposerSendLoading {
+  pointer-events: none;
+}
+
+.aiComposerSendLoading::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: aiSendSpin 0.75s linear infinite;
+}
+
+@keyframes aiSendSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .chatWindow {
   display: flex;
   flex-direction: column;

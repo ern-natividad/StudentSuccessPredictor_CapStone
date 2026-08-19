@@ -7,6 +7,7 @@ import { errorHandler, notFoundHandler, HttpError } from "./middleware/errorHand
 import { formatGeminiHistory } from "./utils/geminiChat.js";
 import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
 import { buildAdvisingSystemInstruction } from "./utils/advisingPrompt.js";
+import { isGeminiServiceError, resolveAdvisingReply } from "./utils/geminiReply.js";
 
 const app = express();
 
@@ -48,7 +49,7 @@ app.post(
       history: formattedHistory,
     });
     const result = await chat.sendMessage(message);
-    const replyText = result.response.text();
+    const replyText = resolveAdvisingReply(message, result);
 
     return res.status(200).json({
       success: true,
@@ -57,7 +58,7 @@ app.post(
   } catch (error) {
     console.error("Gemini AI Advising Error:", error);
 
-    if (error?.message?.includes("GoogleGenerativeAI")) {
+    if (isGeminiServiceError(error)) {
       return next(
         new HttpError(
           502,
@@ -66,7 +67,11 @@ app.post(
       );
     }
 
-    return next(error);
+    return res.status(200).json({
+      success: true,
+      reply:
+        "I can't answer that right now. Please ask about your academic plan, grades, or study strategies.",
+    });
   }
   },
 );
