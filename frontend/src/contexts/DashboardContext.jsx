@@ -2,7 +2,7 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
-import { filterStudentsForAdviser } from "../utils/adviserAssignmentUtils";
+import { filterStudentsForAdviser, parseAssignedSections } from "../utils/adviserAssignmentUtils";
 
 export const DashboardContext = createContext();
 
@@ -99,6 +99,9 @@ export const DashboardProvider = ({ children }) => {
             role: "staff",
             title: account.title || "Academic Adviser",
             assignedSection: account.adviser_info?.assigned_section || null,
+            assignedSections: parseAssignedSections(
+              account.adviser_info?.assigned_section,
+            ),
             assignedYearLevel: account.adviser_info?.year_level || "N/A",
             account_locked: Boolean(account.account_locked),
             created_at: account.created_at,
@@ -215,7 +218,9 @@ export const DashboardProvider = ({ children }) => {
 
       return filterStudentsForAdviser(
         students,
-        staff.assignedSection,
+        staff.assignedSections?.length
+          ? staff.assignedSections
+          : staff.assignedSection,
         staff.assignedYearLevel,
       );
     },
@@ -277,15 +282,11 @@ export const DashboardProvider = ({ children }) => {
   const updateSectionAdviser = useCallback(
     (sectionId, staffId) => {
       setSections((prevSections) =>
-        prevSections.map((section) => {
-          if (section.id === sectionId) {
-            return { ...section, adviserId: staffId };
-          }
-          if (section.adviserId === staffId) {
-            return { ...section, adviserId: "" };
-          }
-          return section;
-        }),
+        prevSections.map((section) =>
+          section.id === sectionId
+            ? { ...section, adviserId: staffId }
+            : section,
+        ),
       );
     },
     [setSections],
@@ -318,6 +319,9 @@ export const DashboardProvider = ({ children }) => {
               ...staff,
               assignedSection:
                 infoUpdates.assigned_section ?? staff.assignedSection,
+              assignedSections: parseAssignedSections(
+                infoUpdates.assigned_section ?? staff.assignedSection,
+              ),
               assignedYearLevel:
                 infoUpdates.year_level ?? staff.assignedYearLevel,
             }

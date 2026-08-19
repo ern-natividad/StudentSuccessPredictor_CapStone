@@ -1,11 +1,17 @@
 import { supabase } from "../lib/supabaseClient";
 
+import { serializeAssignedSections } from "../utils/adviserAssignmentUtils";
+
 const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level";
 
 export const upsertAdviserInfo = async (userId, updates) => {
+  const assignedSection = Array.isArray(updates.assigned_sections)
+    ? serializeAssignedSections(updates.assigned_sections)
+    : updates.assigned_section?.trim() || null;
+
   const payload = {
     user_id: userId,
-    assigned_section: updates.assigned_section?.trim() || null,
+    assigned_section: assignedSection,
     year_level: updates.year_level?.trim() || null,
   };
 

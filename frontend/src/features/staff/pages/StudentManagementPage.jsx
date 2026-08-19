@@ -13,6 +13,7 @@ import {
   matchesSemesterFilter,
 } from "../../../utils/gradeSemesterUtils";
 import {
+  getStaffAssignedSections,
   getStaffSectionLabel,
   getStudentSectionValue,
 } from "../../../utils/adviserAssignmentUtils";
@@ -276,13 +277,12 @@ const StudentManagementPage = () => {
     }
   };
 
-  const summaryStats = useMemo(() => {
-    const sectionNames = new Set(
-      displayStudentList
-        .map((student) => getStudentSectionLabel(student, getSectionById))
-        .filter((name) => name && name !== "Unassigned"),
-    );
+  const assignedSectionCount = useMemo(() => {
+    if (!loggedInStaff) return 0;
+    return getStaffAssignedSections(loggedInStaff).length;
+  }, [loggedInStaff]);
 
+  const summaryStats = useMemo(() => {
     const averageGrade =
       displayStudentList.length > 0
         ? (
@@ -295,14 +295,14 @@ const StudentManagementPage = () => {
 
     return [
       { label: "Assigned students", value: displayStudentList.length },
-      { label: "Sections covered", value: sectionNames.size },
+      { label: "Sections covered", value: assignedSectionCount },
       { label: "Average grade", value: averageGrade },
       {
         label: "Current focus",
         value: selectedStudent ? "Selected" : "None",
       },
     ];
-  }, [displayStudentList, getSectionById, selectedStudent]);
+  }, [assignedSectionCount, displayStudentList, selectedStudent]);
 
   return (
     <div className={styles.pageShell}>
