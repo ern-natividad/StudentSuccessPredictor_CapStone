@@ -594,13 +594,10 @@ const AdviserManager = () => {
               >
                 <thead className={commonStyles.tableHead}>
                   <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                    <th style={{ padding: "12px 16px", textAlign: "left", width: "14%" }}>Student ID</th>
-                    <th style={{ padding: "12px 16px", textAlign: "left", width: "24%" }}>Name</th>
-                    <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Section</th>
-                    <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Year Level</th>
-                    <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Subject Code</th>
-                    <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Schedule</th>
-                    <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Grade</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", width: "18%" }}>Student ID</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", width: "30%" }}>Name</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "16%" }}>Section</th>
+                    <th style={{ padding: "12px 16px", textAlign: "center", width: "16%" }}>Year Level</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -625,20 +622,11 @@ const AdviserManager = () => {
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
                         {student.yearLevel}
                       </td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        {student.grade_records?.[0]?.subject || "N/A"}
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        {student.grade_records?.[0]?.semester || "TBA"}
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                        {student.grade_records?.[0]?.grade || "N/A"}
-                      </td>
                     </tr>
                   ))}
                   {viewSectionStudents.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
+                      <td colSpan={4} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
                         No students assigned to this section.
                       </td>
                     </tr>

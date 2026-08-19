@@ -143,16 +143,6 @@ const StudentManagementPage = () => {
         ...student,
         rowIndex: rowIndex + 1,
         sectionName: getStudentSectionLabel(student, getSectionById),
-        subjectCode: student.grade_records?.[0]?.subject || "UXD1712",
-        schedule:
-          [
-            "MWF 8:00-9:00",
-            "TTh 9:00-10:30",
-            "MWF 10:00-11:00",
-            "TTh 1:00-2:30",
-            "MWF 2:00-3:00",
-          ][rowIndex] || "TBA",
-        displayGrade: student.grade_records?.[0]?.grade || "N/A",
       })),
     [displayStudentList, getSectionById],
   );
@@ -363,15 +353,12 @@ const StudentManagementPage = () => {
         >
           <table className={`${commonStyles.table} ${styles.studentTable}`}>
             <colgroup>
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "7%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "24%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "20%" }} />
             </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
@@ -380,9 +367,6 @@ const StudentManagementPage = () => {
                 <th>Name</th>
                 <th>Section</th>
                 <th>Year Level</th>
-                <th>Subject Code</th>
-                <th>Schedule</th>
-                <th>Grade</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -405,9 +389,6 @@ const StudentManagementPage = () => {
                   <td>{row.full_name}</td>
                   <td>{row.sectionName}</td>
                   <td>{row.yearLevel}</td>
-                  <td>{row.subjectCode}</td>
-                  <td>{row.schedule}</td>
-                  <td>{row.displayGrade}</td>
                   <td>
                     <div className={styles.tableActionGroup}>
                       <button
