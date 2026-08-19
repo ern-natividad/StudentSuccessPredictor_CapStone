@@ -11,7 +11,7 @@
 - Screening page no backend and metrix yet
 
 **STUDENTS**
-- Connect the Prediction Result and My Grades page to the AI Advising Module, so that it will fetch the original data there and can give a proper advise based on the students data.
+- 
 
 **ALL ROLES**
 - 
@@ -37,6 +37,7 @@
 - My Grades (Same with the engineering program predictor)
 - Fix the section in UI and Database (Staff & Student)
 - AI Academic and Advising Module (not responsive yet)
+- Connect the Prediction Result and My Grades page to the AI Advising Module, so that it will fetch the original data there and can give a proper advise based on the students data.
 
 
 **SYSTEM IMPORTANT FEATURES**
