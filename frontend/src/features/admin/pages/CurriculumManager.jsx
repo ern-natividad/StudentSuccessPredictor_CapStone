@@ -424,9 +424,8 @@ const CurriculumManager = () => {
   const renderCourseActionButtons = (onEdit, onDelete, labelPrefix) => (
     <div
       style={{
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
-        justifyContent: "center",
         gap: "8px",
       }}
     >
@@ -849,7 +848,7 @@ const CurriculumManager = () => {
                         <th>Sem</th>
                         <th>Units</th>
                         <th>Type</th>
-                        <th>Actions</th>
+                        <th style={{ textAlign: "center", width: "108px" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody className={styles.tableStriped}>
@@ -861,7 +860,7 @@ const CurriculumManager = () => {
                           <td>{course.semester}</td>
                           <td>{course.units}</td>
                           <td>{course.type}</td>
-                          <td>
+                          <td style={{ textAlign: "center" }}>
                             {renderCourseActionButtons(
                               () => handleEditCourse(idx),
                               () => handleDeleteCourse(idx),
