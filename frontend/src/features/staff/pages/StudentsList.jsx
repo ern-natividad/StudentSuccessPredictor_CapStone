@@ -1,19 +1,85 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
+
+const formatMetric = (value, suffix = "") => {
+  if (value === null || value === undefined || value === "") return "—";
+  return `${Number(value).toFixed(2)}${suffix}`;
+};
 
 const StudentsList = () => {
   const {
     students,
     updateStudentFilter,
     updateRiskFilter,
-    getFilteredStudents,
     directoryLoading,
     directoryError,
   } = useDashboard();
   const [searchTerm, setSearchTerm] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
+  const [predictionsByUserId, setPredictionsByUserId] = useState({});
+  const [predictionsLoading, setPredictionsLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPredictions = async () => {
+      if (!isBackendAuthEnabled() || students.length === 0) {
+        if (isMounted) {
+          setPredictionsByUserId({});
+          setPredictionsLoading(false);
+        }
+        return;
+      }
+
+      setPredictionsLoading(true);
+
+      try {
+        const results = await Promise.all(
+          students.map(async (student) => {
+            try {
+              const result = await api.getStudentPrediction(student.user_id);
+              return [student.user_id, result.prediction || null];
+            } catch {
+              return [student.user_id, null];
+            }
+          }),
+        );
+
+        if (isMounted) {
+          setPredictionsByUserId(Object.fromEntries(results));
+        }
+      } finally {
+        if (isMounted) {
+          setPredictionsLoading(false);
+        }
+      }
+    };
+
+    loadPredictions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [students]);
+
+  const enrichedStudents = useMemo(
+    () =>
+      students.map((student) => {
+        const prediction = predictionsByUserId[student.user_id] || null;
+
+        return {
+          ...student,
+          current_gpa: prediction?.current_gpa ?? null,
+          predicted_gpa: prediction?.predicted_gpa ?? null,
+          confidence_score: prediction?.confidence_score ?? null,
+          risk_level: prediction?.risk_level || student.risk_level || "Low",
+        };
+      }),
+    [students, predictionsByUserId],
+  );
 
   const handleSearch = (value) => {
     setSearchTerm(value);
@@ -25,7 +91,24 @@ const StudentsList = () => {
     updateRiskFilter(value);
   };
 
-  const filteredStudents = getFilteredStudents();
+  const filteredStudents = useMemo(() => {
+    let filtered = enrichedStudents;
+
+    if (riskLevel) {
+      filtered = filtered.filter((student) => student.risk_level === riskLevel);
+    }
+
+    if (searchTerm.trim()) {
+      const query = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (student) =>
+          student.full_name.toLowerCase().includes(query) ||
+          String(student.student_id || "").toLowerCase().includes(query),
+      );
+    }
+
+    return filtered;
+  }, [enrichedStudents, riskLevel, searchTerm]);
 
   return (
     <div>
@@ -44,25 +127,25 @@ const StudentsList = () => {
         >
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Low").length}
+              {enrichedStudents.filter((s) => s.risk_level === "Low").length}
             </div>
             <div className={commonStyles.statLabel}>Low Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Medium").length}
+              {enrichedStudents.filter((s) => s.risk_level === "Medium").length}
             </div>
             <div className={commonStyles.statLabel}>Medium Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "High").length}
+              {enrichedStudents.filter((s) => s.risk_level === "High").length}
             </div>
             <div className={commonStyles.statLabel}>High Risk</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {students.filter((s) => s.risk_level === "Critical").length}
+              {enrichedStudents.filter((s) => s.risk_level === "Critical").length}
             </div>
             <div className={commonStyles.statLabel}>Critical</div>
           </div>
@@ -143,13 +226,15 @@ const StudentsList = () => {
                       {student.yearLevel || "N/A"}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                      {Number(student.current_gpa ?? 0).toFixed(2)}
+                      {formatMetric(student.current_gpa)}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                      {Number(student.predicted_gpa ?? 0).toFixed(2)}
+                      {formatMetric(student.predicted_gpa)}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                      {Number(student.confidence_score ?? 0)}%
+                      {student.confidence_score == null
+                        ? "—"
+                        : `${Number(student.confidence_score)}%`}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <span
@@ -169,7 +254,10 @@ const StudentsList = () => {
         </div>
 
         {directoryLoading && <div className={commonStyles.emptyState}>Loading students…</div>}
-        {!directoryLoading && filteredStudents.length === 0 && (
+        {!directoryLoading && predictionsLoading && (
+          <div className={commonStyles.emptyState}>Loading grade predictions…</div>
+        )}
+        {!directoryLoading && !predictionsLoading && filteredStudents.length === 0 && (
           <div className={commonStyles.emptyState}>
             <div className={commonStyles.emptyStateIcon}>👥</div>
             <div className={commonStyles.emptyStateTitle}>
