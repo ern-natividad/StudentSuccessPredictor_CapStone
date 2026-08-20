@@ -2,11 +2,11 @@
 🔴 *To be Fixed*
 **ADMIN**
 - Pre-Enrollment Degree Recommendation Module (No Backend and Criteria for Recommendation)
-- Fix section for teacher backend and supabase connection
-- Academic Performance Forecasting and Early Warning Module (Backend and Connection to other module)
+- 
+- 
 
 **STAFF**
-- Connect (Backend) StudentPrediction.jsx to the Staff's grade prediction feature
+- 
 - fix student Management: Manage Grade button
 - Screening page no backend and metrix yet
 
