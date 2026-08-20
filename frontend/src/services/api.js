@@ -143,6 +143,29 @@ export const api = {
   getMyPrediction: () => request("/predictions/me"),
   getStudentPrediction: (studentId) => request(`/predictions/${studentId}`),
 
+  getAcademicPerformanceForecasts: ({
+    academicYear = "",
+    riskLevel = "",
+    program = "",
+    search = "",
+    sync = "true",
+  } = {}) => {
+    const params = new URLSearchParams();
+    if (academicYear) params.set("academicYear", academicYear);
+    if (riskLevel) params.set("riskLevel", riskLevel);
+    if (program) params.set("program", program);
+    if (search) params.set("search", search);
+    if (sync) params.set("sync", sync);
+    const query = params.toString();
+    return request(`/academic-performance/forecasts${query ? `?${query}` : ""}`);
+  },
+
+  syncAcademicPerformance: (academicYear) =>
+    request("/academic-performance/sync", {
+      method: "POST",
+      body: JSON.stringify({ academicYear }),
+    }),
+
   createStudentGrade: (grade) =>
     request("/grades", {
       method: "POST",

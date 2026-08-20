@@ -14,7 +14,7 @@
 - 
 
 **ALL ROLES**
-- Set a New Password add view icon
+- ALL EXPORTS MAKE IT TO PDF INSTEAD OF CSV, MAKE IT ALSO IN ICON NOT WORD BUTTONS
 
 
 🟡 *In Progress*

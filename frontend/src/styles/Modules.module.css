@@ -663,6 +663,128 @@
   color: var(--color-risk-critical);
 }
 
+.performanceToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.performanceFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 280px;
+}
+
+.performanceFilters .formInput,
+.performanceFilters .formSelect {
+  min-width: 150px;
+  flex: 1 1 160px;
+}
+
+.performanceActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.performanceIconButton {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #d8e0ea;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.performanceIconButton:hover:not(:disabled) {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #8b0000;
+  box-shadow: 0 4px 10px rgba(139, 0, 0, 0.1);
+}
+
+.performanceIconButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.performanceTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-neutral);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-main);
+}
+
+.performanceTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 980px;
+}
+
+.performanceTable th,
+.performanceTable td {
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--color-border-neutral);
+  vertical-align: middle;
+}
+
+.performanceTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.performanceTable tbody tr:nth-child(even) {
+  background: #fcfcfd;
+}
+
+.performanceTable tbody tr:hover {
+  background: #fef2f2;
+}
+
+.performanceTable .numericCell,
+.numericCell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.performanceTable .studentNameCell,
+.studentNameCell {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 160px;
+}
+
+.performanceTable .recommendationCell,
+.recommendationCell {
+  min-width: 240px;
+  max-width: 360px;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  font-size: 0.94rem;
+}
+
 .infoBlock {
   display: grid;
   gap: var(--space-md);
