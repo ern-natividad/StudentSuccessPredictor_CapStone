@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { api, isBackendAuthEnabled } from "../../../services/api";
@@ -46,6 +46,7 @@ const AcademicPerformanceModule = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const hasSyncedRef = useRef(false);
 
   const loadForecasts = async ({ sync = true, showLoader = true } = {}) => {
     if (!isBackendAuthEnabled()) {
@@ -97,7 +98,9 @@ const AcademicPerformanceModule = () => {
   };
 
   useEffect(() => {
-    loadForecasts();
+    const shouldSync = !hasSyncedRef.current;
+    if (shouldSync) hasSyncedRef.current = true;
+    loadForecasts({ sync: shouldSync });
   }, [filters.academicYear, filters.risk, filters.program]);
 
   useEffect(() => {

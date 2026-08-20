@@ -25,20 +25,32 @@ const upsertPerformancePrediction = async ({
     updated_at: new Date().toISOString(),
   };
 
-  const { data: existing, error: existingError } = await supabase
+  const { data: existingRows, error: existingError } = await supabase
     .from("academic_performance_predictions")
     .select("id")
     .eq("student_id", studentId)
-    .eq("academic_year", academicYear)
-    .maybeSingle();
+    .order("updated_at", { ascending: false });
 
   if (existingError) throw existingError;
 
-  if (existing?.id) {
+  const [primary, ...duplicates] = existingRows || [];
+
+  if (duplicates.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("academic_performance_predictions")
+      .delete()
+      .in(
+        "id",
+        duplicates.map((row) => row.id),
+      );
+    if (deleteError) throw deleteError;
+  }
+
+  if (primary?.id) {
     const { error } = await supabase
       .from("academic_performance_predictions")
       .update(payload)
-      .eq("id", existing.id);
+      .eq("id", primary.id);
     if (error) throw error;
     return { studentId, action: "updated" };
   }
@@ -50,9 +62,43 @@ const upsertPerformancePrediction = async ({
   return { studentId, action: "created" };
 };
 
+const deduplicatePerformancePredictions = async () => {
+  const { data: rows, error } = await supabase
+    .from("academic_performance_predictions")
+    .select("id, student_id, updated_at")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  if (!rows?.length) return { removed: 0 };
+
+  const seenStudents = new Set();
+  const duplicateIds = [];
+
+  for (const row of rows) {
+    if (!row.student_id) continue;
+    if (seenStudents.has(row.student_id)) {
+      duplicateIds.push(row.id);
+      continue;
+    }
+    seenStudents.add(row.student_id);
+  }
+
+  if (duplicateIds.length === 0) return { removed: 0 };
+
+  const { error: deleteError } = await supabase
+    .from("academic_performance_predictions")
+    .delete()
+    .in("id", duplicateIds);
+
+  if (deleteError) throw deleteError;
+  return { removed: duplicateIds.length };
+};
+
 export const syncAcademicPerformanceRecords = async (
   academicYear = DEFAULT_ACADEMIC_YEAR,
 ) => {
+  await deduplicatePerformancePredictions();
+
   const { data: studentRows, error: studentError } = await supabase
     .from("student_info")
     .select("student_id, user_id, department, year_level");
