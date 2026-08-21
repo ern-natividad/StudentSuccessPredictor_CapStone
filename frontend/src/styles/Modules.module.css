@@ -720,6 +720,59 @@
   cursor: not-allowed;
 }
 
+.historyToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.historySearchInput {
+  width: min(360px, 100%);
+  min-width: 220px;
+}
+
+.exportMenuWrapper {
+  position: relative;
+}
+
+.exportMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 148px;
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.exportMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  background: transparent;
+  border: none;
+  color: #334155;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.exportMenuItem:hover {
+  background: #fff1f2;
+  color: #8b0000;
+}
+
+.exportMenuItem + .exportMenuItem {
+  border-top: 1px solid #eef2f7;
+}
+
 .performanceTableWrapper {
   overflow-x: auto;
   border: 1px solid var(--color-border-neutral);

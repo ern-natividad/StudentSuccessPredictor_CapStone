@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
+import { useToast } from "../../../components/Common/Toast";
 import { normalizeApplicantPayload } from "../../../utils/dataNormalization";
 import styles from "../../../styles/Modules.module.css";
 
@@ -46,15 +47,32 @@ const initialForm = {
 const PreEnrollmentModule = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
+  const exportMenuRef = useRef(null);
   const [formData, setFormData] = useState(initialForm);
   const [recommendation, setRecommendation] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const filteredHistory = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
     if (!query) return [];
     return [];
   }, [searchTerm]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target)
+      ) {
+        setExportMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -129,8 +147,59 @@ const PreEnrollmentModule = () => {
     });
   };
 
+  const getExportRows = () => filteredHistory;
+
+  const handleExportCSV = () => {
+    setExportMenuOpen(false);
+    const rows = getExportRows();
+
+    if (rows.length === 0) {
+      toast.error("No records available to export.");
+      return;
+    }
+
+    const headers = ["Applicant ID", "Name", "Program", "Confidence", "Status"];
+    const csvRows = rows.map((item) => [
+      item.id,
+      item.name,
+      item.program,
+      `${item.confidence}%`,
+      item.status,
+    ]);
+
+    const csv = [headers, ...csvRows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "pre-enrollment-recommendations.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Recommendation history exported as CSV.");
+  };
+
   const handleExportPDF = () => {
+    setExportMenuOpen(false);
+
+    if (getExportRows().length === 0) {
+      toast.error("No records available to export.");
+      return;
+    }
+
     window.print();
+  };
+
+  const toggleExportMenu = () => {
+    setExportMenuOpen((current) => !current);
   };
 
   return (
@@ -616,65 +685,51 @@ const PreEnrollmentModule = () => {
             Recommendation History & Audits
           </div>
 
-          <div
-            className={styles.buttonGroup}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "1rem",
-              marginBottom: "1rem",
-            }}
-          >
+          <div className={styles.historyToolbar}>
             <input
               type="search"
-              className={styles.formInput}
+              className={`${styles.formInput} ${styles.historySearchInput}`}
               placeholder="Search history by applicant ID or name..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              style={{ maxWidth: "360px", padding: "0.5rem 0.75rem" }}
             />
 
-            <button
-              onClick={handleExportPDF}
-              style={{
-                backgroundColor: "#800000",
-                color: "#ffffff",
-                border: "none",
-                padding: "0.5rem 1rem",
-                borderRadius: "6px",
-                fontWeight: "600",
-                fontSize: "13px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                transition: "background-color 0.2s ease",
-              }}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.backgroundColor = "#660000")
-              }
-              onMouseOut={(e) =>
-                (e.currentTarget.style.backgroundColor = "#800000")
-              }
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div className={styles.exportMenuWrapper} ref={exportMenuRef}>
+              <button
+                type="button"
+                className={styles.performanceIconButton}
+                onClick={toggleExportMenu}
+                title="Export options"
+                aria-label="Export options"
+                aria-expanded={exportMenuOpen}
+                aria-haspopup="menu"
               >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Export Report (PDF)
-            </button>
+                <i className="fas fa-file-export" aria-hidden="true" />
+              </button>
+
+              {exportMenuOpen ? (
+                <div className={styles.exportMenu} role="menu">
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    role="menuitem"
+                    onClick={handleExportCSV}
+                  >
+                    <i className="fas fa-file-csv" aria-hidden="true" />
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    role="menuitem"
+                    onClick={handleExportPDF}
+                  >
+                    <i className="fas fa-file-pdf" aria-hidden="true" />
+                    Export PDF
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className={styles.tableWrapper}>
