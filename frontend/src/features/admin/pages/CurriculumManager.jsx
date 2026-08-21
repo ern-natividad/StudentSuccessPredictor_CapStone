@@ -990,14 +990,14 @@ const CurriculumManager = () => {
                           type="button"
                           style={{
                             ...iconButtonStyle,
-                            color: "#2563eb",
+                            color: "#334155",
                           }}
                           onClick={() => setCurriculumToView(c)}
                           title="View Curriculum"
                           aria-label={`View ${c.title}`}
                           onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = "#eff6ff";
-                            e.currentTarget.style.borderColor = "#bfdbfe";
+                            e.currentTarget.style.backgroundColor = "#f1f5f9";
+                            e.currentTarget.style.borderColor = "#cbd5e1";
                           }}
                           onMouseOut={(e) => {
                             e.currentTarget.style.backgroundColor = "#ffffff";
