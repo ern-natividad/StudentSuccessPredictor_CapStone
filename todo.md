@@ -18,7 +18,7 @@
 
 
 🟡 *In Progress*
-- 
+- Fixing the Section in the Manage Adviser (the unassigned)
 
 
 
