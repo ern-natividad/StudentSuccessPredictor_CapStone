@@ -192,7 +192,9 @@ const HomePage = () => {
               targeted support systems.
             </p>
             <button
-              onClick={() => navigate("/pre-enrollment")}
+              onClick={() =>
+                navigate("/pre-enrollment", { state: { fromLanding: true } })
+              }
               className="btn-primary"
               style={{
                 fontSize: "var(--font-size-base)",

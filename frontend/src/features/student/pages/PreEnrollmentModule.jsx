@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
@@ -46,6 +46,7 @@ const initialForm = {
 
 const PreEnrollmentModule = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const toast = useToast();
   const exportMenuRef = useRef(null);
@@ -53,6 +54,12 @@ const PreEnrollmentModule = () => {
   const [recommendation, setRecommendation] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  // Public landing entry only (`/pre-enrollment` from Home CTA).
+  // Authenticated staff/admin use `/modules/pre-enrollment` and should not see this.
+  const showLandingBack =
+    location.pathname === "/pre-enrollment" ||
+    Boolean(location.state?.fromLanding);
 
   const filteredHistory = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
@@ -208,6 +215,7 @@ const PreEnrollmentModule = () => {
       description="Assist admission personnel in recommending the most suitable engineering degree program for incoming applicants based on their academic profile, CET components, and non-academic activities."
       activeKey="pre-enrollment"
       menuItems={moduleLinks}
+      onBack={showLandingBack ? () => navigate("/") : undefined}
     >
       <div className={styles.sectionGrid} style={{ gap: "1.25rem" }}>
         {/* Left Column: Input Form */}
