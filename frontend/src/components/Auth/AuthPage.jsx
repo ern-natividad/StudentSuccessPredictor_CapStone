@@ -54,9 +54,10 @@ const AuthPage = () => {
             type="button"
             className={styles.backButton}
             onClick={handleBack}
+            title="Back"
+            aria-label="Back"
           >
-            <i className="fas fa-arrow-left"></i>
-            Back to roles
+            <i className="fas fa-arrow-left" aria-hidden="true"></i>
           </button>
           <div className={styles.roleBadge}>{roleConfig.title}</div>
           {view === "login" && (
