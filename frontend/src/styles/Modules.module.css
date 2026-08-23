@@ -212,12 +212,12 @@
 
 .aiComposer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-sm);
   background: var(--color-bg-main);
   border: 1px solid var(--color-border-neutral);
-  border-radius: 999px;
-  padding: 0.45rem 0.55rem;
+  border-radius: 22px;
+  padding: 0.55rem 0.6rem 0.55rem 0.75rem;
 }
 
 .aiComposerPlus,
@@ -232,20 +232,37 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .aiComposerInput {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
-  padding: 0.7rem 0.75rem;
+  padding: 0.65rem 0.5rem;
   font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.45;
   color: var(--color-text-primary);
   outline: none;
+  resize: none;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-height: 42px;
+  max-height: 160px;
+  box-sizing: border-box;
 }
 
 .aiComposerInput::placeholder {
   color: var(--color-text-muted);
+}
+
+.aiComposerInput:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .aiComposerSend {

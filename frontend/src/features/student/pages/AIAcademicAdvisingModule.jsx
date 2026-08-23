@@ -57,6 +57,14 @@ const AIAcademicAdvisingModule = () => {
   const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
   const canSend = !isThinking && !loading && Boolean(snapshot);
 
+  const resizeComposer = () => {
+    const field = composerInputRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    const nextHeight = Math.min(field.scrollHeight, 160);
+    field.style.height = `${Math.max(nextHeight, 42)}px`;
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -64,6 +72,10 @@ const AIAcademicAdvisingModule = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    resizeComposer();
+  }, [query]);
 
   useEffect(() => {
     if (loading) return;
@@ -485,10 +497,11 @@ const AIAcademicAdvisingModule = () => {
           </div>
 
           <div className={styles.aiComposer}>
-            <input
+            <textarea
               ref={composerInputRef}
               className={styles.aiComposerInput}
               value={query}
+              rows={1}
               placeholder={
                 editingMessageId
                   ? "Finish or cancel the edit above..."
@@ -497,7 +510,8 @@ const AIAcademicAdvisingModule = () => {
               disabled={!canSend || Boolean(editingMessageId)}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
                   handleAsk();
                 }
               }}
