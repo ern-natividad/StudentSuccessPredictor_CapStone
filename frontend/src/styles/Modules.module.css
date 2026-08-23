@@ -312,6 +312,181 @@
   align-self: flex-start;
 }
 
+.chatMessageRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 82%;
+  width: fit-content;
+  position: relative;
+  z-index: 1;
+}
+
+.chatMessageRowUser {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chatMessageRowBot {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chatMessageRow .chatMessage {
+  max-width: 100%;
+}
+
+.chatMessageActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+  padding: 0.1rem 0.05rem;
+  visibility: visible;
+  opacity: 1;
+}
+
+.chatActionButton {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid #d8e0ea;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.chatActionButton svg {
+  flex-shrink: 0;
+  display: block;
+  stroke-width: 2.25;
+}
+
+.chatActionButton:hover {
+  color: #8b0000;
+  background: #fff1f2;
+  border-color: #fecdd3;
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.12);
+}
+
+.chatActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.chatActionButton:disabled:hover {
+  color: #475569;
+  background: #ffffff;
+  border-color: #d8e0ea;
+}
+
+.chatActionButtonActive {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.chatEditPanel {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.chatEditTextarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1e293b;
+  font: inherit;
+  line-height: 1.5;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.chatEditTextarea:focus {
+  border-color: #fecdd3;
+  box-shadow: 0 0 0 3px rgba(254, 205, 211, 0.45);
+}
+
+.chatEditActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.chatEditSaveButton {
+  color: #ffffff !important;
+  background: #8b0000 !important;
+  border-color: #8b0000 !important;
+}
+
+.chatEditSaveButton:hover:not(:disabled) {
+  background: #6f0000 !important;
+  border-color: #6f0000 !important;
+  color: #ffffff !important;
+}
+
+.chatEditSaveButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.chatMarkdown {
+  white-space: normal;
+}
+
+.chatMarkdown :global(.chatMdHeading) {
+  margin: 0.65rem 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1.35;
+}
+
+.chatMarkdown :global(.chatMdHeading:first-child) {
+  margin-top: 0;
+}
+
+.chatMarkdown :global(.chatMdParagraph) {
+  margin: 0 0 0.45rem;
+}
+
+.chatMarkdown :global(.chatMdParagraph:last-child) {
+  margin-bottom: 0;
+}
+
+.chatMarkdown :global(.chatMdList) {
+  margin: 0.35rem 0 0.55rem;
+  padding-left: 1.15rem;
+}
+
+.chatMarkdown :global(.chatMdList li) {
+  margin-bottom: 0.25rem;
+}
+
+.chatMarkdown :global(strong) {
+  font-weight: 700;
+}
+
 @media (max-width: 980px) {
   .aiChatLayout {
     grid-template-columns: 1fr;
@@ -324,7 +499,8 @@
     align-items: flex-start;
   }
 
-  .chatMessage {
+  .chatMessage,
+  .chatMessageRow {
     max-width: 100%;
   }
 }

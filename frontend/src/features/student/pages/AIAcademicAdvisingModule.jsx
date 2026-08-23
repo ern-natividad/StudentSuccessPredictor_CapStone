@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
+import { FiCheck, FiCopy, FiEdit2, FiSend, FiX } from "react-icons/fi";
 import ModuleShell from "../../../components/Common/ModuleShell";
+import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Modules.module.css";
 import { useAdvisingContext } from "../../../hooks/useAdvisingContext";
 import { ROLE_QUICK_PROMPTS } from "../../../utils/advisingSnapshot";
+import { renderChatMarkdown } from "../../../utils/renderChatMarkdown";
 
 const moduleLinks = [
   { key: "pre-enrollment", label: "Degree Recommendation", path: "/modules/pre-enrollment" },
@@ -28,6 +31,7 @@ const formatGpa = (value) =>
   value === null || value === undefined ? "—" : Number(value).toFixed(2);
 
 const AIAcademicAdvisingModule = () => {
+  const toast = useToast();
   const {
     role,
     snapshot,
@@ -42,10 +46,16 @@ const AIAcademicAdvisingModule = () => {
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editDraft, setEditDraft] = useState("");
   const messagesEndRef = useRef(null);
+  const composerInputRef = useRef(null);
+  const editTextareaRef = useRef(null);
 
   const quickPrompts = ROLE_QUICK_PROMPTS[role] || ROLE_QUICK_PROMPTS.student;
   const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
+  const canSend = !isThinking && !loading && Boolean(snapshot);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,11 +75,81 @@ const AIAcademicAdvisingModule = () => {
         text: welcomeMessage,
       },
     ]);
+    setEditingMessageId(null);
+    setEditDraft("");
+    setQuery("");
   }, [contextKey, loading, welcomeMessage]);
+
+  useEffect(() => {
+    if (!editingMessageId) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const field = editTextareaRef.current;
+      if (!field) return;
+      field.focus();
+      const length = field.value.length;
+      field.setSelectionRange(length, length);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [editingMessageId]);
+
+  const handleCopyMessage = async (message) => {
+    try {
+      await navigator.clipboard.writeText(message.text || "");
+      setCopiedMessageId(message.id);
+      toast.success("Copied to clipboard.");
+      window.setTimeout(() => {
+        setCopiedMessageId((current) =>
+          current === message.id ? null : current,
+        );
+      }, 1600);
+    } catch {
+      toast.error("Unable to copy message.");
+    }
+  };
+
+  const handleStartEdit = (message) => {
+    if (!canSend || message.sender !== "user") return;
+    setEditingMessageId(message.id);
+    setEditDraft(message.text || "");
+    setQuery("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditDraft("");
+  };
+
+  const requestAiReply = async ({ prompt, historyMessages }) => {
+    const response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        message: prompt,
+        history: historyMessages,
+        studentSnapshot: snapshot,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to receive AI response.");
+    }
+
+    return data.reply || "I couldn't process your request at this moment.";
+  };
 
   const handleAsk = async (promptText = query) => {
     const cleanedPrompt = (promptText || "").trim();
-    if (!cleanedPrompt || isThinking || loading || !snapshot) return;
+    if (!cleanedPrompt || !canSend) return;
+
+    // If an inline edit is open, prefer completing that edit instead.
+    if (editingMessageId) {
+      await handleSaveEdit();
+      return;
+    }
 
     const userMessage = {
       id: Date.now(),
@@ -77,40 +157,93 @@ const AIAcademicAdvisingModule = () => {
       text: cleanedPrompt,
     };
 
+    const historyForApi = messages.filter(
+      (message, index) => !(index === 0 && message.sender === "bot"),
+    );
+
     setMessages((prev) => [...prev, userMessage]);
     setQuery("");
     setIsThinking(true);
 
     try {
-      const conversationHistory = messages.filter(
-        (message, index) => !(index === 0 && message.sender === "bot"),
-      );
-
-      const response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          message: cleanedPrompt,
-          history: conversationHistory,
-          studentSnapshot: snapshot,
-        }),
+      const reply = await requestAiReply({
+        prompt: cleanedPrompt,
+        historyMessages: historyForApi,
       });
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to receive AI response.");
-      }
-
-      const botMessage = {
-        id: Date.now() + 1,
-        sender: "bot",
-        text: data.reply || "I couldn't process your request at this moment.",
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "bot",
+          text: reply,
+        },
+      ]);
     } catch (requestError) {
       console.error("AI Advising Communication Error:", requestError);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "bot",
+          text:
+            requestError.message ||
+            "Unable to reach the AI server. Please verify that your backend server is running on port 5001.",
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const cleanedPrompt = editDraft.trim();
+    if (!cleanedPrompt) {
+      toast.error("Edited prompt cannot be empty.");
+      return;
+    }
+    if (!canSend || !editingMessageId) return;
+
+    const editIndex = messages.findIndex(
+      (message) => message.id === editingMessageId,
+    );
+    if (editIndex < 0) {
+      handleCancelEdit();
+      return;
+    }
+
+    const historyBeforeEdit = messages
+      .slice(0, editIndex)
+      .filter((message, index) => !(index === 0 && message.sender === "bot"));
+
+    const updatedUserMessage = {
+      id: editingMessageId,
+      sender: "user",
+      text: cleanedPrompt,
+    };
+
+    setMessages((prev) => [...prev.slice(0, editIndex), updatedUserMessage]);
+    setEditingMessageId(null);
+    setEditDraft("");
+    setQuery("");
+    setIsThinking(true);
+
+    try {
+      const reply = await requestAiReply({
+        prompt: cleanedPrompt,
+        historyMessages: historyBeforeEdit,
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "bot",
+          text: reply,
+        },
+      ]);
+    } catch (requestError) {
+      console.error("AI Advising Edit Error:", requestError);
       setMessages((prev) => [
         ...prev,
         {
@@ -196,7 +329,7 @@ const AIAcademicAdvisingModule = () => {
                 key={prompt}
                 type="button"
                 className={styles.aiQuickPrompt}
-                disabled={isThinking || loading || !snapshot}
+                disabled={!canSend || Boolean(editingMessageId)}
                 onClick={() => handleAsk(prompt)}
               >
                 {prompt}
@@ -218,17 +351,128 @@ const AIAcademicAdvisingModule = () => {
           </div>
 
           <div className={styles.chatWindow}>
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`${styles.chatMessage} ${
-                  message.sender === "user" ? styles.chatUser : styles.chatBot
-                }`}
-                style={{ whiteSpace: "pre-wrap" }}
-              >
-                {message.text}
-              </div>
-            ))}
+            {messages.map((message) => {
+              const isUser = message.sender === "user";
+              const isCopied = copiedMessageId === message.id;
+              const isEditing = editingMessageId === message.id;
+
+              return (
+                <div
+                  key={message.id}
+                  className={`${styles.chatMessageRow} ${
+                    isUser ? styles.chatMessageRowUser : styles.chatMessageRowBot
+                  }`}
+                >
+                  {isEditing ? (
+                    <div className={`${styles.chatMessage} ${styles.chatUser} ${styles.chatEditPanel}`}>
+                      <textarea
+                        ref={editTextareaRef}
+                        className={styles.chatEditTextarea}
+                        value={editDraft}
+                        rows={Math.min(8, Math.max(3, editDraft.split("\n").length + 1))}
+                        disabled={isThinking}
+                        onChange={(event) => setEditDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            handleCancelEdit();
+                          }
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            handleSaveEdit();
+                          }
+                        }}
+                      />
+                      <div className={styles.chatEditActions}>
+                        <button
+                          type="button"
+                          className={styles.chatActionButton}
+                          title="Cancel edit"
+                          aria-label="Cancel edit"
+                          disabled={isThinking}
+                          onClick={handleCancelEdit}
+                        >
+                          <FiX size={15} aria-hidden="true" />
+                          <span>Cancel</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.chatActionButton} ${styles.chatEditSaveButton}`}
+                          title="Save and resend"
+                          aria-label="Save and resend"
+                          disabled={isThinking || !editDraft.trim()}
+                          onClick={handleSaveEdit}
+                        >
+                          <FiSend size={15} aria-hidden="true" />
+                          <span>Save &amp; Resend</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className={`${styles.chatMessage} ${
+                          isUser ? styles.chatUser : styles.chatBot
+                        } ${!isUser ? styles.chatMarkdown : ""}`}
+                      >
+                        {isUser ? message.text : renderChatMarkdown(message.text)}
+                      </div>
+
+                      <div className={styles.chatMessageActions}>
+                        {isUser ? (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.chatActionButton}
+                              title="Edit prompt"
+                              aria-label="Edit prompt"
+                              disabled={!canSend || Boolean(editingMessageId)}
+                              onClick={() => handleStartEdit(message)}
+                            >
+                              <FiEdit2 size={15} aria-hidden="true" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.chatActionButton} ${
+                                isCopied ? styles.chatActionButtonActive : ""
+                              }`}
+                              title="Copy prompt"
+                              aria-label="Copy prompt"
+                              onClick={() => handleCopyMessage(message)}
+                            >
+                              {isCopied ? (
+                                <FiCheck size={15} aria-hidden="true" />
+                              ) : (
+                                <FiCopy size={15} aria-hidden="true" />
+                              )}
+                              <span>{isCopied ? "Copied" : "Copy"}</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className={`${styles.chatActionButton} ${
+                              isCopied ? styles.chatActionButtonActive : ""
+                            }`}
+                            title="Copy response"
+                            aria-label="Copy response"
+                            onClick={() => handleCopyMessage(message)}
+                          >
+                            {isCopied ? (
+                              <FiCheck size={15} aria-hidden="true" />
+                            ) : (
+                              <FiCopy size={15} aria-hidden="true" />
+                            )}
+                            <span>{isCopied ? "Copied" : "Copy"}</span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
             {isThinking && (
               <div
                 className={`${styles.chatMessage} ${styles.chatBot}`}
@@ -242,10 +486,15 @@ const AIAcademicAdvisingModule = () => {
 
           <div className={styles.aiComposer}>
             <input
+              ref={composerInputRef}
               className={styles.aiComposerInput}
               value={query}
-              placeholder="Write a message here..."
-              disabled={isThinking || loading || !snapshot}
+              placeholder={
+                editingMessageId
+                  ? "Finish or cancel the edit above..."
+                  : "Write a message here..."
+              }
+              disabled={!canSend || Boolean(editingMessageId)}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -258,7 +507,11 @@ const AIAcademicAdvisingModule = () => {
               className={`${styles.aiComposerSend} ${
                 isThinking ? styles.aiComposerSendLoading : ""
               }`}
-              disabled={isThinking || loading || !snapshot || (!isThinking && !query.trim())}
+              disabled={
+                !canSend ||
+                Boolean(editingMessageId) ||
+                (!isThinking && !query.trim())
+              }
               aria-busy={isThinking}
               aria-label={isThinking ? "Sending message" : "Send message"}
               onClick={() => handleAsk()}
