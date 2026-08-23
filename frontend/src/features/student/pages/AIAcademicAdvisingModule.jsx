@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FiCheck, FiCopy, FiEdit2, FiSend, FiX } from "react-icons/fi";
+import { FiCheck, FiCopy, FiEdit2, FiSend, FiSquare, FiX } from "react-icons/fi";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Modules.module.css";
@@ -52,10 +52,45 @@ const AIAcademicAdvisingModule = () => {
   const messagesEndRef = useRef(null);
   const composerInputRef = useRef(null);
   const editTextareaRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   const quickPrompts = ROLE_QUICK_PROMPTS[role] || ROLE_QUICK_PROMPTS.student;
   const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
   const canSend = !isThinking && !loading && Boolean(snapshot);
+
+  const isAbortError = (error) =>
+    error?.name === "AbortError" ||
+    error?.message?.toLowerCase?.().includes("aborted");
+
+  const beginAiRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    return controller;
+  };
+
+  const clearAiRequest = () => {
+    abortControllerRef.current = null;
+  };
+
+  const handleStopGeneration = () => {
+    if (!abortControllerRef.current) return;
+    abortControllerRef.current.abort();
+    abortControllerRef.current = null;
+    setIsThinking(false);
+    toast.info("Response stopped.");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   const resizeComposer = () => {
     const field = composerInputRef.current;
@@ -80,6 +115,11 @@ const AIAcademicAdvisingModule = () => {
   useEffect(() => {
     if (loading) return;
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
     setMessages([
       {
         id: 1,
@@ -90,6 +130,7 @@ const AIAcademicAdvisingModule = () => {
     setEditingMessageId(null);
     setEditDraft("");
     setQuery("");
+    setIsThinking(false);
   }, [contextKey, loading, welcomeMessage]);
 
   useEffect(() => {
@@ -133,10 +174,11 @@ const AIAcademicAdvisingModule = () => {
     setEditDraft("");
   };
 
-  const requestAiReply = async ({ prompt, historyMessages }) => {
+  const requestAiReply = async ({ prompt, historyMessages, signal }) => {
     const response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
       method: "POST",
       headers: getAuthHeaders(),
+      signal,
       body: JSON.stringify({
         message: prompt,
         history: historyMessages,
@@ -173,6 +215,7 @@ const AIAcademicAdvisingModule = () => {
       (message, index) => !(index === 0 && message.sender === "bot"),
     );
 
+    const controller = beginAiRequest();
     setMessages((prev) => [...prev, userMessage]);
     setQuery("");
     setIsThinking(true);
@@ -181,7 +224,10 @@ const AIAcademicAdvisingModule = () => {
       const reply = await requestAiReply({
         prompt: cleanedPrompt,
         historyMessages: historyForApi,
+        signal: controller.signal,
       });
+
+      if (controller.signal.aborted) return;
 
       setMessages((prev) => [
         ...prev,
@@ -192,6 +238,18 @@ const AIAcademicAdvisingModule = () => {
         },
       ]);
     } catch (requestError) {
+      if (isAbortError(requestError) || controller.signal.aborted) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            sender: "bot",
+            text: "Response stopped. You can continue the conversation anytime.",
+          },
+        ]);
+        return;
+      }
+
       console.error("AI Advising Communication Error:", requestError);
       setMessages((prev) => [
         ...prev,
@@ -204,6 +262,9 @@ const AIAcademicAdvisingModule = () => {
         },
       ]);
     } finally {
+      if (abortControllerRef.current === controller) {
+        clearAiRequest();
+      }
       setIsThinking(false);
     }
   };
@@ -234,6 +295,7 @@ const AIAcademicAdvisingModule = () => {
       text: cleanedPrompt,
     };
 
+    const controller = beginAiRequest();
     setMessages((prev) => [...prev.slice(0, editIndex), updatedUserMessage]);
     setEditingMessageId(null);
     setEditDraft("");
@@ -244,7 +306,10 @@ const AIAcademicAdvisingModule = () => {
       const reply = await requestAiReply({
         prompt: cleanedPrompt,
         historyMessages: historyBeforeEdit,
+        signal: controller.signal,
       });
+
+      if (controller.signal.aborted) return;
 
       setMessages((prev) => [
         ...prev,
@@ -255,6 +320,18 @@ const AIAcademicAdvisingModule = () => {
         },
       ]);
     } catch (requestError) {
+      if (isAbortError(requestError) || controller.signal.aborted) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            sender: "bot",
+            text: "Response stopped. You can continue the conversation anytime.",
+          },
+        ]);
+        return;
+      }
+
       console.error("AI Advising Edit Error:", requestError);
       setMessages((prev) => [
         ...prev,
@@ -267,6 +344,9 @@ const AIAcademicAdvisingModule = () => {
         },
       ]);
     } finally {
+      if (abortControllerRef.current === controller) {
+        clearAiRequest();
+      }
       setIsThinking(false);
     }
   };
@@ -519,18 +599,31 @@ const AIAcademicAdvisingModule = () => {
             <button
               type="button"
               className={`${styles.aiComposerSend} ${
-                isThinking ? styles.aiComposerSendLoading : ""
+                isThinking ? styles.aiComposerStop : ""
               }`}
               disabled={
-                !canSend ||
-                Boolean(editingMessageId) ||
-                (!isThinking && !query.trim())
+                isThinking
+                  ? false
+                  : !canSend ||
+                    Boolean(editingMessageId) ||
+                    !query.trim()
               }
               aria-busy={isThinking}
-              aria-label={isThinking ? "Sending message" : "Send message"}
-              onClick={() => handleAsk()}
+              aria-label={isThinking ? "Stop generating response" : "Send message"}
+              title={isThinking ? "Stop" : "Send"}
+              onClick={() => {
+                if (isThinking) {
+                  handleStopGeneration();
+                  return;
+                }
+                handleAsk();
+              }}
             >
-              {!isThinking ? "↑" : null}
+              {isThinking ? (
+                <FiSquare size={14} fill="currentColor" aria-hidden="true" />
+              ) : (
+                "↑"
+              )}
             </button>
           </div>
         </div>
