@@ -14,7 +14,7 @@
 
 **ALL ROLES**
 - ALL EXPORTS MAKE IT TO PDF INSTEAD OF CSV, MAKE IT ALSO IN ICON NOT WORD BUTTONS
-- Early Alets and Dashboard (only the students assigned to the staff should be visible to them but all students should be visible to admin)
+- 
 
 🟡 *In Progress*
 - 
@@ -38,6 +38,7 @@
 - AI Academic and Advising Module (not responsive yet)
 - Connect the Prediction Result and My Grades page to the AI Advising Module, so that it will fetch the original data there and can give a proper advise based on the students data.
 - Fixing the Section in the Manage Adviser (the unassigned)
+- Early Alets, Performance Forecastig Page and Dashboard (only the students assigned to the staff should be visible to them but all students should be visible to admin)
 
 
 **SYSTEM IMPORTANT FEATURES**

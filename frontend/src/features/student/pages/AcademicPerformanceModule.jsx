@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
+import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Modules.module.css";
 
@@ -25,8 +26,30 @@ const moduleLinks = [
 const ACADEMIC_YEARS = ["2026-2027", "2025-2026", "2024-2025", "2023-2024"];
 const RISK_OPTIONS = ["All", "Low", "Medium", "High", "Critical"];
 
+const buildSummary = (rows = []) => {
+  const mae =
+    rows.length > 0
+      ? Number(
+          (
+            rows.reduce((sum, row) => sum + Number(row.abs_error || 0), 0) /
+            rows.length
+          ).toFixed(2),
+        )
+      : 0;
+
+  return {
+    totalStudents: rows.length,
+    mae,
+    moderateRisk: rows.filter((row) => row.risk_level === "Medium").length,
+    highRisk: rows.filter(
+      (row) => row.risk_level === "High" || row.risk_level === "Critical",
+    ).length,
+  };
+};
+
 const AcademicPerformanceModule = () => {
   const toast = useToast();
+  const { isAdmin, visibleStudentIds } = useRoleScopedStudents();
   const [filters, setFilters] = useState({
     program: "All",
     yearLevel: "All",
@@ -35,12 +58,6 @@ const AcademicPerformanceModule = () => {
   });
   const [search, setSearch] = useState("");
   const [forecasts, setForecasts] = useState([]);
-  const [summary, setSummary] = useState({
-    totalStudents: 0,
-    mae: 0,
-    moderateRisk: 0,
-    highRisk: 0,
-  });
   const [programOptions, setProgramOptions] = useState(["All"]);
   const [yearLevelOptions, setYearLevelOptions] = useState(["All"]);
   const [loading, setLoading] = useState(true);
@@ -70,23 +87,23 @@ const AcademicPerformanceModule = () => {
       });
 
       const rows = result.forecasts || [];
-      setForecasts(rows);
-      setSummary(
-        result.summary || {
-          totalStudents: rows.length,
-          mae: 0,
-          moderateRisk: 0,
-          highRisk: 0,
-        },
-      );
+      const scopedRows = isAdmin
+        ? rows
+        : rows.filter((row) =>
+            visibleStudentIds.has(
+              String(row.student_id || "").trim().toLowerCase(),
+            ),
+          );
+
+      setForecasts(scopedRows);
 
       setProgramOptions([
         "All",
-        ...new Set(rows.map((row) => row.program).filter(Boolean)),
+        ...new Set(scopedRows.map((row) => row.program).filter(Boolean)),
       ]);
       setYearLevelOptions([
         "All",
-        ...new Set(rows.map((row) => row.year_level).filter(Boolean)),
+        ...new Set(scopedRows.map((row) => row.year_level).filter(Boolean)),
       ]);
     } catch (requestError) {
       setError(requestError.message || "Unable to load academic performance forecasts.");
@@ -101,7 +118,7 @@ const AcademicPerformanceModule = () => {
     const shouldSync = !hasSyncedRef.current;
     if (shouldSync) hasSyncedRef.current = true;
     loadForecasts({ sync: shouldSync });
-  }, [filters.academicYear, filters.risk, filters.program]);
+  }, [filters.academicYear, filters.risk, filters.program, isAdmin, visibleStudentIds]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -109,13 +126,18 @@ const AcademicPerformanceModule = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [search]);
+  }, [search, isAdmin, visibleStudentIds]);
 
   const filteredStudents = useMemo(() => {
     if (filters.yearLevel === "All") return forecasts;
 
     return forecasts.filter((student) => student.year_level === filters.yearLevel);
   }, [filters.yearLevel, forecasts]);
+
+  const displaySummary = useMemo(
+    () => buildSummary(filteredStudents),
+    [filteredStudents],
+  );
 
   const riskClass = (risk) => {
     switch (risk) {
@@ -194,22 +216,24 @@ const AcademicPerformanceModule = () => {
       <div className={styles.metricGrid}>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Total Students</div>
-          <div className={styles.metricValue}>{summary.totalStudents}</div>
-          <div className={styles.metricSubtext}>Active student cohort</div>
+          <div className={styles.metricValue}>{displaySummary.totalStudents}</div>
+          <div className={styles.metricSubtext}>
+            {isAdmin ? "Active student cohort" : "Assigned student cohort"}
+          </div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Prediction MAE</div>
-          <div className={styles.metricValue}>{Number(summary.mae || 0).toFixed(2)}</div>
+          <div className={styles.metricValue}>{Number(displaySummary.mae || 0).toFixed(2)}</div>
           <div className={styles.metricSubtext}>Mean Absolute Error (GWA)</div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted Moderate Risk</div>
-          <div className={styles.metricValue}>{summary.moderateRisk}</div>
+          <div className={styles.metricValue}>{displaySummary.moderateRisk}</div>
           <div className={styles.metricSubtext}>Monitor progress closely</div>
         </div>
         <div className={styles.metricCard}>
           <div className={styles.metricLabel}>Predicted High Risk</div>
-          <div className={styles.metricValue}>{summary.highRisk}</div>
+          <div className={styles.metricValue}>{displaySummary.highRisk}</div>
           <div className={styles.metricSubtext}>Intervention required</div>
         </div>
       </div>

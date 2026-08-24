@@ -11,7 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import { Doughnut, Line } from "react-chartjs-2";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
@@ -28,10 +28,10 @@ ChartJS.register(
 );
 
 const DashboardOverview = () => {
-  const { students } = useDashboard();
+  const { isAdmin, visibleStudents } = useRoleScopedStudents();
   const { alerts, loading: alertsLoading } = useEarlyAlerts();
 
-  const safeStudents = Array.isArray(students) ? students : [];
+  const safeStudents = Array.isArray(visibleStudents) ? visibleStudents : [];
 
   const riskCounts = {
     Low: safeStudents.filter((s) => s.risk_level === "Low").length,
@@ -201,7 +201,7 @@ const DashboardOverview = () => {
               }}
             >
               <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#64748b" }}>
-                Total Students
+                {isAdmin ? "Total Students" : "Assigned Students"}
               </div>
               <div
                 style={{

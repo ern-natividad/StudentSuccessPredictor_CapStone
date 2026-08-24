@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../../../lib/supabaseClient";
+import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 
 // Shared alert source for the Early Alerts module and the Dashboard's
 // Recent Alerts widget, so both surfaces always reflect the same data.
@@ -7,6 +8,7 @@ export const useEarlyAlerts = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isAdmin, visibleStudentIds, visibleUserIds } = useRoleScopedStudents();
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -20,6 +22,7 @@ export const useEarlyAlerts = () => {
           student_id,
           department,
           section,
+          year_level,
           risk_level,
           created_at,
           users (
@@ -67,6 +70,10 @@ export const useEarlyAlerts = () => {
 
           return {
             id: student.id,
+            studentId: student.student_id || "",
+            userId: userObj?.id || "",
+            section: student.section || "",
+            yearLevel: student.year_level || "",
             name: displayName,
             desc: description,
             sev: severity,
@@ -103,5 +110,18 @@ export const useEarlyAlerts = () => {
     };
   }, [fetchAlerts]);
 
-  return { alerts, loading, error, refetch: fetchAlerts };
+  const scopedAlerts = useMemo(() => {
+    if (isAdmin) return alerts;
+
+    return alerts.filter((alert) => {
+      const studentId = String(alert.studentId || "").trim().toLowerCase();
+      const userId = String(alert.userId || "").trim().toLowerCase();
+      return (
+        (studentId && visibleStudentIds.has(studentId)) ||
+        (userId && visibleUserIds.has(userId))
+      );
+    });
+  }, [alerts, isAdmin, visibleStudentIds, visibleUserIds]);
+
+  return { alerts: scopedAlerts, loading, error, refetch: fetchAlerts };
 };

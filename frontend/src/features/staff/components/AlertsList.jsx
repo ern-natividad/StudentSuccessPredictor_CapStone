@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { useToast } from "../../../components/Common/Toast";
 import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const AlertsList = () => {
-  const { directoryLoading: contextLoading, directoryError: contextError } = useDashboard();
+  const { directoryLoading: contextLoading, directoryError: contextError } =
+    useDashboard();
+  const { isAdmin } = useRoleScopedStudents();
   const toast = useToast();
 
   const { alerts, loading, error } = useEarlyAlerts();
@@ -37,7 +40,9 @@ const AlertsList = () => {
 
   return (
     <div>
-      <h1 className={styles.pageTitle}>Early Alerts</h1>
+      <h1 className={styles.pageTitle}>
+        {isAdmin ? "Early Alerts" : "Early Alerts — Assigned Students"}
+      </h1>
 
       {displayError && <div className={styles.card}>{displayError}</div>}
 
@@ -109,7 +114,11 @@ const AlertsList = () => {
           ))}
 
           {!isLoading && activeAlerts.length === 0 && (
-            <div className={commonStyles.emptyState}>No account alerts found.</div>
+            <div className={commonStyles.emptyState}>
+              {isAdmin
+                ? "No account alerts found."
+                : "No alerts found for your assigned students."}
+            </div>
           )}
 
           {isLoading && (
