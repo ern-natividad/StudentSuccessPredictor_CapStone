@@ -48,6 +48,8 @@ const StudentManagementPage = () => {
     directoryError,
   } = useDashboard();
 
+  const isAdmin = user?.role === "admin";
+
   const loggedInStaff = useMemo(() => {
     if (!user || user.role !== "staff") return null;
 
@@ -60,15 +62,12 @@ const StudentManagementPage = () => {
     );
   }, [staffMembers, user]);
 
-  const staffStudentList = useMemo(() => {
+  const displayStudentList = useMemo(() => {
+    // Admins see every student, with or without a section assignment.
+    if (isAdmin) return students;
     if (!loggedInStaff) return [];
     return getStudentsForStaff(loggedInStaff.id);
-  }, [getStudentsForStaff, loggedInStaff]);
-
-  const displayStudentList = useMemo(
-    () => staffStudentList,
-    [staffStudentList],
-  );
+  }, [getStudentsForStaff, isAdmin, loggedInStaff, students]);
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
@@ -268,9 +267,19 @@ const StudentManagementPage = () => {
   };
 
   const assignedSectionCount = useMemo(() => {
+    if (isAdmin) {
+      return new Set(
+        displayStudentList
+          .map((student) => getStudentSectionValue(student))
+          .map((section) => String(section || "").trim())
+          .filter(Boolean)
+          .filter((section) => section.toLowerCase() !== "unassigned"),
+      ).size;
+    }
+
     if (!loggedInStaff) return 0;
     return getStaffAssignedSections(loggedInStaff).length;
-  }, [loggedInStaff]);
+  }, [displayStudentList, isAdmin, loggedInStaff]);
 
   const summaryStats = useMemo(() => {
     const averageGrade =
@@ -284,15 +293,21 @@ const StudentManagementPage = () => {
         : "0.0";
 
     return [
-      { label: "Assigned students", value: displayStudentList.length },
-      { label: "Sections covered", value: assignedSectionCount },
+      {
+        label: isAdmin ? "Total students" : "Assigned students",
+        value: displayStudentList.length,
+      },
+      {
+        label: isAdmin ? "Sections in use" : "Sections covered",
+        value: assignedSectionCount,
+      },
       { label: "Average grade", value: averageGrade },
       {
         label: "Current focus",
         value: selectedStudent ? "Selected" : "None",
       },
     ];
-  }, [assignedSectionCount, displayStudentList, selectedStudent]);
+  }, [assignedSectionCount, displayStudentList, isAdmin, selectedStudent]);
 
   return (
     <div className={styles.pageShell}>
@@ -300,8 +315,9 @@ const StudentManagementPage = () => {
         <div>
           <h1 className={styles.pageTitle}>Student Management</h1>
           <p className={styles.pageSubtitle}>
-            Review assigned learners, manage grade entries, and keep student
-            support tasks organized in one space.
+            {isAdmin
+              ? "Review all enrolled learners, manage grade entries, and keep student records organized in one space."
+              : "Review assigned learners, manage grade entries, and keep student support tasks organized in one space."}
           </p>
         </div>
       </div>
@@ -339,8 +355,12 @@ const StudentManagementPage = () => {
       <div className={styles.contentCard}>
         <div className={styles.contentCardHeader}>
           <div>
-            <div className={styles.contentCardEyebrow}>Assigned learners</div>
-            <div className={styles.contentCardTitle}>Assigned Students</div>
+            <div className={styles.contentCardEyebrow}>
+              {isAdmin ? "Student directory" : "Assigned learners"}
+            </div>
+            <div className={styles.contentCardTitle}>
+              {isAdmin ? "All Students" : "Assigned Students"}
+            </div>
           </div>
           <div className={styles.contentCardHint}>
             {displayStudentList.length} students visible

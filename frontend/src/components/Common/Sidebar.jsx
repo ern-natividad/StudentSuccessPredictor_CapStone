@@ -120,6 +120,11 @@ const Sidebar = () => {
         { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
         { id: "students", icon: "fas fa-users", label: "Students" },
         {
+          id: "student-management",
+          icon: "fas fa-user-edit",
+          label: "Student Management",
+        },
+        {
           id: "adviser-manager",
           icon: "fas fa-user-tie",
           label: "Manage Adviser",

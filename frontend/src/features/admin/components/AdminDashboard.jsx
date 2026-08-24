@@ -1,6 +1,7 @@
 import { useDashboard } from "../../../hooks/useDashboard";
 import DashboardOverview from "../../staff/pages/DashboardOverview";
 import StudentsList from "../../staff/pages/StudentsList";
+import StudentManagementPage from "../../staff/pages/StudentManagementPage";
 import AlertsList from "../../staff/components/AlertsList";
 import ModelManagementPage from "../pages/ModelManagementPage";
 import AuditLogsPage from "../pages/AuditLogsPage";
@@ -15,6 +16,8 @@ const AdminDashboard = () => {
       return <DashboardOverview />;
     case "students":
       return <StudentsList />;
+    case "student-management":
+      return <StudentManagementPage />;
     case "adviser-manager":
       return <AdviserManager />;
     case "alerts":
