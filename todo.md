@@ -15,7 +15,7 @@
 
 **ALL ROLES**
 - ALL EXPORTS MAKE IT TO PDF INSTEAD OF CSV, MAKE IT ALSO IN ICON NOT WORD BUTTONS
-
+- Early Alets and Dashboard (only the students assigned to the staff should be visible to them but all students should be visible to admin)
 
 🟡 *In Progress*
 - 
