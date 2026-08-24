@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useToast } from "../../../components/Common/Toast";
 import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
@@ -10,8 +12,12 @@ const formatMetric = (value, suffix = "") => {
 };
 
 const StudentsList = () => {
+  const { user } = useAuth();
+  const toast = useToast();
   const {
     students,
+    staffMembers,
+    getStudentsForStaff,
     updateStudentFilter,
     updateRiskFilter,
     directoryLoading,
@@ -22,11 +28,32 @@ const StudentsList = () => {
   const [predictionsByUserId, setPredictionsByUserId] = useState({});
   const [predictionsLoading, setPredictionsLoading] = useState(false);
 
+  const isAdmin = user?.role === "admin";
+
+  const loggedInStaff = useMemo(() => {
+    if (!user || user.role !== "staff") return null;
+
+    return (
+      staffMembers.find(
+        (staff) =>
+          staff.id === user.id ||
+          staff.email?.toLowerCase() === (user.email || "").toLowerCase(),
+      ) || null
+    );
+  }, [staffMembers, user]);
+
+  // Admin: all students. Staff: only students assigned to their sections.
+  const visibleStudents = useMemo(() => {
+    if (isAdmin) return students;
+    if (!loggedInStaff) return [];
+    return getStudentsForStaff(loggedInStaff.id);
+  }, [getStudentsForStaff, isAdmin, loggedInStaff, students]);
+
   useEffect(() => {
     let isMounted = true;
 
     const loadPredictions = async () => {
-      if (!isBackendAuthEnabled() || students.length === 0) {
+      if (!isBackendAuthEnabled() || visibleStudents.length === 0) {
         if (isMounted) {
           setPredictionsByUserId({});
           setPredictionsLoading(false);
@@ -38,7 +65,7 @@ const StudentsList = () => {
 
       try {
         const results = await Promise.all(
-          students.map(async (student) => {
+          visibleStudents.map(async (student) => {
             try {
               const result = await api.getStudentPrediction(student.user_id);
               return [student.user_id, result.prediction || null];
@@ -63,11 +90,11 @@ const StudentsList = () => {
     return () => {
       isMounted = false;
     };
-  }, [students]);
+  }, [visibleStudents]);
 
   const enrichedStudents = useMemo(
     () =>
-      students.map((student) => {
+      visibleStudents.map((student) => {
         const prediction = predictionsByUserId[student.user_id] || null;
 
         return {
@@ -78,7 +105,7 @@ const StudentsList = () => {
           risk_level: prediction?.risk_level || student.risk_level || "Low",
         };
       }),
-    [students, predictionsByUserId],
+    [visibleStudents, predictionsByUserId],
   );
 
   const handleSearch = (value) => {
@@ -110,9 +137,61 @@ const StudentsList = () => {
     return filtered;
   }, [enrichedStudents, riskLevel, searchTerm]);
 
+  const handleExport = () => {
+    if (filteredStudents.length === 0) {
+      toast.error("No students available to export.");
+      return;
+    }
+
+    const headers = [
+      "Student ID",
+      "Name",
+      "Year Level",
+      "Current GPA",
+      "Predicted GPA",
+      "Confidence",
+      "Risk Level",
+    ];
+
+    const rows = filteredStudents.map((student) => [
+      student.student_id,
+      student.full_name,
+      student.yearLevel || "N/A",
+      student.current_gpa == null ? "" : Number(student.current_gpa).toFixed(2),
+      student.predicted_gpa == null
+        ? ""
+        : Number(student.predicted_gpa).toFixed(2),
+      student.confidence_score == null ? "" : `${Number(student.confidence_score)}%`,
+      student.risk_level || "Low",
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = isAdmin
+      ? "all-students.csv"
+      : "assigned-students.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Student list exported as CSV.");
+  };
+
   return (
     <div>
-      <h1 className={styles.pageTitle}>All Students</h1>
+      <h1 className={styles.pageTitle}>
+        {isAdmin ? "All Students" : "Assigned Students"}
+      </h1>
 
       {directoryError && <div className={styles.card}>{directoryError}</div>}
 
@@ -153,37 +232,50 @@ const StudentsList = () => {
       </div>
 
       <div className={styles.card} style={{ marginBottom: "20px" }}>
-        <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-          <input
-            type="text"
-            placeholder="Search by name or ID..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={{
-              flex: 1,
-              padding: "8px 12px",
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: "6px",
-              fontSize: "13px",
-            }}
-          />
-          <select
-            value={riskLevel}
-            onChange={(e) => handleRiskFilter(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: "6px",
-              fontSize: "13px",
-              minWidth: "140px",
-            }}
+        <div className={styles.listToolbar}>
+          <div className={styles.listToolbarFilters}>
+            <input
+              type="text"
+              placeholder="Search by name or ID..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: "6px",
+                fontSize: "13px",
+              }}
+            />
+            <select
+              value={riskLevel}
+              onChange={(e) => handleRiskFilter(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: "6px",
+                fontSize: "13px",
+                minWidth: "140px",
+              }}
+            >
+              <option value="">All Risk Levels</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            className={styles.toolbarIconButton}
+            onClick={handleExport}
+            title="Export to CSV"
+            aria-label="Export to CSV"
+            disabled={filteredStudents.length === 0}
           >
-            <option value="">All Risk Levels</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
+            <i className="fas fa-file-export" aria-hidden="true" />
+          </button>
         </div>
 
         {/* Scrollable container for smaller screens */}
@@ -264,7 +356,9 @@ const StudentsList = () => {
               No students found
             </div>
             <div className={commonStyles.emptyStateDescription}>
-              Try adjusting your search or filters
+              {isAdmin
+                ? "Try adjusting your search or filters"
+                : "No students are assigned to your sections yet, or try adjusting your filters"}
             </div>
           </div>
         )}
