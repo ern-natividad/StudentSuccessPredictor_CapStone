@@ -7,7 +7,7 @@ const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level";
 export const upsertAdviserInfo = async (userId, updates) => {
   const assignedSection = Array.isArray(updates.assigned_sections)
     ? serializeAssignedSections(updates.assigned_sections)
-    : updates.assigned_section?.trim() || null;
+    : serializeAssignedSections(updates.assigned_section);
 
   const payload = {
     user_id: userId,

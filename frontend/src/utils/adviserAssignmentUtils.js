@@ -1,16 +1,35 @@
 export const MAX_ADVISER_SECTIONS = 3;
 
+const PLACEHOLDER_SECTION_VALUES = new Set([
+  "unassigned",
+  "n/a",
+  "na",
+  "none",
+  "null",
+  "undefined",
+  "-",
+  "--",
+]);
+
 export const normalizeMatchValue = (value) =>
   String(value || "").trim().toLowerCase();
+
+const isRealSectionValue = (value) => {
+  const normalized = normalizeMatchValue(value);
+  return Boolean(normalized) && !PLACEHOLDER_SECTION_VALUES.has(normalized);
+};
 
 export const parseAssignedSections = (value) => {
   if (!value) return [];
 
   if (Array.isArray(value)) {
-    return [...new Set(value.map((section) => String(section).trim()).filter(Boolean))].slice(
-      0,
-      MAX_ADVISER_SECTIONS,
-    );
+    return [
+      ...new Set(
+        value
+          .map((section) => String(section).trim())
+          .filter(isRealSectionValue),
+      ),
+    ].slice(0, MAX_ADVISER_SECTIONS);
   }
 
   return [
@@ -18,7 +37,7 @@ export const parseAssignedSections = (value) => {
       String(value)
         .split(/[,|]/)
         .map((section) => section.trim())
-        .filter(Boolean),
+        .filter(isRealSectionValue),
     ),
   ].slice(0, MAX_ADVISER_SECTIONS);
 };
@@ -51,7 +70,11 @@ export const isStudentAssignedToAdviser = (
     student.yearLevel || student.year_level,
   );
 
-  if (!normalizedAdviserSection || !normalizedAdviserYear) {
+  if (
+    !normalizedAdviserSection ||
+    !normalizedAdviserYear ||
+    !isRealSectionValue(adviserSection)
+  ) {
     return false;
   }
 
@@ -80,8 +103,13 @@ export const filterStudentsForAdviser = (
 };
 
 export const getStaffSectionLabel = (assignedSection, getSectionById) => {
-  if (!assignedSection) return "Unassigned";
-  return getSectionById(assignedSection)?.name || assignedSection;
+  if (!isRealSectionValue(assignedSection)) return "Unassigned";
+
+  const section = getSectionById?.(assignedSection);
+  const label = section?.name || assignedSection;
+
+  if (!isRealSectionValue(label)) return "Unassigned";
+  return label;
 };
 
 export const getStaffSectionsLabel = (assignedSections, getSectionById) => {
@@ -89,7 +117,9 @@ export const getStaffSectionsLabel = (assignedSections, getSectionById) => {
 
   if (sections.length === 0) return "Unassigned";
 
-  return sections
+  const labels = sections
     .map((section) => getStaffSectionLabel(section, getSectionById))
-    .join(", ");
+    .filter(isRealSectionValue);
+
+  return labels.length > 0 ? labels.join(", ") : "Unassigned";
 };
