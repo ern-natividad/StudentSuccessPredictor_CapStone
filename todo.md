@@ -18,7 +18,7 @@
 
 
 🟡 *In Progress*
-- Fixing the Section in the Manage Adviser (the unassigned)
+- 
 
 
 
@@ -38,6 +38,7 @@
 - Fix the section in UI and Database (Staff & Student)
 - AI Academic and Advising Module (not responsive yet)
 - Connect the Prediction Result and My Grades page to the AI Advising Module, so that it will fetch the original data there and can give a proper advise based on the students data.
+- Fixing the Section in the Manage Adviser (the unassigned)
 
 
 **SYSTEM IMPORTANT FEATURES**
