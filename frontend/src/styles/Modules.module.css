@@ -18,9 +18,9 @@
 
 .moduleBackButton {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  margin-top: 0.15rem;
+  width: 34px;
+  height: 34px;
+  margin-top: 0.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -29,7 +29,7 @@
   border: 1px solid #8b0000;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
