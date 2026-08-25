@@ -39,14 +39,23 @@ const AlertsList = () => {
   const displayError = error || contextError;
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>
-        {isAdmin ? "Early Alerts" : "Early Alerts — Assigned Students"}
-      </h1>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>
+            {isAdmin ? "Early Alerts" : "Early Alerts — Assigned Students"}
+          </h1>
+          <p className={styles.pageSubtitle}>
+            {isAdmin
+              ? "Monitor risk flags and account issues across the full student cohort."
+              : "Monitor risk flags and account issues for students assigned to your sections."}
+          </p>
+        </div>
+      </div>
 
       {displayError && <div className={styles.card}>{displayError}</div>}
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Alert Summary</div>
         <div
           style={{

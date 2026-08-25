@@ -217,7 +217,7 @@ const PreEnrollmentModule = () => {
       menuItems={moduleLinks}
       onBack={showLandingBack ? () => navigate("/") : undefined}
     >
-      <div className={styles.sectionGrid} style={{ gap: "1.25rem" }}>
+      <div className={styles.sectionGrid} style={{ gap: "12px" }}>
         {/* Left Column: Input Form */}
         <div className={styles.moduleCard} style={{ padding: "1.25rem" }}>
           <div

@@ -334,19 +334,24 @@ const DashboardOverview = () => {
   };
 
   return (
-    <div style={{ padding: "0.5rem" }}>
-      {/* Main Page Title Header using CSS module className */}
-      <h1 className={styles.pageTitle} style={{ fontSize: "1.75rem", marginBottom: "1.5rem" }}>
-        Dashboard
-      </h1>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Dashboard</h1>
+          <p className={styles.pageSubtitle}>
+            {isAdmin
+              ? "Monitor cohort risk, GPA trends, and early alerts across all students."
+              : "Monitor risk, GPA trends, and early alerts for students assigned to your sections."}
+          </p>
+        </div>
+      </div>
 
       {/* Top Overview Cards Grid */}
       <div
         className={commonStyles.grid}
         style={{
           gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "1.5rem",
+          gap: "12px",
         }}
       >
         {/* Key Metrics Card */}
@@ -581,7 +586,7 @@ const DashboardOverview = () => {
         className={commonStyles.grid}
         style={{
           gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
-          gap: "1.5rem",
+          gap: "12px",
         }}
       >
         {/* GPA Trend Analysis Card */}

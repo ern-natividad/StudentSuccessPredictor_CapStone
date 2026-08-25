@@ -63,11 +63,15 @@ const AuditLogsPage = () => {
   };
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>Audit Logs</h1>
-      <p className={styles.pageDesc}>
-        A chronological record of all system actions performed by administrators and staff.
-      </p>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Audit Logs</h1>
+          <p className={styles.pageSubtitle}>
+            A chronological record of all system actions performed by administrators and staff.
+          </p>
+        </div>
+      </div>
 
       <div className={styles.card}>
         {/* Medium-Sized Date Filter Bar */}

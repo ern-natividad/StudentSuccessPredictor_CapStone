@@ -297,8 +297,16 @@ const AdviserManager = () => {
   };
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>Manage Adviser</h1>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Manage Adviser</h1>
+          <p className={styles.pageSubtitle}>
+            Assign advisers to sections, review student coverage, and keep teaching
+            assignments organized.
+          </p>
+        </div>
+      </div>
 
       {directoryError && <div className={styles.card}>{directoryError}</div>}
 

@@ -188,14 +188,23 @@ const StudentsList = () => {
   };
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>
-        {isAdmin ? "All Students" : "Assigned Students"}
-      </h1>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>
+            {isAdmin ? "All Students" : "Assigned Students"}
+          </h1>
+          <p className={styles.pageSubtitle}>
+            {isAdmin
+              ? "Review the full student cohort, risk distribution, and prediction metrics in one place."
+              : "Review students assigned to your sections, including risk levels and prediction metrics."}
+          </p>
+        </div>
+      </div>
 
       {directoryError && <div className={styles.card}>{directoryError}</div>}
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Statistics</div>
         <div
           style={{
@@ -231,7 +240,7 @@ const StudentsList = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.listToolbar}>
           <div className={styles.listToolbarFilters}>
             <input
