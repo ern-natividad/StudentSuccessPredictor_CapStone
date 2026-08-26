@@ -33,19 +33,11 @@ const averageNumericGrades = (records) => {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
 
-const isPassingRecord = (record) => {
-  const remark = String(record.remarks || "").toLowerCase();
-  if (remark.includes("fail") || remark.includes("drop") || remark === "inc") {
-    return false;
-  }
-  const numeric = parseNumericGrade(record.grade);
-  if (numeric === null) return remark.includes("pass");
-  return numeric <= 3;
-};
-
 const getGradeTone = (grade, remarks = "") => {
+  const rawGrade = String(grade ?? "").trim().toUpperCase();
   const remark = String(remarks).toLowerCase();
   if (
+    rawGrade === "INC" ||
     remark.includes("fail") ||
     remark.includes("drop") ||
     remark.includes("incomplete") ||
@@ -55,10 +47,23 @@ const getGradeTone = (grade, remarks = "") => {
   }
   const numeric = parseNumericGrade(grade);
   if (numeric === null) return "neutral";
-  if (numeric <= 1.75) return "excellent";
-  if (numeric <= 2.5) return "good";
+  if (numeric <= 1) return "excellent";
+  if (numeric <= 2) return "good";
   if (numeric <= 3) return "pass";
   return "fail";
+};
+
+const isPassingRecord = (record) => {
+  const rawGrade = String(record.grade ?? "").trim().toUpperCase();
+  if (rawGrade === "INC") return false;
+
+  const remark = String(record.remarks || "").toLowerCase();
+  if (remark.includes("fail") || remark.includes("drop") || remark === "inc") {
+    return false;
+  }
+  const numeric = parseNumericGrade(record.grade);
+  if (numeric === null) return remark.includes("pass");
+  return numeric <= 3;
 };
 
 const formatSemesterLabel = (code) => SEMESTER_LABELS[code] || code || "—";

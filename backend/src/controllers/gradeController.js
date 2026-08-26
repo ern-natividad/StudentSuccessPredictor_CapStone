@@ -2,11 +2,16 @@ import { supabase } from "../config/supabaseClient.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 const parseGrade = (value) => {
-  const grade = Number(value);
-  if (!Number.isFinite(grade) || grade < 1 || grade > 5) {
-    throw new HttpError(400, "Grade must be a number from 1 to 5.");
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  if (raw === "INC") return "INC";
+  if (raw === "1" || raw === "2" || raw === "3" || raw === "5") {
+    return Number(raw);
   }
-  return grade;
+
+  throw new HttpError(400, "Grade must be 1, 2, 3, INC, or 5.");
 };
 
 const normalizeSemester = (value) => {

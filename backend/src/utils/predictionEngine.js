@@ -12,7 +12,25 @@ export const buildPredictionFromGrades = (grades) => {
   const orderedGrades = [...grades].sort(
     (left, right) => new Date(left.created_at) - new Date(right.created_at),
   );
-  const values = orderedGrades.map((record) => Number(record.grade));
+  const values = orderedGrades
+    .map((record) => Number(record.grade))
+    .filter((grade) => Number.isFinite(grade));
+
+  if (values.length === 0) {
+    return {
+      current_gpa: null,
+      predicted_gpa: null,
+      confidence_score: 0,
+      risk_level: "Medium",
+      success_probability: 50,
+      grade_count: grades.length,
+      trend: 0,
+      method: "grade-trend",
+      message:
+        "Prediction needs numeric grades. Incomplete (INC) records are excluded from GWA calculations.",
+    };
+  }
+
   const currentGpa = values.reduce((total, grade) => total + grade, 0) / values.length;
 
   const meanIndex = (values.length - 1) / 2;

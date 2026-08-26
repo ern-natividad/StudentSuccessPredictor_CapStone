@@ -80,7 +80,7 @@ const StudentManagementPage = () => {
     subject: "",
     semester: "1",
     grade: "",
-    remarks: "",
+    remarks: "Pass",
   });
   const [studentInfoForm, setStudentInfoForm] = useState(createEmptyStudentInfoForm);
   const [studentGrades, setStudentGrades] = useState([]);
@@ -113,7 +113,7 @@ const StudentManagementPage = () => {
 
   useEffect(() => {
     if (selectedStudent) {
-      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
+      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
     }
   }, [selectedStudent]);
 
@@ -147,14 +147,12 @@ const StudentManagementPage = () => {
   );
 
   const handleGradeChange = (field, value) => {
-    const nextValue =
-      field === "grade" ? (value === "" ? "" : Number(value)) : value;
-    setGradeForm((prev) => ({ ...prev, [field]: nextValue }));
+    setGradeForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
+    setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
     setIsGradeModalOpen(true);
   };
 
@@ -231,13 +229,11 @@ const StudentManagementPage = () => {
   };
 
   const handleAddGrade = async () => {
-    if (
-      !selectedStudent ||
-      !gradeForm.subject.trim() ||
-      gradeForm.grade === "" ||
-      gradeForm.grade === null
-    ) {
-      toast.error("Enter a subject and a grade from 1 to 5.");
+    const allowedGrades = new Set(["1", "2", "3", "INC", "5"]);
+    const selectedGrade = String(gradeForm.grade ?? "").trim().toUpperCase();
+
+    if (!selectedStudent || !gradeForm.subject.trim() || !allowedGrades.has(selectedGrade)) {
+      toast.error("Enter a subject and select a grade (1, 2, 3, INC, or 5).");
       return;
     }
 
@@ -247,12 +243,12 @@ const StudentManagementPage = () => {
         user_id: selectedStudent.user_id,
         subject_name: gradeForm.subject.trim(),
         semester: gradeForm.semester,
-        grade: Number(gradeForm.grade),
+        grade: selectedGrade === "INC" ? "INC" : Number(selectedGrade),
         remarks: gradeForm.remarks.trim() || "",
       };
       const result = await api.createStudentGrade(payload);
       setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
-      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "" });
+      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
       setIsGradeModalOpen(false);
       updateStudentGradeRecord(selectedStudent.student_id, [
         result.grade,
@@ -710,18 +706,22 @@ const StudentManagementPage = () => {
                 <label
                   style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
                 >
-                  Grade (1-5)
+                  Grade
                 </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={5}
-                  step={1}
-                  placeholder="1-5"
+                <select
                   value={gradeForm.grade}
                   onChange={(e) => handleGradeChange("grade", e.target.value)}
                   style={{ padding: 12, borderRadius: 12, width: "100%" }}
-                />
+                >
+                  <option value="" disabled>
+                    Select grade
+                  </option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="INC">INC</option>
+                  <option value="5">5</option>
+                </select>
               </div>
 
               <div style={{ display: "grid", gap: 6 }}>
@@ -730,18 +730,14 @@ const StudentManagementPage = () => {
                 >
                   Remarks
                 </label>
-                
-                <textarea
-                  placeholder="Remarks"
+                <select
                   value={gradeForm.remarks}
                   onChange={(e) => handleGradeChange("remarks", e.target.value)}
-                  style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    minHeight: 100,
-                    width: "100%",
-                  }}
-                />
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  <option value="Pass">Pass</option>
+                  <option value="Fail">Fail</option>
+                </select>
               </div>
 
               <div
