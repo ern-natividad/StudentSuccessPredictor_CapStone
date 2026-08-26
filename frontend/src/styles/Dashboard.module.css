@@ -1139,3 +1139,164 @@
   background: rgba(139, 0, 0, 0.18) !important;
   border-left-color: #8b0000 !important;
 }
+
+/* STUDENT GRADES PORTAL */
+.gradesFilterSelect {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d8e0ea;
+  background: #ffffff;
+  font-size: 13px;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gradesFilterSelect:focus {
+  outline: none;
+  border-color: #f1a0a0;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.08);
+}
+
+.gradesTableShell {
+  margin-top: 4px;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.gradesTable {
+  table-layout: fixed;
+  margin: 0;
+  width: 100%;
+}
+
+.gradesTable th {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8edf3;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.gradesTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.gradesTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.gradesTable tbody tr:hover td {
+  background: #fcfcfd;
+}
+
+.gradesSubjectName {
+  display: block;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.gradesMutedText {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.gradeValueBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+
+.gradeValueExcellent {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.gradeValueGood {
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.16);
+}
+
+.gradeValuePass {
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.18);
+}
+
+.gradeValueFail {
+  background: rgba(185, 28, 28, 0.1);
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.18);
+}
+
+.gradeValueNeutral {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.gradeRemarkBadge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gradesEmptyState {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.gradesEmptyIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff1f2;
+  color: #8b0000;
+  font-size: 18px;
+}
+
+.gradesEmptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gradesEmptyText {
+  margin: 8px auto 0;
+  max-width: 400px;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
