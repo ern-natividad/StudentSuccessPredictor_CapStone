@@ -3,6 +3,8 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
 import { getUserDirectory } from "../../../services/userDirectory";
+import styles from "../../../styles/Dashboard.module.css";
+import moduleStyles from "../../../styles/Modules.module.css";
 
 const AccountSettingsPage = () => {
   const authContext = useAuth();
@@ -205,58 +207,69 @@ const AccountSettingsPage = () => {
   };
 
   return (
-    <div style={{ padding: "2rem", width: "100%", maxWidth: "100%", fontFamily: "sans-serif" }}>
-      <h2 style={{ color: "#800000", borderBottom: "2px solid #f0f0f0", paddingBottom: "0.5rem", marginTop: 0 }}>
-        Security & Account Settings
-      </h2>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Security & Account Settings</h1>
+          <p className={styles.pageSubtitle}>
+            Manage two-factor authentication and account security for your HawkPredict profile.
+          </p>
+        </div>
+        <div className={styles.pageHeaderBadge}>Account</div>
+      </div>
 
       {/* MFA Management Section */}
-      <div style={{ background: "#fafafa", padding: "1.5rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginBottom: "1.5rem" }}>
-        <h3 style={{ marginTop: 0 }}>Two-Factor Authentication (MFA)</h3>
-        <p style={{ color: "#666", fontSize: "14px" }}>
-          Secure your account using dynamic timed verification codes via Google Authenticator.
-        </p>
-
-        <div style={{ margin: "1.5rem 0" }}>
-          <span style={{ fontSize: "14px", fontWeight: "bold" }}>Status: </span>
-          <span style={{
-            padding: "0.25rem 0.5rem", 
-            borderRadius: "4px", 
-            fontSize: "12px", 
-            fontWeight: "bold",
-            backgroundColor: isMfaEnabled ? "#e8f5e9" : "#ffebee",
-            color: isMfaEnabled ? "#2e7d32" : "#c62828"
-          }}>
+      <div className={styles.contentCard}>
+        <div className={styles.contentCardHeader}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Security</div>
+            <div className={styles.contentCardTitle}>Two-Factor Authentication (MFA)</div>
+            <p className={styles.contentCardMeta}>
+              Secure your account using dynamic timed verification codes via Google Authenticator.
+            </p>
+          </div>
+          <span
+            className={styles.selectedStudentTag}
+            style={{
+              backgroundColor: isMfaEnabled ? "#e8f5e9" : "#ffebee",
+              color: isMfaEnabled ? "#2e7d32" : "#c62828",
+            }}
+          >
             {isMfaEnabled ? "ENABLED" : "DISABLED"}
           </span>
         </div>
 
-        {!isMfaEnabled && !isSettingUp && (
-          <button 
-            onClick={handleStartSetup} 
-            disabled={loading}
-            style={{ backgroundColor: "#800000", color: "#fff", border: "none", padding: "0.6rem 1.2rem", borderRadius: "4px", cursor: "pointer" }}
-          >
-            {loading ? "Initializing..." : "Enable Google Authenticator"}
-          </button>
-        )}
+        <div style={{ marginTop: "1.25rem" }}>
+          {!isMfaEnabled && !isSettingUp && (
+            <button
+              type="button"
+              onClick={handleStartSetup}
+              disabled={loading}
+              className={moduleStyles.primaryButton}
+            >
+              {loading ? "Initializing..." : "Enable Google Authenticator"}
+            </button>
+          )}
 
-        {isMfaEnabled && (
-          <button 
-            onClick={() => setShowDisableModal(true)} 
-            style={{ backgroundColor: "#d32f2f", color: "#fff", border: "none", padding: "0.6rem 1.2rem", borderRadius: "4px", cursor: "pointer" }}
-          >
-            Disable 2FA
-          </button>
-        )}
+          {isMfaEnabled && (
+            <button
+              type="button"
+              onClick={() => setShowDisableModal(true)}
+              className={moduleStyles.primaryButton}
+              style={{ backgroundColor: "#d32f2f" }}
+            >
+              Disable 2FA
+            </button>
+          )}
+        </div>
 
         {!isMfaEnabled && isSettingUp && (
-          <div style={{ marginTop: "1.5rem", background: "#fff", padding: "1rem", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
-            <h4 style={{ margin: "0 0 0.5rem 0" }}>Link your Device</h4>
-            <p style={{ fontSize: "13px", color: "#666" }}>
+          <div className={styles.contentCard} style={{ marginTop: "1.25rem", boxShadow: "none" }}>
+            <div className={styles.contentCardTitle} style={{ fontSize: 16 }}>Link your Device</div>
+            <p className={styles.contentCardMeta}>
               Scan this QR code using Google Authenticator or use the manual key <strong>{manualKey}</strong>:
             </p>
-            
+
             <div style={{ textAlign: "left", margin: "1rem 0" }}>
               {qrCodeUrl && <img src={qrCodeUrl} alt="MFA QR Enrollment Code" style={{ maxWidth: "180px" }} />}
             </div>
@@ -264,24 +277,29 @@ const AccountSettingsPage = () => {
             <form onSubmit={handleConfirmSetup}>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "300px" }}>
                 <label style={{ fontSize: "13px", fontWeight: "bold" }}>Enter 6-Digit Code:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   maxLength="6"
                   placeholder="123456"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", fontSize: "16px", textAlign: "center", letterSpacing: "4px" }}
+                  style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid #d8e0ea", fontSize: "16px", textAlign: "center", letterSpacing: "4px" }}
                   required
                 />
                 <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    style={{ flex: 1, backgroundColor: loading ? "#cccccc" : "#2e7d32", color: "#fff", border: "none", padding: "0.5rem", borderRadius: "4px", cursor: loading ? "not-allowed" : "pointer" }}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={moduleStyles.primaryButton}
+                    style={{ flex: 1, backgroundColor: loading ? "#cccccc" : "#2e7d32" }}
                   >
                     {loading ? "Verifying..." : "Verify & Activate"}
                   </button>
-                  <button type="button" onClick={() => setIsSettingUp(false)} style={{ backgroundColor: "#ccc", border: "none", padding: "0.5rem 1rem", borderRadius: "4px", cursor: "pointer" }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettingUp(false)}
+                    className={moduleStyles.secondaryButton}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -293,18 +311,20 @@ const AccountSettingsPage = () => {
 
       {/* ADMIN-ONLY: Remove Account Section */}
       {user?.role === 'admin' && (
-        <div style={{ background: "#fafafa", padding: "1.5rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderTop: "3px solid #800000" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <div className={styles.contentCard}>
+          <div className={styles.contentCardHeader}>
             <div>
-              <h3 style={{ color: "#800000", margin: 0 }}>Remove User Account</h3>
-              <p style={{ color: "#666", fontSize: "14px", margin: "0.25rem 0 0 0" }}>
+              <div className={styles.contentCardEyebrow}>Administration</div>
+              <div className={styles.contentCardTitle}>Remove User Account</div>
+              <p className={styles.contentCardMeta}>
                 Manage registered user accounts with full system revocation capabilities.
               </p>
             </div>
-            <button 
-              onClick={loadManageableAccounts} 
+            <button
+              type="button"
+              onClick={loadManageableAccounts}
               disabled={fetchingUsers}
-              style={{ backgroundColor: "#f0f0f0", border: "1px solid #ccc", padding: "0.4rem 0.8rem", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+              className={moduleStyles.secondaryButton}
             >
               {fetchingUsers ? "Refreshing..." : "Refresh Table"}
             </button>

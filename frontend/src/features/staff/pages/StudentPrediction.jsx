@@ -66,19 +66,22 @@ const StudentPrediction = () => {
   const predictedGpa = Number(prediction?.predicted_gpa ?? 0);
 
   return (
-    <div className={styles.studentPredictionPage}>
-      <div className={styles.pageHeaderSection}>
-        <h1 className={styles.pageTitle}>Engineering Program Predictor</h1>
-        <p className={styles.pageDesc}>
-          Your forecast is generated from grades recorded by your academic staff.
-        </p>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Engineering Program Predictor</h1>
+          <p className={styles.pageSubtitle}>
+            Your forecast is generated from grades recorded by your academic staff.
+          </p>
+        </div>
+        <div className={styles.pageHeaderBadge}>Student Forecast</div>
       </div>
 
-      {loading && <div className={styles.card}>Loading your grade prediction…</div>}
-      {!loading && error && <div className={styles.card}>{error}</div>}
+      {loading && <div className={styles.contentCard}>Loading your grade prediction…</div>}
+      {!loading && error && <div className={styles.contentCard}>{error}</div>}
       {!loading && !error && emptyMessage && (
-        <div className={styles.card}>
-          <p className={styles.pageDesc} style={{ margin: 0 }}>
+        <div className={styles.contentCard}>
+          <p className={styles.pageSubtitle} style={{ margin: 0 }}>
             {emptyMessage}
           </p>
         </div>
@@ -89,31 +92,26 @@ const StudentPrediction = () => {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "2rem",
-            marginBottom: "2rem",
+            gap: "14px",
           }}
         >
           <div
+            className={styles.resultBanner}
             style={{
-              background: "#8b0000",
-              borderRadius: "16px",
-              padding: "2rem",
-              color: "#fff",
-              minHeight: "200px",
+              minHeight: 180,
+              marginBottom: 0,
+              flexDirection: "column",
+              alignItems: "stretch",
             }}
           >
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
               <div>
-                <div style={{ fontSize: "48px", fontWeight: 700 }}>{currentGpa.toFixed(2)}</div>
-                <div style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9 }}>CURRENT GWA</div>
+                <div className={styles.resultPct}>{currentGpa.toFixed(2)}</div>
+                <div className={styles.resultPctLabel}>CURRENT GWA</div>
               </div>
               <div>
-                <div style={{ fontSize: "48px", fontWeight: 700 }}>
-                  {prediction.success_probability}%
-                </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9 }}>
-                  SUCCESS PROBABILITY
-                </div>
+                <div className={styles.resultPct}>{prediction.success_probability}%</div>
+                <div className={styles.resultPctLabel}>SUCCESS PROBABILITY</div>
               </div>
             </div>
             <p style={{ fontSize: "13px", lineHeight: 1.5, margin: "1.5rem 0 0" }}>
@@ -121,15 +119,16 @@ const StudentPrediction = () => {
             </p>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.cardTitle}>Prediction Details</div>
-            <div style={{ display: "grid", gap: "12px" }}>
+          <div className={styles.contentCard}>
+            <div className={styles.contentCardEyebrow}>Prediction</div>
+            <div className={styles.contentCardTitle}>Prediction Details</div>
+            <div style={{ display: "grid", gap: "12px", marginTop: 12 }}>
               <div><strong>Risk Level:</strong> {prediction.risk_level}</div>
               <div><strong>Predicted GWA:</strong> {predictedGpa.toFixed(2)}</div>
               <div><strong>Confidence:</strong> {prediction.confidence_score}%</div>
               <div><strong>Grade trend:</strong> {prediction.trend > 0 ? "Declining" : prediction.trend < 0 ? "Improving" : "Stable"}</div>
             </div>
-            <p style={{ fontSize: "13px", lineHeight: 1.5, marginTop: "1rem" }}>{prediction.message}</p>
+            <p className={styles.contentCardMeta} style={{ marginTop: "1rem" }}>{prediction.message}</p>
           </div>
         </div>
       )}
@@ -137,15 +136,14 @@ const StudentPrediction = () => {
       <div
         role="button"
         tabIndex={0}
+        className={styles.resultBanner}
         style={{
-          background: "linear-gradient(135deg, #8b0000 0%, #6b0000 100%)",
-          borderRadius: "16px",
-          padding: "2rem",
-          color: "#fff",
+          flexDirection: "column",
           textAlign: "center",
-          marginTop: "2rem",
           cursor: "pointer",
+          background: "linear-gradient(135deg, #8b0000 0%, #6b0000 100%)",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          marginBottom: 0,
         }}
         onClick={() => navigate("/modules/ai-advising")}
         onKeyDown={(event) => {
