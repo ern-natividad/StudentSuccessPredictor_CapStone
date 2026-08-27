@@ -22,6 +22,34 @@ import commonStyles from "../../../styles/Common.module.css";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
+const GRADE_VALUE_OPTIONS = ["1", "2", "3", "INC", "5"];
+const REMARKS_OPTIONS = ["Pass", "Fail"];
+
+const createEmptyGradeForm = () => ({
+  subject: "",
+  semester: "1",
+  grade: "",
+  remarks: "Pass",
+});
+
+const normalizeGradeFormValue = (value) => {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (GRADE_VALUE_OPTIONS.includes(raw)) return raw;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && GRADE_VALUE_OPTIONS.includes(String(numeric))) {
+    return String(numeric);
+  }
+  return "";
+};
+
+const normalizeRemarksValue = (value) => {
+  const raw = String(value ?? "").trim();
+  if (REMARKS_OPTIONS.includes(raw)) return raw;
+  const lower = raw.toLowerCase();
+  if (lower.includes("fail")) return "Fail";
+  if (lower.includes("pass")) return "Pass";
+  return "Pass";
+};
 
 const createEmptyStudentInfoForm = () => ({
   student_id: "",
@@ -76,12 +104,12 @@ const StudentManagementPage = () => {
   const [semesterFilter, setSemesterFilter] = useState("");
   const [isSavingGrade, setIsSavingGrade] = useState(false);
   const [isSavingStudentInfo, setIsSavingStudentInfo] = useState(false);
-  const [gradeForm, setGradeForm] = useState({
-    subject: "",
-    semester: "1",
-    grade: "",
-    remarks: "Pass",
-  });
+  const [isSavingEditGrade, setIsSavingEditGrade] = useState(false);
+  const [isDeletingGrade, setIsDeletingGrade] = useState(false);
+  const [gradeForm, setGradeForm] = useState(createEmptyGradeForm);
+  const [editGradeForm, setEditGradeForm] = useState(createEmptyGradeForm);
+  const [editingGradeRecord, setEditingGradeRecord] = useState(null);
+  const [deletingGradeRecord, setDeletingGradeRecord] = useState(null);
   const [studentInfoForm, setStudentInfoForm] = useState(createEmptyStudentInfoForm);
   const [studentGrades, setStudentGrades] = useState([]);
   const [gradesLoading, setGradesLoading] = useState(false);
@@ -113,7 +141,7 @@ const StudentManagementPage = () => {
 
   useEffect(() => {
     if (selectedStudent) {
-      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
+      setGradeForm(createEmptyGradeForm());
     }
   }, [selectedStudent]);
 
@@ -150,14 +178,42 @@ const StudentManagementPage = () => {
     setGradeForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleEditGradeChange = (field, value) => {
+    setEditGradeForm((prev) => ({ ...prev, [field]: value }));
+  };
+
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
+    setGradeForm(createEmptyGradeForm());
     setIsGradeModalOpen(true);
   };
 
   const closeGradeModal = () => {
     setIsGradeModalOpen(false);
+  };
+
+  const openEditGradeModal = (record) => {
+    const semesterCode = formatSemesterCode(record.semester);
+    setEditingGradeRecord(record);
+    setEditGradeForm({
+      subject: record.subject_name || "",
+      semester: semesterCode === "—" ? "1" : semesterCode,
+      grade: normalizeGradeFormValue(record.grade),
+      remarks: normalizeRemarksValue(record.remarks),
+    });
+  };
+
+  const closeEditGradeModal = () => {
+    setEditingGradeRecord(null);
+    setEditGradeForm(createEmptyGradeForm());
+  };
+
+  const openDeleteGradeModal = (record) => {
+    setDeletingGradeRecord(record);
+  };
+
+  const closeDeleteGradeModal = () => {
+    setDeletingGradeRecord(null);
   };
 
   const openEditStudentModal = (studentId) => {
@@ -248,7 +304,7 @@ const StudentManagementPage = () => {
       };
       const result = await api.createStudentGrade(payload);
       setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
-      setGradeForm({ subject: "", semester: "1", grade: "", remarks: "Pass" });
+      setGradeForm(createEmptyGradeForm());
       setIsGradeModalOpen(false);
       updateStudentGradeRecord(selectedStudent.student_id, [
         result.grade,
@@ -259,6 +315,61 @@ const StudentManagementPage = () => {
       toast.error(error.message || "Unable to save the grade record.");
     } finally {
       setIsSavingGrade(false);
+    }
+  };
+
+  const handleUpdateGrade = async () => {
+    if (!editingGradeRecord || !selectedStudent) return;
+
+    const selectedGrade = String(editGradeForm.grade ?? "").trim().toUpperCase();
+    if (
+      !editGradeForm.subject.trim() ||
+      !GRADE_VALUE_OPTIONS.includes(selectedGrade)
+    ) {
+      toast.error("Enter a subject and select a grade (1, 2, 3, INC, or 5).");
+      return;
+    }
+
+    try {
+      setIsSavingEditGrade(true);
+      const payload = {
+        subject_name: editGradeForm.subject.trim(),
+        semester: editGradeForm.semester,
+        grade: selectedGrade === "INC" ? "INC" : Number(selectedGrade),
+        remarks: editGradeForm.remarks.trim() || "",
+      };
+      const result = await api.updateStudentGrade(editingGradeRecord.id, payload);
+      const nextGrades = studentGrades.map((record) =>
+        record.id === editingGradeRecord.id ? result.grade : record,
+      );
+      setStudentGrades(nextGrades);
+      updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
+      closeEditGradeModal();
+      toast.success("Grade record updated successfully.");
+    } catch (error) {
+      toast.error(error.message || "Unable to update the grade record.");
+    } finally {
+      setIsSavingEditGrade(false);
+    }
+  };
+
+  const handleDeleteGrade = async () => {
+    if (!deletingGradeRecord || !selectedStudent) return;
+
+    try {
+      setIsDeletingGrade(true);
+      await api.deleteStudentGrade(deletingGradeRecord.id);
+      const nextGrades = studentGrades.filter(
+        (record) => record.id !== deletingGradeRecord.id,
+      );
+      setStudentGrades(nextGrades);
+      updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
+      closeDeleteGradeModal();
+      toast.success("Grade record deleted successfully.");
+    } catch (error) {
+      toast.error(error.message || "Unable to delete the grade record.");
+    } finally {
+      setIsDeletingGrade(false);
     }
   };
 
@@ -562,10 +673,11 @@ const StudentManagementPage = () => {
                   style={{ width: "100%", borderCollapse: "collapse" }}
                 >
                   <colgroup>
-                    <col style={{ width: "30%" }} />
-                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "26%" }} />
                     <col style={{ width: "12%" }} />
-                    <col style={{ width: "25%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "16%" }} />
                     <col style={{ width: "18%" }} />
                   </colgroup>
                   <thead className={commonStyles.tableHead}>
@@ -575,6 +687,7 @@ const StudentManagementPage = () => {
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Grade</th>
                       <th style={{ padding: "12px 16px", textAlign: "left" }}>Remarks</th>
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Date</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -598,6 +711,29 @@ const StudentManagementPage = () => {
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
                           {new Date(record.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          <div className={styles.tableActionGroup}>
+                            <button
+                              type="button"
+                              className={styles.tableActionButton}
+                              onClick={() => openEditGradeModal(record)}
+                              title="Edit grade"
+                              aria-label={`Edit grade for ${record.subject_name}`}
+                            >
+                              <i className="fas fa-pen-to-square" aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.tableActionButton}
+                              onClick={() => openDeleteGradeModal(record)}
+                              title="Delete grade"
+                              aria-label={`Delete grade for ${record.subject_name}`}
+                              style={{ color: "#ef4444" }}
+                            >
+                              <i className="fas fa-trash-can" aria-hidden="true" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -766,6 +902,281 @@ const StudentManagementPage = () => {
                   {isSavingGrade ? "Saving..." : "Save Grade Record"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingGradeRecord && selectedStudent ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1100,
+          }}
+          onClick={closeEditGradeModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-grade-title"
+            style={{
+              width: "min(660px, 100%)",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 20,
+              }}
+            >
+              <div>
+                <h2 id="edit-grade-title" style={{ margin: 0 }}>
+                  Edit Grade
+                </h2>
+                <p style={{ margin: "8px 0 0", color: "#64748B" }}>
+                  Update the grade record for {selectedStudent.full_name}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditGradeModal}
+                aria-label="Close edit grade"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 16 }}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  placeholder="Subject"
+                  value={editGradeForm.subject}
+                  onChange={(e) => handleEditGradeChange("subject", e.target.value)}
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Semester
+                </label>
+                <select
+                  value={editGradeForm.semester}
+                  onChange={(e) => handleEditGradeChange("semester", e.target.value)}
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  {SEMESTER_FORM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "#64748B" }}>
+                  {SEMESTER_INFO_TEXT}
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Grade
+                </label>
+                <select
+                  value={editGradeForm.grade}
+                  onChange={(e) => handleEditGradeChange("grade", e.target.value)}
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  <option value="" disabled>
+                    Select grade
+                  </option>
+                  {GRADE_VALUE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Remarks
+                </label>
+                <select
+                  value={editGradeForm.remarks}
+                  onChange={(e) => handleEditGradeChange("remarks", e.target.value)}
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  {REMARKS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={closeEditGradeModal}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateGrade}
+                  disabled={isSavingEditGrade}
+                  className={commonStyles.primaryButton}
+                  style={{ padding: "10px 16px" }}
+                >
+                  {isSavingEditGrade ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deletingGradeRecord ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1100,
+          }}
+          onClick={closeDeleteGradeModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-grade-title"
+            style={{
+              width: "min(440px, 100%)",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2
+              id="delete-grade-title"
+              style={{ margin: "0 0 12px", color: "#800000", fontSize: "1.25rem", fontWeight: 700 }}
+            >
+              Delete Grade Record
+            </h2>
+            <p
+              style={{
+                margin: "0 0 24px 0",
+                color: "#475569",
+                fontSize: "1.05rem",
+                lineHeight: 1.5,
+              }}
+            >
+              Are you sure you want to permanently delete the grade for{" "}
+              <strong>{deletingGradeRecord.subject_name}</strong>
+              {deletingGradeRecord.grade != null
+                ? ` (${deletingGradeRecord.grade})`
+                : ""}
+              ? This action cannot be undone.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleDeleteGrade}
+                disabled={isDeletingGrade}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#800000",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  cursor: isDeletingGrade ? "not-allowed" : "pointer",
+                  textAlign: "center",
+                  opacity: isDeletingGrade ? 0.7 : 1,
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (!isDeletingGrade) e.currentTarget.style.backgroundColor = "#600000";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = "#800000";
+                }}
+              >
+                {isDeletingGrade ? "Deleting..." : "Yes, Delete"}
+              </button>
+              <button
+                type="button"
+                onClick={closeDeleteGradeModal}
+                disabled={isDeletingGrade}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#cccccc",
+                  color: "#1e293b",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  cursor: isDeletingGrade ? "not-allowed" : "pointer",
+                  textAlign: "center",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (!isDeletingGrade) e.currentTarget.style.backgroundColor = "#b8b8b8";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = "#cccccc";
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

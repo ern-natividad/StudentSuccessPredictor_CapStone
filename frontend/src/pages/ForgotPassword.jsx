@@ -159,8 +159,7 @@ const ForgotPassword = () => {
             style={{ textDecoration: "none" }}
             state={{ email, fromPasswordReset: true }}
           >
-            <i className="fas fa-arrow-left"></i>
-            Back to sign in
+            <i className="fas fa-arrow-left" aria-hidden="true"></i>
           </Link>
 
           <div className={styles.formView}>
