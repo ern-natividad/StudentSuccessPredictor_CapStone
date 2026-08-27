@@ -59,7 +59,6 @@ const AuthPage = () => {
           >
             <i className="fas fa-arrow-left" aria-hidden="true"></i>
           </button>
-          <div className={styles.roleBadge}>{roleConfig.title}</div>
           {view === "login" && (
             <LoginForm
               roleConfig={roleConfig}

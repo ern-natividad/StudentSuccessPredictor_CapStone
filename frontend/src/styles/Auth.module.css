@@ -182,11 +182,15 @@
 
 .backButton {
   align-self: flex-start;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  max-width: 36px;
   margin-bottom: 14px;
   padding: 0;
   background: #fff;
@@ -195,13 +199,21 @@
   color: #8B0000;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s ease;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .backButton:hover {
   background: #8B0000;
   color: #fff;
   border-color: #8B0000;
+  box-shadow: 0 4px 10px rgba(139, 0, 0, 0.18);
+}
+
+.backButton i {
+  pointer-events: none;
 }
 
 
