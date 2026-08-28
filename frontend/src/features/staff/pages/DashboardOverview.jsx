@@ -40,9 +40,7 @@ const YEAR_LEVEL_ORDER = [
 
 const average = (values) => {
   if (!values.length) return null;
-  return (
-    values.reduce((sum, value) => sum + value, 0) / values.length
-  );
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
 
 const formatGpa = (value) =>
@@ -71,7 +69,8 @@ const sortYearLevels = (years) =>
   });
 
 const DashboardOverview = () => {
-  const { isAdmin, visibleStudents, visibleStudentIds } = useRoleScopedStudents();
+  const { isAdmin, visibleStudents, visibleStudentIds } =
+    useRoleScopedStudents();
   const { alerts, loading: alertsLoading } = useEarlyAlerts();
   const [performanceRows, setPerformanceRows] = useState([]);
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -105,7 +104,6 @@ const DashboardOverview = () => {
           rows = [];
         }
 
-        // Fallback: pull per-student predictions when forecast rows are unavailable.
         if (rows.length === 0) {
           const predictionResults = await Promise.all(
             visibleStudents.map(async (student) => {
@@ -133,7 +131,9 @@ const DashboardOverview = () => {
           ? rows
           : rows.filter((row) =>
               visibleStudentIds.has(
-                String(row.student_id || "").trim().toLowerCase(),
+                String(row.student_id || "")
+                  .trim()
+                  .toLowerCase(),
               ),
             );
 
@@ -143,9 +143,7 @@ const DashboardOverview = () => {
       } catch (error) {
         if (isMounted) {
           setPerformanceRows([]);
-          setMetricsError(
-            error.message || "Unable to load GPA trend metrics.",
-          );
+          setMetricsError(error.message || "Unable to load GPA trend metrics.");
         }
       } finally {
         if (isMounted) setMetricsLoading(false);
@@ -164,13 +162,17 @@ const DashboardOverview = () => {
   const enrichedStudents = useMemo(() => {
     const predictionByStudentId = new Map(
       performanceRows.map((row) => [
-        String(row.student_id || "").trim().toLowerCase(),
+        String(row.student_id || "")
+          .trim()
+          .toLowerCase(),
         row,
       ]),
     );
 
     return safeStudents.map((student) => {
-      const key = String(student.student_id || "").trim().toLowerCase();
+      const key = String(student.student_id || "")
+        .trim()
+        .toLowerCase();
       const row = predictionByStudentId.get(key);
 
       return {
@@ -193,7 +195,8 @@ const DashboardOverview = () => {
     Low: enrichedStudents.filter((s) => s.risk_level === "Low").length,
     Medium: enrichedStudents.filter((s) => s.risk_level === "Medium").length,
     High: enrichedStudents.filter((s) => s.risk_level === "High").length,
-    Critical: enrichedStudents.filter((s) => s.risk_level === "Critical").length,
+    Critical: enrichedStudents.filter((s) => s.risk_level === "Critical")
+      .length,
   };
 
   const riskChartData = {
@@ -305,9 +308,24 @@ const DashboardOverview = () => {
 
   const getSeverityBadge = (severity) => {
     const stylesMap = {
-      critical: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca", label: "Critical" },
-      high: { bg: "#fff7ed", color: "#ea580c", border: "#ffedd5", label: "High" },
-      medium: { bg: "#fffbeb", color: "#d97706", border: "#fef3c7", label: "Medium" },
+      critical: {
+        bg: "#fef2f2",
+        color: "#dc2626",
+        border: "#fecaca",
+        label: "Critical",
+      },
+      high: {
+        bg: "#fff7ed",
+        color: "#ea580c",
+        border: "#ffedd5",
+        label: "High",
+      },
+      medium: {
+        bg: "#fffbeb",
+        color: "#d97706",
+        border: "#fef3c7",
+        label: "Medium",
+      },
       low: { bg: "#f0fdf4", color: "#166534", border: "#dcfce7", label: "Low" },
     };
 
@@ -361,18 +379,20 @@ const DashboardOverview = () => {
             background: "#ffffff",
             borderRadius: "12px",
             border: "1px solid #e2e8f0",
-            padding: "1.5rem",
+            padding: "1rem 1.25rem 1.25rem",
             boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <div
             style={{
-              fontSize: "1.15rem",
+              fontSize: "1.1rem",
               fontWeight: "700",
               color: "#800000",
-              marginBottom: "1rem",
               borderBottom: "1px solid #f1f5f9",
-              paddingBottom: "0.75rem",
+              paddingBottom: "0.5rem",
+              marginBottom: "0.75rem",
             }}
           >
             Academic Overview Metrics
@@ -382,76 +402,116 @@ const DashboardOverview = () => {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "1rem",
-              marginTop: "1rem",
+              gap: "0.75rem",
+              flex: 1,
+              alignItems: "stretch",
             }}
           >
+            {/* Total Students Card */}
             <div
               style={{
                 backgroundColor: "#f8fafc",
-                padding: "1.15rem 0.85rem",
+                padding: "1rem 0.75rem",
                 borderRadius: "10px",
-                border: "1px solid #f1f5f9",
+                border: "1px solid #e2e8f0",
                 textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
               }}
             >
-              <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#64748b" }}>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: "#64748b",
+                }}
+              >
                 {isAdmin ? "Total Students" : "Assigned Students"}
               </div>
               <div
                 style={{
-                  fontSize: "2.1rem",
+                  fontSize: "2rem",
                   fontWeight: "800",
                   color: "#0f172a",
-                  marginTop: "0.35rem",
+                  marginTop: "0.25rem",
+                  lineHeight: "1",
                 }}
               >
                 {enrichedStudents.length}
               </div>
             </div>
 
+            {/* At Risk Card */}
             <div
               style={{
                 backgroundColor: "#fff7ed",
-                padding: "1.15rem 0.85rem",
+                padding: "1rem 0.75rem",
                 borderRadius: "10px",
                 border: "1px solid #ffedd5",
                 textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
               }}
             >
-              <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#c2410c" }}>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: "#c2410c",
+                }}
+              >
                 At Risk
               </div>
               <div
                 style={{
-                  fontSize: "2.1rem",
+                  fontSize: "2rem",
                   fontWeight: "800",
                   color: "#ea580c",
-                  marginTop: "0.35rem",
+                  marginTop: "0.25rem",
+                  lineHeight: "1",
                 }}
               >
                 {riskCounts.High + riskCounts.Critical}
               </div>
             </div>
 
+            {/* Avg GPA Card */}
             <div
               style={{
                 backgroundColor: "#f8fafc",
-                padding: "1.15rem 0.85rem",
+                padding: "1rem 0.75rem",
                 borderRadius: "10px",
-                border: "1px solid #f1f5f9",
+                border: "1px solid #e2e8f0",
                 textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
               }}
             >
-              <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#64748b" }}>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: "#64748b",
+                }}
+              >
                 Avg GPA
               </div>
               <div
                 style={{
-                  fontSize: "2.1rem",
+                  fontSize: "2rem",
                   fontWeight: "800",
                   color: "#800000",
-                  marginTop: "0.35rem",
+                  marginTop: "0.25rem",
+                  lineHeight: "1",
                 }}
               >
                 {formatGpa(averageCurrentGpa)}
@@ -467,18 +527,17 @@ const DashboardOverview = () => {
             background: "#ffffff",
             borderRadius: "12px",
             border: "1px solid #e2e8f0",
-            padding: "1.5rem",
+            padding: "1.25rem 1.5rem",
             boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
           }}
         >
           <div
             style={{
-              fontSize: "1.15rem",
+              fontSize: "1.1rem",
               fontWeight: "700",
               color: "#800000",
-              marginBottom: "1rem",
               borderBottom: "1px solid #f1f5f9",
-              paddingBottom: "0.75rem",
+              paddingBottom: "0.5rem",
             }}
           >
             Risk Distribution
@@ -489,15 +548,15 @@ const DashboardOverview = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: "1.5rem",
+              gap: "1.25rem",
               marginTop: "0.5rem",
             }}
           >
             <div
               style={{
                 position: "relative",
-                height: "170px",
-                width: "170px",
+                height: "140px",
+                width: "140px",
                 flexShrink: 0,
               }}
             >
@@ -526,7 +585,7 @@ const DashboardOverview = () => {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr",
-                gap: "0.5rem",
+                gap: "0.35rem",
                 flex: 1,
               }}
             >
@@ -545,31 +604,49 @@ const DashboardOverview = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "0.45rem 0.75rem",
-                      borderRadius: "8px",
+                      padding: "0.35rem 0.65rem",
+                      borderRadius: "6px",
                       backgroundColor: "#f8fafc",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
                       <span
                         style={{
-                          width: "12px",
-                          height: "12px",
-                          borderRadius: "4px",
+                          width: "10px",
+                          height: "10px",
+                          borderRadius: "3px",
                           backgroundColor: color,
                           display: "inline-block",
                         }}
                       />
-                      <span style={{ fontWeight: 600, color: "#334155", fontSize: "0.95rem" }}>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: "#334155",
+                          fontSize: "0.85rem",
+                        }}
+                      >
                         {label}
                       </span>
                     </div>
 
-                    <div style={{ fontSize: "0.95rem" }}>
+                    <div style={{ fontSize: "0.85rem" }}>
                       <span style={{ fontWeight: "700", color: "#0f172a" }}>
                         {value}
                       </span>
-                      <span style={{ color: "#64748b", marginLeft: "6px", fontSize: "0.875rem" }}>
+                      <span
+                        style={{
+                          color: "#64748b",
+                          marginLeft: "4px",
+                          fontSize: "0.8rem",
+                        }}
+                      >
                         ({percentage}%)
                       </span>
                     </div>
@@ -587,6 +664,7 @@ const DashboardOverview = () => {
         style={{
           gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
           gap: "12px",
+          marginTop: "12px",
         }}
       >
         {/* GPA Trend Analysis Card */}
@@ -733,7 +811,10 @@ const DashboardOverview = () => {
                         font: { size: 11, weight: "600" },
                       },
                       grid: { display: false },
-                      ticks: { font: { size: 12, weight: "500" }, color: "#475569" },
+                      ticks: {
+                        font: { size: 12, weight: "500" },
+                        color: "#475569",
+                      },
                     },
                   },
                   responsive: true,
@@ -744,7 +825,7 @@ const DashboardOverview = () => {
           </div>
         </div>
 
-        {/* Recent Alerts Module Card */}
+        {/* Recent Early Alerts Module Card */}
         <div
           className={styles.card}
           style={{
@@ -783,7 +864,9 @@ const DashboardOverview = () => {
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
             {alertsLoading && (
               <div
                 style={{
@@ -827,12 +910,24 @@ const DashboardOverview = () => {
                     border: "1px solid #f1f5f9",
                     transition: "background-color 0.15s ease",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f1f5f9")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.85rem",
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                  >
                     {getSeverityBadge(alert.sev)}
-                    
+
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
