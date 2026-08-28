@@ -69,6 +69,7 @@ const CurriculumManager = () => {
   const [attachments, setAttachments] = useState([]);
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [courses, setCourses] = useState([]);
 
@@ -248,6 +249,24 @@ const CurriculumManager = () => {
     setAttachments((prev) => [...prev, ...data]);
   };
 
+  const handleRemoveAttachment = (index) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const buildVersionSnapshot = (curriculum) => ({
+    versionedAt: new Date().toISOString(),
+    title: curriculum.title,
+    academicYear: curriculum.academicYear,
+    courses: curriculum.courses,
+    department: curriculum.department,
+    program: curriculum.program,
+    attachments: (curriculum.attachments || []).map(({ name, type }) => ({
+      name,
+      type,
+    })),
+    status: curriculum.status,
+  });
+
   const previewAttachment = (att) => {
     if (!att || !att.type) return null;
     if (att.type.startsWith("image/")) {
@@ -287,20 +306,14 @@ const CurriculumManager = () => {
     }
 
     try {
+      setIsSaving(true);
+
       if (editingId) {
         const c = curricula.find((x) => x.id === editingId);
-        if (!c) return;
-
-        const versionEntry = {
-          versionedAt: new Date().toISOString(),
-          title: c.title,
-          academicYear: c.academicYear,
-          courses: c.courses,
-          department: c.department,
-          program: c.program,
-          attachments: c.attachments || [],
-          status: c.status,
-        };
+        if (!c) {
+          toast.error("Curriculum record not found.");
+          return;
+        }
 
         await updateCurriculum(editingId, {
           title: title.trim(),
@@ -308,10 +321,11 @@ const CurriculumManager = () => {
           courses,
           department,
           program,
-          attachments: [...(c.attachments || []), ...attachments],
+          attachments,
           status,
-          versions: [versionEntry, ...(c.versions || [])],
+          versions: [buildVersionSnapshot(c), ...(c.versions || [])],
         });
+        toast.success("Curriculum updated successfully.");
       } else {
         await createCurriculum({
           title: title.trim(),
@@ -322,6 +336,7 @@ const CurriculumManager = () => {
           attachments,
           status,
         });
+        toast.success("Curriculum posted successfully.");
       }
 
       await loadCurricula();
@@ -329,6 +344,8 @@ const CurriculumManager = () => {
     } catch (err) {
       console.error("Failed to save curriculum:", err);
       toast.error(err.message || "Failed to save curriculum.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -905,24 +922,29 @@ const CurriculumManager = () => {
             <input
               type="file"
               multiple
-              onChange={(e) => handleAttach(e.target.files)}
+              onChange={(e) => {
+                handleAttach(e.target.files);
+                e.target.value = "";
+              }}
             />
             {attachments.length > 0 && (
               <div style={{ marginTop: 8 }}>
                 {attachments.map((a, i) => (
-                  <div key={i} style={{ marginBottom: 12 }}>
+                  <div key={`${a.name}-${i}`} style={{ marginBottom: 12 }}>
                     <div
                       style={{ display: "flex", gap: 8, alignItems: "center" }}
                     >
                       <div style={{ flex: 1 }}>{a.name}</div>
-                      <div>
-                        <button
-                          className={styles.secondaryButton}
-                          onClick={() => downloadAttachment(a)}
-                        >
-                          Download
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => handleRemoveAttachment(i)}
+                        style={{ color: "#ef4444", borderColor: "#fecaca" }}
+                        title="Remove attachment"
+                        aria-label={`Remove ${a.name}`}
+                      >
+                        <i className="fas fa-trash-can" aria-hidden="true" />
+                      </button>
                     </div>
                     <div>{previewAttachment(a)}</div>
                   </div>
@@ -934,10 +956,24 @@ const CurriculumManager = () => {
 
         {/* Bottom Submission Action Buttons */}
         <div className={styles.buttonGroup} style={{ marginTop: "24px" }}>
-          <button className={styles.primaryButton} onClick={handleAddOrUpdate}>
-            {editingId ? "Save Changes" : "Post Curriculum"}
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={handleAddOrUpdate}
+            disabled={isSaving}
+          >
+            {isSaving
+              ? "Saving..."
+              : editingId
+                ? "Save Changes"
+                : "Post Curriculum"}
           </button>
-          <button className={styles.secondaryButton} onClick={resetForm}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={resetForm}
+            disabled={isSaving}
+          >
             Cancel
           </button>
         </div>
