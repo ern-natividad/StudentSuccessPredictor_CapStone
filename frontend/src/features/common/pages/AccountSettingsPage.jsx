@@ -215,7 +215,7 @@ const AccountSettingsPage = () => {
             Manage two-factor authentication and account security for your HawkPredict profile.
           </p>
         </div>
-        <div className={styles.pageHeaderBadge}>Account</div>
+        
       </div>
 
       {/* MFA Management Section */}
