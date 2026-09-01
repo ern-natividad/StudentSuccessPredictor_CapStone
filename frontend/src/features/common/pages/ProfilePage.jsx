@@ -120,7 +120,6 @@ const ProfilePage = () => {
             Update your display name and profile photo used across HawkPredict.
           </p>
         </div>
-        <div className={styles.pageHeaderBadge}>Profile</div>
       </div>
 
       <div className={styles.contentCard}>
