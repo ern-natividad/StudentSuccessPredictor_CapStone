@@ -9,7 +9,7 @@ const Sidebar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentPage, showPage, alerts } = useDashboard();
+  const { currentPage, showPage, unreadAlertCount } = useDashboard();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
@@ -75,7 +75,7 @@ const Sidebar = () => {
             id: "alerts",
             icon: "fas fa-exclamation-triangle",
             label: "Early Alerts",
-            badge: alerts.length,
+            badge: unreadAlertCount,
           },
           { id: "screening", icon: "fas fa-check-square", label: "Screening" },
           {
@@ -133,7 +133,7 @@ const Sidebar = () => {
           id: "alerts",
           icon: "fas fa-exclamation-triangle",
           label: "Alerts",
-          badge: alerts.length,
+          badge: unreadAlertCount,
         },
         
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },

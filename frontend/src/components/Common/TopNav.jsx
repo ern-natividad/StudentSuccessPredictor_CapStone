@@ -10,7 +10,7 @@ import styles from "../../styles/Dashboard.module.css";
 const TopNav = ({ onLogout }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toggleNotificationsPanel, alerts } = useDashboard();
+  const { toggleNotificationsPanel, unreadAlertCount } = useDashboard();
   const [showConfirm, setShowConfirm] = useState(false);
   const displayName = user?.name || user?.fullName || user?.full_name || "User";
   const initials = generateInitials(displayName);
@@ -87,9 +87,9 @@ const TopNav = ({ onLogout }) => {
                 fill="none"
               />
             </svg>
-            {alerts.length > 0 && (
+            {unreadAlertCount > 0 && (
               <span className={styles.navBellBadge}>
-                {alerts.length > 9 ? "9+" : alerts.length}
+                {unreadAlertCount > 9 ? "9+" : unreadAlertCount}
               </span>
             )}
           </button>

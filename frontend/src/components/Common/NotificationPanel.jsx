@@ -12,8 +12,16 @@ const NotificationPanel = () => {
     notificationsPanelOpen,
     closeNotificationsPanel,
     alerts,
+    unreadAlertCount,
     alertsLoading,
+    markNotificationsAsViewed,
   } = useDashboard();
+
+  React.useEffect(() => {
+    if (notificationsPanelOpen) {
+      markNotificationsAsViewed();
+    }
+  }, [notificationsPanelOpen, markNotificationsAsViewed]);
 
   React.useEffect(() => {
     const handleClickOutside = (e) => {
@@ -41,6 +49,7 @@ const NotificationPanel = () => {
   };
 
   const handleViewAll = () => {
+    markNotificationsAsViewed();
     closeNotificationsPanel();
     if (user?.role === "student") return;
     const basePath = getDashboardPath(user?.role);
@@ -56,8 +65,8 @@ const NotificationPanel = () => {
     >
       <div className={styles.notifHead}>
         <span>Notifications</span>
-        {alerts.length > 0 ? (
-          <span className={styles.notifCountBadge}>{alerts.length}</span>
+        {unreadAlertCount > 0 ? (
+          <span className={styles.notifCountBadge}>{unreadAlertCount}</span>
         ) : null}
       </div>
 

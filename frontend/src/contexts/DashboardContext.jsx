@@ -8,6 +8,22 @@ import { supabase } from "../lib/supabaseClient";
 
 export const DashboardContext = createContext();
 
+const getViewedAlertsKey = (userId) => `hawkpredict-viewed-alerts:${userId || "guest"}`;
+
+const loadViewedAlertIds = (userId) => {
+  try {
+    const stored = localStorage.getItem(getViewedAlertsKey(userId));
+    return new Set(JSON.parse(stored || "[]"));
+  } catch {
+    return new Set();
+  }
+};
+
+const saveViewedAlertIds = (userId, viewedIds) => {
+  if (!userId) return;
+  localStorage.setItem(getViewedAlertsKey(userId), JSON.stringify([...viewedIds]));
+};
+
 const normalizeRiskLevel = (riskLevel) => {
   const normalized = String(riskLevel || "").trim().toLowerCase();
   const riskLevels = {
@@ -30,6 +46,7 @@ export const DashboardProvider = ({ children }) => {
   const [sections, setSections] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
   const [earlyAlerts, setEarlyAlerts] = useState([]);
+  const [viewedAlertIds, setViewedAlertIds] = useState(() => new Set());
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [directoryError, setDirectoryError] = useState("");
@@ -134,6 +151,14 @@ export const DashboardProvider = ({ children }) => {
       isMounted = false;
     };
   }, [user?.id, user?.role, user?.isAuthenticated]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setViewedAlertIds(loadViewedAlertIds(user.id));
+    } else {
+      setViewedAlertIds(new Set());
+    }
+  }, [user?.id]);
 
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [studentFilter, setStudentFilter] = useState("");
@@ -278,6 +303,32 @@ export const DashboardProvider = ({ children }) => {
 
   const alerts = useMemo(() => earlyAlerts, [earlyAlerts]);
 
+  const unreadAlerts = useMemo(
+    () => earlyAlerts.filter((alert) => !viewedAlertIds.has(alert.id)),
+    [earlyAlerts, viewedAlertIds],
+  );
+
+  const unreadAlertCount = unreadAlerts.length;
+
+  const markNotificationsAsViewed = useCallback(() => {
+    if (earlyAlerts.length === 0) return;
+
+    setViewedAlertIds((prev) => {
+      const next = new Set(prev);
+      earlyAlerts.forEach((alert) => {
+        if (alert.id) next.add(alert.id);
+      });
+      saveViewedAlertIds(user?.id, next);
+      return next;
+    });
+  }, [earlyAlerts, user?.id]);
+
+  useEffect(() => {
+    if (currentPage === "alerts") {
+      markNotificationsAsViewed();
+    }
+  }, [currentPage, markNotificationsAsViewed]);
+
   const updateStudentGradeRecord = useCallback(
     (studentId, gradeRecords) => {
       setStudents((prevStudents) =>
@@ -414,12 +465,14 @@ export const DashboardProvider = ({ children }) => {
     sections,
     staffMembers,
     alerts,
+    unreadAlertCount,
     alertsLoading,
     directoryLoading,
     directoryError,
     notificationsPanelOpen,
     toggleNotificationsPanel,
     closeNotificationsPanel,
+    markNotificationsAsViewed,
     studentFilter,
     updateStudentFilter,
     riskFilter,
