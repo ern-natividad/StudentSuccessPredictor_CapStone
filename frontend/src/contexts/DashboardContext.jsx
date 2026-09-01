@@ -1,8 +1,10 @@
-import { createContext, useState, useCallback, useEffect } from "react";
+import { createContext, useState, useCallback, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
 import { filterStudentsForAdviser, parseAssignedSections } from "../utils/adviserAssignmentUtils";
+import { fetchEarlyAlerts, scopeEarlyAlerts } from "../utils/earlyAlertsUtils";
+import { supabase } from "../lib/supabaseClient";
 
 export const DashboardContext = createContext();
 
@@ -27,7 +29,8 @@ export const DashboardProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
-  const [alerts, setAlerts] = useState([]);
+  const [earlyAlerts, setEarlyAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [directoryError, setDirectoryError] = useState("");
 
@@ -37,7 +40,7 @@ export const DashboardProvider = ({ children }) => {
     if (!canLoadRoleAccounts) {
       setStudents([]);
       setStaffMembers([]);
-      setAlerts([]);
+      setEarlyAlerts([]);
       return undefined;
     }
 
@@ -113,25 +116,11 @@ export const DashboardProvider = ({ children }) => {
 
         setStudents(normalizedStudents);
         setStaffMembers(normalizedStaffMembers);
-        setAlerts(
-          accounts
-            .filter((account) => account.account_locked)
-            .map((account) => ({
-              id: account.id,
-              sev: "high",
-              name: account.full_name || account.email || "User account",
-              desc: "This user account is currently locked.",
-              time: account.updated_at
-                ? new Date(account.updated_at).toLocaleString()
-                : "Recently updated",
-            })),
-        );
       } catch (error) {
         console.error("Failed to load role-based dashboard accounts:", error);
         if (isMounted) {
           setStudents([]);
           setStaffMembers([]);
-          setAlerts([]);
           setDirectoryError("Unable to load the user directory from Supabase.");
         }
       } finally {
@@ -145,6 +134,7 @@ export const DashboardProvider = ({ children }) => {
       isMounted = false;
     };
   }, [user?.id, user?.role, user?.isAuthenticated]);
+
   const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [studentFilter, setStudentFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
@@ -226,6 +216,67 @@ export const DashboardProvider = ({ children }) => {
     },
     [students, staffMembers],
   );
+
+  useEffect(() => {
+    if (!user?.isAuthenticated) {
+      setEarlyAlerts([]);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadAlerts = async () => {
+      try {
+        setAlertsLoading(true);
+        const fetchedAlerts = await fetchEarlyAlerts();
+        if (!isMounted) return;
+
+        setEarlyAlerts(
+          scopeEarlyAlerts({
+            alerts: fetchedAlerts,
+            role: user.role,
+            userId: user.id,
+            userEmail: user.email,
+            students,
+            staffMembers,
+            getStudentsForStaff,
+          }),
+        );
+      } catch (error) {
+        console.error("Failed to load early alerts:", error);
+        if (isMounted) setEarlyAlerts([]);
+      } finally {
+        if (isMounted) setAlertsLoading(false);
+      }
+    };
+
+    loadAlerts();
+
+    const subscription = supabase
+      .channel("public:student_info_nav_alerts")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "student_info" },
+        () => {
+          loadAlerts();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(subscription);
+    };
+  }, [
+    getStudentsForStaff,
+    staffMembers,
+    students,
+    user?.id,
+    user?.isAuthenticated,
+    user?.role,
+  ]);
+
+  const alerts = useMemo(() => earlyAlerts, [earlyAlerts]);
 
   const updateStudentGradeRecord = useCallback(
     (studentId, gradeRecords) => {
@@ -363,6 +414,7 @@ export const DashboardProvider = ({ children }) => {
     sections,
     staffMembers,
     alerts,
+    alertsLoading,
     directoryLoading,
     directoryError,
     notificationsPanelOpen,

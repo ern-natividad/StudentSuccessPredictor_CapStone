@@ -6,7 +6,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { useDashboard } from "../../hooks/useDashboard";
 import { useIdleTimeout } from "../../hooks/useIdleTimeout";
 import TopNav from "./TopNav";
 import Sidebar from "./Sidebar";
@@ -20,7 +19,6 @@ const MainLayout = () => {
   const { user, logout, expireSessionDueToInactivity } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { closeNotificationsPanel } = useDashboard();
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const handleLogout = () => {
@@ -48,7 +46,6 @@ const MainLayout = () => {
   return (
     <div
       className={`${styles.dashboardScreen} ${isModulePage ? styles.modulePageBg : ""}`}
-      onClick={closeNotificationsPanel}
     >
       <TopNav onLogout={handleLogout} />
       <NotificationPanel />

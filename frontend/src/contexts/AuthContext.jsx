@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
           email: profile.email,
           isAuthenticated: true,
           twoFactorEnabled: profile.twoFactorEnabled,
+          profilePicture: profile.profilePicture || null,
         });
       } catch {
         if (cancelled) return;
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }) => {
       email: backendUser.email,
       isAuthenticated: true,
       twoFactorEnabled: backendUser.twoFactorEnabled,
+      profilePicture: backendUser.profilePicture || null,
     });
   };
 
@@ -274,12 +276,19 @@ export const AuthProvider = ({ children }) => {
   const updateUserFields = useCallback((fields) => {
     setUser((prevUser) => {
       if (!prevUser) return null;
+      const nextName = fields.name ?? fields.fullName ?? fields.full_name ?? prevUser.name;
       return {
         ...prevUser,
         ...fields,
+        name: nextName,
       };
     });
-  }, []);
+
+    if (fields.name || fields.fullName || fields.full_name) {
+      const nextName = fields.name || fields.fullName || fields.full_name;
+      storeUserSession(nextName, user?.role || getUserSession().userRole);
+    }
+  }, [user?.role]);
 
   const value = {
     user,

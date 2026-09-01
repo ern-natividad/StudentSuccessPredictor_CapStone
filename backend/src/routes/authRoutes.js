@@ -8,6 +8,7 @@ import {
   sessionTimeoutHandler,
   signup,
   me,
+  updateProfile,
   forgotPasswordRequest,
   verifyForgotPasswordCode,
   forgotPasswordReset,
@@ -25,6 +26,7 @@ router.post("/users/:id/grades", requireAuth, requireRole("admin", "staff"), add
 router.post("/login", authRateLimiter, login);
 router.post("/login/verify-mfa", authRateLimiter, verifyMfaLogin);
 router.get("/me", requireAuth, me);
+router.patch("/profile", requireAuth, updateProfile);
 router.post("/logout", requireAuth, logoutHandler);
 router.post("/session-timeout", requireAuth, sessionTimeoutHandler);
 router.post("/signup", signup);

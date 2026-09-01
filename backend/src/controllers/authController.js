@@ -9,6 +9,7 @@ import {
   recordSessionTimeout,
   registerUser,
   getCurrentUser,
+  updateUserProfile,
   initiatePasswordReset,
   verifyPasswordOtp,
   completePasswordReset,
@@ -55,6 +56,11 @@ export const verifyMfaLogin = asyncHandler(async (req, res) => {
 
 export const me = asyncHandler(async (req, res) => {
   const profile = await getCurrentUser(req.user);
+  return res.status(200).json(profile);
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const profile = await updateUserProfile(req.user, req.body);
   return res.status(200).json(profile);
 });
 

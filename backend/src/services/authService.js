@@ -303,6 +303,7 @@ const issueSessionForUser = (user) => {
       fullName: user.full_name,
       role: user.role,
       twoFactorEnabled: user.two_factor_enabled,
+      profilePicture: user.profile_picture || null,
     },
   };
 };
@@ -320,7 +321,7 @@ export const logout = async (authUser, meta = {}) => {
 export const getCurrentUser = async (authUser) => {
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, email, full_name, role, two_factor_enabled")
+    .select("id, email, full_name, role, two_factor_enabled, profile_picture")
     .eq("id", authUser.sub)
     .maybeSingle();
 
@@ -333,6 +334,56 @@ export const getCurrentUser = async (authUser) => {
     fullName: user.full_name,
     role: user.role,
     twoFactorEnabled: user.two_factor_enabled,
+    profilePicture: user.profile_picture || null,
+  };
+};
+
+export const updateUserProfile = async (authUser, payload) => {
+  const fullName = payload.fullName?.trim();
+  const profilePicture = payload.profilePicture;
+
+  if (!fullName) {
+    throw new HttpError(400, "Full name is required.");
+  }
+
+  if (
+    profilePicture !== undefined &&
+    profilePicture !== null &&
+    typeof profilePicture !== "string"
+  ) {
+    throw new HttpError(400, "Profile picture must be a valid image string.");
+  }
+
+  if (profilePicture && profilePicture.length > 1_500_000) {
+    throw new HttpError(400, "Profile picture is too large. Use an image under 1 MB.");
+  }
+
+  const updates = {
+    full_name: fullName,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (profilePicture !== undefined) {
+    updates.profile_picture = profilePicture || null;
+  }
+
+  const { data: user, error } = await supabase
+    .from("users")
+    .update(updates)
+    .eq("id", authUser.sub)
+    .select("id, email, full_name, role, two_factor_enabled, profile_picture")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!user) throw new HttpError(404, "User not found.");
+
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.full_name,
+    role: user.role,
+    twoFactorEnabled: user.two_factor_enabled,
+    profilePicture: user.profile_picture || null,
   };
 };
 

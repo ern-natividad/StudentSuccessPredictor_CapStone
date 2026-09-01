@@ -21,6 +21,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CurriculumManager from "./features/admin/pages/CurriculumManager";
 import CurriculumViewer from "./features/student/pages/CurriculumViewer";
 import AccountSettingsPage from "./features/common/pages/AccountSettingsPage";
+import ProfilePage from "./features/common/pages/ProfilePage";
 
 function App() {
   return (
@@ -114,6 +115,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["student", "admin", "staff"]}>
                     <AIAcademicAdvisingModule />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["student", "admin", "staff"]}>
+                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />

@@ -70,6 +70,12 @@ export const api = {
 
   getMe: () => request("/auth/me"),
 
+  updateProfile: (payload) =>
+    request("/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
   logout: () => request("/auth/logout", { method: "POST" }),
 
   reportSessionTimeout: () =>

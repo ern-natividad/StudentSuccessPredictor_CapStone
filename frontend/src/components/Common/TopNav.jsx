@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useDashboard } from "../../hooks/useDashboard";
 import { generateInitials } from "../../utils/authUtils";
@@ -7,10 +8,13 @@ import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 import styles from "../../styles/Dashboard.module.css";
 
 const TopNav = ({ onLogout }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toggleNotificationsPanel, alerts } = useDashboard();
   const [showConfirm, setShowConfirm] = useState(false);
-  const initials = generateInitials(user.name);
+  const displayName = user?.name || user?.fullName || user?.full_name || "User";
+  const initials = generateInitials(displayName);
+  const profilePicture = user?.profilePicture || user?.profile_picture || "";
   const ROLE_LABELS = {
     admin: "System Administrator",
     staff: "Academic Staff",
@@ -25,21 +29,30 @@ const TopNav = ({ onLogout }) => {
   };
   const handleCancelLogout = () => setShowConfirm(false);
 
+  const handleBellClick = (event) => {
+    event.stopPropagation();
+    toggleNotificationsPanel();
+  };
+
+  const handleProfileClick = () => {
+    navigate("/profile");
+  };
+
   return (
     <>
       <nav className={styles.topNav}>
         <div className={styles.navLogo}>
-          <img 
-            src={engineeringLogo} 
-            alt="WMSU College of Engineering Logo" 
+          <img
+            src={engineeringLogo}
+            alt="WMSU College of Engineering Logo"
             className={styles.navLogoIcon}
-            style={{ 
-              width: "28px", 
-              height: "28px", 
+            style={{
+              width: "28px",
+              height: "28px",
               objectFit: "contain",
               borderRadius: "50%",
               backgroundColor: "rgba(255, 255, 255, 0.1)",
-              padding: "2px"
+              padding: "2px",
             }}
           />
           <div>
@@ -48,7 +61,14 @@ const TopNav = ({ onLogout }) => {
           </div>
         </div>
         <div className={styles.navRight}>
-          <button className={styles.navBell} onClick={toggleNotificationsPanel}>
+          <button
+            type="button"
+            className={styles.navBell}
+            data-nav-bell="true"
+            onClick={handleBellClick}
+            aria-label="Open notifications"
+            title="Notifications"
+          >
             <svg
               className="ico"
               viewBox="0 0 24 24"
@@ -68,14 +88,30 @@ const TopNav = ({ onLogout }) => {
               />
             </svg>
             {alerts.length > 0 && (
-              <span className={styles.navBellBadge}>{alerts.length}</span>
+              <span className={styles.navBellBadge}>
+                {alerts.length > 9 ? "9+" : alerts.length}
+              </span>
             )}
           </button>
           <div>
-            <div className={styles.navUserName}>{user.name}</div>
+            <div className={styles.navUserName}>{displayName}</div>
             <div className={styles.navUserRole}>{roleLabel}</div>
           </div>
-          <div className={styles.navAvatar}>{initials}</div>
+          <button
+            type="button"
+            className={styles.navAvatarButton}
+            onClick={handleProfileClick}
+            title="View profile"
+            aria-label="View profile"
+          >
+            <div className={styles.navAvatar}>
+              {profilePicture ? (
+                <img src={profilePicture} alt={`${displayName} profile`} />
+              ) : (
+                initials
+              )}
+            </div>
+          </button>
           <button className={styles.navLogout} onClick={handleLogoutClick}>
             Logout
           </button>
