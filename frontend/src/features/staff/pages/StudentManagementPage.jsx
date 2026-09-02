@@ -1208,6 +1208,7 @@ const StudentManagementPage = () => {
             position: "fixed",
             inset: 0,
             background: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1221,11 +1222,13 @@ const StudentManagementPage = () => {
             aria-modal="true"
             aria-labelledby="edit-student-title"
             style={{
-              width: "min(660px, 100%)",
-              background: "#fff",
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+              background: "#ffffff",
+              borderRadius: "16px",
+              width: "min(560px, 100%)",
+              padding: "28px",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+              border: "1px solid #e2e8f0",
               maxHeight: "90vh",
               overflowY: "auto",
             }}
@@ -1234,18 +1237,51 @@ const StudentManagementPage = () => {
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 20,
+                alignItems: "flex-start",
+                marginBottom: "24px",
+                paddingBottom: "16px",
+                borderBottom: "1px solid #f1f5f9",
               }}
             >
-              <div>
-                <h2 id="edit-student-title" style={{ margin: 0 }}>
-                  Edit Student Info
-                </h2>
-                <p style={{ margin: "8px 0 0", color: "#64748B" }}>
-                  Update profile details for {selectedStudent.full_name}.
-                </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fdf2f2",
+                    color: "#8b0000",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  <i className="fas fa-user-pen" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2
+                    id="edit-student-title"
+                    style={{
+                      margin: 0,
+                      fontSize: "1.2rem",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                    }}
+                  >
+                    Edit Student Info
+                  </h2>
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      color: "#64748b",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Update profile details for {selectedStudent.full_name}.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -1254,18 +1290,29 @@ const StudentManagementPage = () => {
                 style={{
                   background: "transparent",
                   border: "none",
-                  fontSize: 22,
-                  lineHeight: 1,
+                  fontSize: "20px",
+                  color: "#94a3b8",
                   cursor: "pointer",
+                  padding: "4px",
+                  lineHeight: 1,
+                  borderRadius: "6px",
                 }}
+                onMouseOver={(e) => (e.currentTarget.style.color = "#0f172a")}
+                onMouseOut={(e) => (e.currentTarget.style.color = "#94a3b8")}
               >
                 ×
               </button>
             </div>
 
-            <div style={{ display: "grid", gap: 16 }}>
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+            <div style={{ display: "grid", gap: "18px" }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Student ID
                 </label>
                 <input
@@ -1274,12 +1321,28 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("student_id", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Department
                 </label>
                 <input
@@ -1288,12 +1351,28 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("department", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Program
                 </label>
                 <select
@@ -1301,7 +1380,16 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("program", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
                 >
                   {PROGRAM_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -1309,10 +1397,19 @@ const StudentManagementPage = () => {
                     </option>
                   ))}
                 </select>
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  Choose which engineering program this student belongs to.
+                </p>
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Section
                 </label>
                 <input
@@ -1321,12 +1418,29 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("section", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  placeholder="e.g., A"
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Year Level
                 </label>
                 <select
@@ -1334,7 +1448,16 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("year_level", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
                 >
                   {YEAR_LEVEL_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -1344,8 +1467,14 @@ const StudentManagementPage = () => {
                 </select>
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
                   Risk Level
                 </label>
                 <select
@@ -1353,7 +1482,16 @@ const StudentManagementPage = () => {
                   onChange={(e) =>
                     handleStudentInfoChange("risk_level", e.target.value)
                   }
-                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
                 >
                   {RISK_LEVEL_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -1364,18 +1502,35 @@ const StudentManagementPage = () => {
               </div>
 
               <div
-                style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "flex-end",
+                  marginTop: "12px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #f1f5f9",
+                }}
               >
                 <button
                   type="button"
                   onClick={closeEditStudentModal}
                   style={{
-                    padding: "10px 16px",
-                    borderRadius: 10,
+                    padding: "0.55rem 1.1rem",
+                    borderRadius: "8px",
                     border: "1px solid #cbd5e1",
-                    background: "#fff",
+                    background: "#ffffff",
+                    color: "#475569",
+                    fontWeight: "600",
+                    fontSize: "0.875rem",
                     cursor: "pointer",
+                    transition: "all 0.15s ease",
                   }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff")
+                  }
                 >
                   Cancel
                 </button>
@@ -1383,10 +1538,29 @@ const StudentManagementPage = () => {
                   type="button"
                   onClick={handleSaveStudentInfo}
                   disabled={isSavingStudentInfo}
-                  className={commonStyles.primaryButton}
-                  style={{ padding: "10px 16px" }}
+                  style={{
+                    padding: "0.55rem 1.25rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "#8b0000",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    fontSize: "0.875rem",
+                    cursor: isSavingStudentInfo ? "not-allowed" : "pointer",
+                    opacity: isSavingStudentInfo ? 0.75 : 1,
+                    boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isSavingStudentInfo) {
+                      e.currentTarget.style.backgroundColor = "#700000";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "#8b0000";
+                  }}
                 >
-                  {isSavingStudentInfo ? "Saving..." : "Save Student Info"}
+                  {isSavingStudentInfo ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
