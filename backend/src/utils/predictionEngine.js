@@ -20,6 +20,8 @@ export const buildPredictionFromGrades = (grades) => {
     return {
       current_gpa: null,
       predicted_gpa: null,
+      abs_error: 0,
+      percent_error: 0,
       confidence_score: 0,
       risk_level: "Medium",
       success_probability: 50,
@@ -51,10 +53,15 @@ export const buildPredictionFromGrades = (grades) => {
     clamp(50 + values.length * 7 + (1 - clamp(meanAbsoluteDeviation / 2, 0, 1)) * 20, 50, 95),
   );
   const riskLevel = getRiskLevel(predictedGpa);
+  const absError = Math.abs(currentGpa - predictedGpa);
+  const percentError =
+    currentGpa > 0 ? (absError / currentGpa) * 100 : 0;
 
   return {
     current_gpa: Number(currentGpa.toFixed(2)),
     predicted_gpa: Number(predictedGpa.toFixed(2)),
+    abs_error: Number(absError.toFixed(2)),
+    percent_error: Number(percentError.toFixed(1)),
     confidence_score: confidenceScore,
     risk_level: riskLevel,
     success_probability: Math.round(clamp(100 - ((predictedGpa - 1) / 4) * 60, 40, 99)),

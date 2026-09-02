@@ -64,6 +64,13 @@ const StudentPrediction = () => {
 
   const currentGpa = Number(prediction?.current_gpa ?? 0);
   const predictedGpa = Number(prediction?.predicted_gpa ?? 0);
+  const absError = Number(
+    prediction?.abs_error ?? Math.abs(currentGpa - predictedGpa),
+  );
+  const errorRate = Number(
+    prediction?.percent_error ??
+      (currentGpa > 0 ? (absError / currentGpa) * 100 : 0),
+  );
 
   const getRiskBadge = (risk) => {
     const stylesMap = {
@@ -211,6 +218,62 @@ const StudentPrediction = () => {
                     }}
                   >
                     {prediction.success_probability}%
+                  </div>
+                </div>
+
+                {/* Abs. Error Box — same fields as AcademicPerformanceModule */}
+                <div
+                  style={{
+                    backgroundColor: "#fff7ed",
+                    padding: "1rem 1.25rem",
+                    borderRadius: "10px",
+                    border: "1px solid #ffedd5",
+                  }}
+                >
+                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#c2410c", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Abs. Error
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "2.25rem",
+                      fontWeight: "800",
+                      color: "#ea580c",
+                      lineHeight: "1.1",
+                      marginTop: "0.35rem",
+                    }}
+                  >
+                    {absError.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#9a3412", marginTop: "0.35rem", fontWeight: "500" }}>
+                    |Actual GWA − Predicted GWA|
+                  </div>
+                </div>
+
+                {/* Error Rate Box — same fields as AcademicPerformanceModule */}
+                <div
+                  style={{
+                    backgroundColor: "#fef2f2",
+                    padding: "1rem 1.25rem",
+                    borderRadius: "10px",
+                    border: "1px solid #fecaca",
+                  }}
+                >
+                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Error Rate
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "2.25rem",
+                      fontWeight: "800",
+                      color: "#dc2626",
+                      lineHeight: "1.1",
+                      marginTop: "0.35rem",
+                    }}
+                  >
+                    {errorRate.toFixed(1)}%
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#991b1b", marginTop: "0.35rem", fontWeight: "500" }}>
+                    Absolute error ÷ Actual GWA
                   </div>
                 </div>
               </div>
