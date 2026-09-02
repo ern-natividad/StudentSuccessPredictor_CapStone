@@ -56,7 +56,7 @@ const TopNav = ({ onLogout }) => {
             }}
           />
           <div>
-            <div className={styles.navLogoText}>HawkPredict</div>
+            <div className={styles.navLogoText}>HawksPredict</div>
             <div className={styles.navLogoSub}>WMSU — College of Engineering</div>
           </div>
         </div>

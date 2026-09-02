@@ -141,12 +141,6 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
         </div>
 
         <div className={styles.fRowSpaced}>
-          <label className={styles.fCheckRow}>
-            <input type="checkbox" id="remember" />
-            <span style={{ fontSize: "12px", color: "var(--stone)" }}>
-              Keep me signed in
-            </span>
-          </label>
           <Link
             to="/forgot-password"
             className={styles.fLink}

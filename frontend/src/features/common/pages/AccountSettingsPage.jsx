@@ -212,7 +212,7 @@ const AccountSettingsPage = () => {
         <div>
           <h1 className={styles.pageTitle}>Security & Account Settings</h1>
           <p className={styles.pageSubtitle}>
-            Manage two-factor authentication and account security for your HawkPredict profile.
+            Manage two-factor authentication and account security for your HawksPredict profile.
           </p>
         </div>
         

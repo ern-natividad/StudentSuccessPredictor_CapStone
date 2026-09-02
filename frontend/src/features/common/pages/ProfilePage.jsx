@@ -117,7 +117,7 @@ const ProfilePage = () => {
         <div>
           <h1 className={styles.pageTitle}>My Profile</h1>
           <p className={styles.pageSubtitle}>
-            Update your display name and profile photo used across HawkPredict.
+            Update your display name and profile photo used across HawksPredict.
           </p>
         </div>
       </div>
