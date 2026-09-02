@@ -1,13 +1,14 @@
 import { supabase } from "../lib/supabaseClient";
 
 const STUDENT_INFO_COLUMNS =
-  "user_id, student_id, department, section, year_level, risk_level";
+  "user_id, student_id, department, program, section, year_level, risk_level";
 
 export const upsertStudentInfo = async (userId, updates) => {
   const payload = {
     user_id: userId,
     student_id: updates.student_id?.trim(),
     department: updates.department?.trim() || null,
+    program: updates.program?.trim() || null,
     section: updates.section?.trim() || null,
     year_level: updates.year_level?.trim() || null,
     risk_level: updates.risk_level?.trim() || null,

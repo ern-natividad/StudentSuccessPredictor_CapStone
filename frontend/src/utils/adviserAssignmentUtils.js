@@ -71,7 +71,7 @@ export const getStudentSectionValue = (student) =>
   student.section || student.assignedSectionId || "";
 
 export const getStudentProgramValue = (student) =>
-  student.department || student.program || "";
+  student.program || student.department || "";
 
 export const isProgramMatch = (studentProgram, adviserProgram) => {
   const normalizedAdviserProgram = normalizeMatchValue(adviserProgram);

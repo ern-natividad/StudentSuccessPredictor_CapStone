@@ -8,6 +8,7 @@ export const fetchEarlyAlerts = async () => {
       id,
       student_id,
       department,
+      program,
       section,
       year_level,
       risk_level,

@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 const USER_DIRECTORY_COLUMNS =
   "id, email, full_name, role, year_level, created_at, updated_at, account_locked";
 const STUDENT_INFO_COLUMNS =
-  "user_id, student_id, department, section, year_level, risk_level";
+  "user_id, student_id, department, program, section, year_level, risk_level";
 const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level, program";
 
 export const getUserDirectory = async () => {

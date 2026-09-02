@@ -24,6 +24,14 @@ const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
 const GRADE_VALUE_OPTIONS = ["1", "2", "3", "INC", "5"];
 const REMARKS_OPTIONS = ["Pass", "Fail"];
+const PROGRAM_OPTIONS = [
+  "Civil Engineering",
+  "Electrical Engineering",
+  "Industrial Engineering",
+  "Computer Engineering",
+  "Mechanical Engineering",
+  "Geodetic Engineering",
+];
 
 const createEmptyGradeForm = () => ({
   subject: "",
@@ -53,7 +61,8 @@ const normalizeRemarksValue = (value) => {
 
 const createEmptyStudentInfoForm = () => ({
   student_id: "",
-  department: "",
+  department: "Engineering",
+  program: PROGRAM_OPTIONS[0],
   section: "",
   year_level: YEAR_LEVEL_OPTIONS[0],
   risk_level: "Low",
@@ -222,10 +231,17 @@ const StudentManagementPage = () => {
     );
     if (!student) return;
 
+    const resolvedProgram =
+      student.program ||
+      (PROGRAM_OPTIONS.includes(student.department)
+        ? student.department
+        : PROGRAM_OPTIONS[0]);
+
     setSelectedStudentId(studentId);
     setStudentInfoForm({
       student_id: student.student_id || "",
-      department: student.department || "",
+      department: student.department || "Engineering",
+      program: resolvedProgram,
       section: student.section || student.assignedSectionId || "",
       year_level: student.yearLevel || student.year_level || YEAR_LEVEL_OPTIONS[0],
       risk_level: student.risk_level || "Low",
@@ -254,6 +270,7 @@ const StudentManagementPage = () => {
       const updatedInfo = await upsertStudentInfo(selectedStudent.user_id, {
         student_id: studentInfoForm.student_id,
         department: studentInfoForm.department,
+        program: studentInfoForm.program,
         section: studentInfoForm.section,
         year_level: studentInfoForm.year_level,
         risk_level: studentInfoForm.risk_level,
@@ -450,7 +467,7 @@ const StudentManagementPage = () => {
             </div>
             <div className={styles.contentCardMeta}>
               {selectedStudent.student_id} • {selectedStudent.yearLevel} •{" "}
-              {selectedStudent.program || "Program pending"}
+              {selectedStudent.program || selectedStudent.department || "Program pending"}
             </div>
           </div>
           <div className={styles.selectedStudentTag}>
@@ -480,18 +497,20 @@ const StudentManagementPage = () => {
         >
           <table className={`${commonStyles.table} ${styles.studentTable}`}>
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "24%" }} />
+              <col style={{ width: "5%" }} />
               <col style={{ width: "14%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "20%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "23%" }} />
             </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
                 <th>#</th>
                 <th>Student ID</th>
                 <th>Name</th>
+                <th>Program</th>
                 <th>Section</th>
                 <th>Year Level</th>
                 <th>Action</th>
@@ -514,6 +533,7 @@ const StudentManagementPage = () => {
                   <td>{row.rowIndex}</td>
                   <td>{row.student_id}</td>
                   <td>{row.full_name}</td>
+                  <td>{row.program || "—"}</td>
                   <td>{row.sectionName}</td>
                   <td>{row.yearLevel}</td>
                   <td>
@@ -1270,6 +1290,25 @@ const StudentManagementPage = () => {
                   }
                   style={{ padding: 12, borderRadius: 12, width: "100%" }}
                 />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                  Program
+                </label>
+                <select
+                  value={studentInfoForm.program}
+                  onChange={(e) =>
+                    handleStudentInfoChange("program", e.target.value)
+                  }
+                  style={{ padding: 12, borderRadius: 12, width: "100%" }}
+                >
+                  {PROGRAM_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ display: "grid", gap: 6 }}>
