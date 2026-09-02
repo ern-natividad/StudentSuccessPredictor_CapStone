@@ -123,6 +123,7 @@ export const DashboardProvider = ({ children }) => {
               account.adviser_info?.assigned_section,
             ),
             assignedYearLevel: account.adviser_info?.year_level || "N/A",
+            assignedProgram: account.adviser_info?.program || null,
             account_locked: Boolean(account.account_locked),
             created_at: account.created_at,
           }));
@@ -237,6 +238,7 @@ export const DashboardProvider = ({ children }) => {
           ? staff.assignedSections
           : staff.assignedSection,
         staff.assignedYearLevel,
+        staff.assignedProgram,
       );
     },
     [students, staffMembers],
@@ -426,6 +428,7 @@ export const DashboardProvider = ({ children }) => {
               ),
               assignedYearLevel:
                 infoUpdates.year_level ?? staff.assignedYearLevel,
+              assignedProgram: infoUpdates.program ?? staff.assignedProgram,
             }
           : staff,
       ),

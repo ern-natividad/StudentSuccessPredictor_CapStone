@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabaseClient";
 
 import { serializeAssignedSections } from "../utils/adviserAssignmentUtils";
 
-const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level";
+const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level, program";
 
 export const upsertAdviserInfo = async (userId, updates) => {
   const assignedSection = Array.isArray(updates.assigned_sections)
@@ -13,6 +13,7 @@ export const upsertAdviserInfo = async (userId, updates) => {
     user_id: userId,
     assigned_section: assignedSection,
     year_level: updates.year_level?.trim() || null,
+    program: updates.program?.trim() || null,
   };
 
   const { data: updated, error: updateError } = await supabase

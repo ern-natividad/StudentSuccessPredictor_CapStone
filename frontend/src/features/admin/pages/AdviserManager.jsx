@@ -4,6 +4,8 @@ import { useToast } from "../../../components/Common/Toast";
 import { upsertAdviserInfo } from "../../../services/adviserInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
 import {
+  ALL_PROGRAMS_OPTION,
+  areAllSectionsSelected,
   filterStudentsForAdviser,
   getStaffAssignedSections,
   getStaffSectionLabel,
@@ -19,13 +21,28 @@ import commonStyles from "../../../styles/Common.module.css";
 const STORAGE_KEY_REMOVED_ROWS = "adviser_overview_removed_ids";
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const DEFAULT_SECTION_OPTIONS = ["A", "B", "C"];
+const PROGRAM_OPTIONS = [
+  ALL_PROGRAMS_OPTION,
+  "Civil Engineering",
+  "Electrical Engineering",
+  "Industrial Engineering",
+  "Computer Engineering",
+  "Mechanical Engineering",
+  "Geodetic Engineering",
+];
 
 const countStudentsForAdviser = (
   studentList,
   adviserSections,
   adviserYearLevel,
+  adviserProgram,
 ) =>
-  filterStudentsForAdviser(studentList, adviserSections, adviserYearLevel).length;
+  filterStudentsForAdviser(
+    studentList,
+    adviserSections,
+    adviserYearLevel,
+    adviserProgram,
+  ).length;
 
 const AdviserManager = () => {
   const toast = useToast();
@@ -46,6 +63,7 @@ const AdviserManager = () => {
   const [editStaffId, setEditStaffId] = useState(staffMembers[0]?.id || "");
   const [editSectionIds, setEditSectionIds] = useState(["A"]);
   const [editYearAssigned, setEditYearAssigned] = useState(YEAR_LEVEL_OPTIONS[0]);
+  const [editProgram, setEditProgram] = useState(PROGRAM_OPTIONS[0]);
   const [editRole, setEditRole] = useState("Adviser");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
@@ -54,6 +72,7 @@ const AdviserManager = () => {
   const [newTeacherYearAssigned, setNewTeacherYearAssigned] = useState(
     YEAR_LEVEL_OPTIONS[0],
   );
+  const [newTeacherProgram, setNewTeacherProgram] = useState(PROGRAM_OPTIONS[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
 
@@ -111,6 +130,23 @@ const AdviserManager = () => {
     setSelectedSections([...selectedSections, sectionId]);
   };
 
+  const toggleAllSections = (selectedSections, setSelectedSections) => {
+    if (areAllSectionsSelected(selectedSections, sectionOptions)) {
+      setSelectedSections([]);
+      return;
+    }
+
+    const allSections = parseAssignedSections(sectionOptions);
+    if (allSections.length > MAX_ADVISER_SECTIONS) {
+      toast.error(
+        `All sections cannot be selected because more than ${MAX_ADVISER_SECTIONS} sections exist.`,
+      );
+      return;
+    }
+
+    setSelectedSections(allSections);
+  };
+
   const sectionOverviewRows = useMemo(() => {
     const rows = staffMembers.map((staff) => {
       const assignedSections = getAdviserSections(staff.id, staff);
@@ -118,8 +154,13 @@ const AdviserManager = () => {
       return {
         id: staff.id,
         name: staff.full_name,
-        section: getStaffSectionsLabel(assignedSections, getSectionById),
+        section: getStaffSectionsLabel(
+          assignedSections,
+          getSectionById,
+          sectionOptions,
+        ),
         yearAssigned: staff.assignedYearLevel || "N/A",
+        program: staff.assignedProgram || ALL_PROGRAMS_OPTION,
         role: staff.title?.toLowerCase().includes("adviser")
           ? "Adviser"
           : staff.title || "Subject Teacher",
@@ -127,9 +168,11 @@ const AdviserManager = () => {
           students,
           assignedSections,
           staff.assignedYearLevel,
+          staff.assignedProgram,
         ),
         adviserId: staff.id,
         assignedSections,
+        assignedProgram: staff.assignedProgram || ALL_PROGRAMS_OPTION,
       };
     });
 
@@ -140,6 +183,7 @@ const AdviserManager = () => {
     getSectionById,
     staffSectionAssignments,
     removedRowIds,
+    sectionOptions,
   ]);
 
   const viewSectionStudents = useMemo(() => {
@@ -154,6 +198,7 @@ const AdviserManager = () => {
       students,
       assignedSections,
       adviser.assignedYearLevel,
+      adviser.assignedProgram,
     );
   }, [students, viewSectionId, staffMembers, staffSectionAssignments]);
 
@@ -171,6 +216,9 @@ const AdviserManager = () => {
         ? staff.assignedYearLevel
         : YEAR_LEVEL_OPTIONS[0],
     );
+    setEditProgram(
+      staff?.assignedProgram || row.assignedProgram || ALL_PROGRAMS_OPTION,
+    );
     setEditRole(row.role);
   };
 
@@ -179,6 +227,7 @@ const AdviserManager = () => {
     setNewTeacherRole("Adviser");
     setNewTeacherSectionIds(["A"]);
     setNewTeacherYearAssigned(YEAR_LEVEL_OPTIONS[0]);
+    setNewTeacherProgram(PROGRAM_OPTIONS[0]);
     setIsAddModalOpen(true);
   };
 
@@ -217,6 +266,7 @@ const AdviserManager = () => {
       const updatedInfo = await upsertAdviserInfo(editStaffId, {
         assigned_sections: editSectionIds,
         year_level: editYearAssigned,
+        program: editProgram,
       });
 
       updateAdviserInfoRecord(editStaffId, updatedInfo);
@@ -266,6 +316,7 @@ const AdviserManager = () => {
       const updatedInfo = await upsertAdviserInfo(newTeacherStaffId, {
         assigned_sections: newTeacherSectionIds,
         year_level: newTeacherYearAssigned,
+        program: newTeacherProgram,
       });
 
       updateAdviserInfoRecord(newTeacherStaffId, updatedInfo);
@@ -353,18 +404,19 @@ const AdviserManager = () => {
           >
             <thead className={commonStyles.tableHead}>
               <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                <th style={{ padding: "12px 16px", textAlign: "left", width: "25%" }}>Name</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Section</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Year Assigned</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", width: "20%" }}>Role</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "18%" }}>Name</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Section</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Program</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Year Assigned</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "16%" }}>Role</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Students</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "15%" }}>Action</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "18%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {directoryLoading && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 20, textAlign: "center" }}>
+                  <td colSpan={7} style={{ padding: 20, textAlign: "center" }}>
                     Loading staff…
                   </td>
                 </tr>
@@ -380,6 +432,9 @@ const AdviserManager = () => {
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>
                     {row.section}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    {row.program || ALL_PROGRAMS_OPTION}
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>
                     {row.yearAssigned || "N/A"}
@@ -429,7 +484,7 @@ const AdviserManager = () => {
               ))}
               {!directoryLoading && sectionOverviewRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
+                  <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
                     No adviser records displayed.
                   </td>
                 </tr>
@@ -830,45 +885,109 @@ const AdviserManager = () => {
                     backgroundColor: "#f8fafc",
                   }}
                 >
-                  {sectionOptions.map((sectionId) => {
+                  {(() => {
                     const selectedSections = isAddModalOpen
                       ? newTeacherSectionIds
                       : editSectionIds;
-                    const isChecked = selectedSections.includes(sectionId);
                     const setSelectedSections = isAddModalOpen
                       ? setNewTeacherSectionIds
                       : setEditSectionIds;
+                    const allSelected = areAllSectionsSelected(
+                      selectedSections,
+                      sectionOptions,
+                    );
 
                     return (
-                      <label
-                        key={sectionId}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          fontSize: "0.9rem",
-                          color: "#0f172a",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() =>
-                            toggleSectionSelection(
-                              sectionId,
-                              selectedSections,
-                              setSelectedSections,
-                            )
-                          }
-                        />
-                        Section {getStaffSectionLabel(sectionId, getSectionById)}
-                      </label>
+                      <>
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            fontSize: "0.9rem",
+                            color: "#0f172a",
+                            cursor: "pointer",
+                            fontWeight: "700",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={() =>
+                              toggleAllSections(selectedSections, setSelectedSections)
+                            }
+                          />
+                          All
+                        </label>
+                        {sectionOptions.map((sectionId) => {
+                          const isChecked = selectedSections.includes(sectionId);
+
+                          return (
+                            <label
+                              key={sectionId}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                fontSize: "0.9rem",
+                                color: "#0f172a",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() =>
+                                  toggleSectionSelection(
+                                    sectionId,
+                                    selectedSections,
+                                    setSelectedSections,
+                                  )
+                                }
+                              />
+                              Section {getStaffSectionLabel(sectionId, getSectionById)}
+                            </label>
+                          );
+                        })}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Select up to {MAX_ADVISER_SECTIONS} sections for this adviser.
+                  Select up to {MAX_ADVISER_SECTIONS} sections, or choose All to assign every section.
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
+                  Program
+                </label>
+                <select
+                  value={isAddModalOpen ? newTeacherProgram : editProgram}
+                  onChange={(e) =>
+                    isAddModalOpen
+                      ? setNewTeacherProgram(e.target.value)
+                      : setEditProgram(e.target.value)
+                  }
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
+                >
+                  {PROGRAM_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  Choose which engineering program this staff member covers.
                 </p>
               </div>
 

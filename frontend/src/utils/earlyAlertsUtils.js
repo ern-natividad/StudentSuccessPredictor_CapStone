@@ -105,6 +105,7 @@ export const scopeEarlyAlerts = ({
             ? loggedInStaff.assignedSections
             : loggedInStaff.assignedSection,
           loggedInStaff.assignedYearLevel,
+          loggedInStaff.assignedProgram,
         );
 
     const visibleStudentIds = new Set(
