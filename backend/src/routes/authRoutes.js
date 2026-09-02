@@ -9,6 +9,7 @@ import {
   signup,
   me,
   updateProfile,
+  changePassword,
   forgotPasswordRequest,
   verifyForgotPasswordCode,
   forgotPasswordReset,
@@ -27,6 +28,7 @@ router.post("/login", authRateLimiter, login);
 router.post("/login/verify-mfa", authRateLimiter, verifyMfaLogin);
 router.get("/me", requireAuth, me);
 router.patch("/profile", requireAuth, updateProfile);
+router.post("/change-password", requireAuth, authRateLimiter, changePassword);
 router.post("/logout", requireAuth, logoutHandler);
 router.post("/session-timeout", requireAuth, sessionTimeoutHandler);
 router.post("/signup", signup);

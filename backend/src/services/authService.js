@@ -677,3 +677,87 @@ export const completePasswordReset = async (userId, newPassword, meta = {}, emai
 
   return user;
 };
+
+/**
+ * Lets an authenticated user change their password after verifying the current one.
+ */
+export const changeUserPassword = async (
+  authUser,
+  { currentPassword, newPassword },
+  meta = {},
+) => {
+  const userId = authUser?.id || authUser?.sub;
+  if (!userId) {
+    throw new HttpError(401, "Authentication required.");
+  }
+
+  if (!currentPassword || !newPassword) {
+    throw new HttpError(400, "Current password and new password are required.");
+  }
+
+  if (currentPassword === newPassword) {
+    throw new HttpError(
+      400,
+      "New password must be different from your current password.",
+    );
+  }
+
+  assertValidPassword(newPassword);
+
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, email, password_hash")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (userError || !user) {
+    throw new HttpError(404, "Account not found.");
+  }
+
+  if (!user.password_hash) {
+    throw new HttpError(
+      400,
+      "Password change is unavailable for this account. Use Forgot Password instead.",
+    );
+  }
+
+  const passwordMatches = await bcrypt.compare(
+    currentPassword,
+    user.password_hash,
+  );
+  if (!passwordMatches) {
+    throw new HttpError(401, "Current password is incorrect.");
+  }
+
+  const { error: authError } = await supabase.auth.admin.updateUserById(
+    userId,
+    { password: newPassword },
+  );
+  if (authError) {
+    throw new HttpError(400, authError.message);
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  const { error: dbError } = await supabase
+    .from("users")
+    .update({ password_hash: passwordHash })
+    .eq("id", userId);
+
+  if (dbError) {
+    throw dbError;
+  }
+
+  await recordAuditLog({
+    userId: user.id,
+    username: user.email,
+    action: AUDIT_ACTIONS.USER_UPDATED,
+    module: AUDIT_MODULES.AUTH,
+    description: "Password changed successfully from Account Settings.",
+    ...meta,
+  });
+
+  return {
+    success: true,
+    message: "Password updated successfully.",
+  };
+};

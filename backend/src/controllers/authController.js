@@ -13,6 +13,7 @@ import {
   initiatePasswordReset,
   verifyPasswordOtp,
   completePasswordReset,
+  changeUserPassword,
 } from "../services/authService.js";
 
 export const login = asyncHandler(async (req, res) => {
@@ -62,6 +63,17 @@ export const me = asyncHandler(async (req, res) => {
 export const updateProfile = asyncHandler(async (req, res) => {
   const profile = await updateUserProfile(req.user, req.body);
   return res.status(200).json(profile);
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const meta = getRequestMeta(req);
+  const result = await changeUserPassword(
+    req.user,
+    { currentPassword, newPassword },
+    meta,
+  );
+  return res.status(200).json(result);
 });
 
 export const logoutHandler = asyncHandler(async (req, res) => {

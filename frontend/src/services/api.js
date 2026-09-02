@@ -76,6 +76,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  changePassword: (currentPassword, newPassword) =>
+    request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
   logout: () => request("/auth/logout", { method: "POST" }),
 
   reportSessionTimeout: () =>

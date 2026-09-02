@@ -31,6 +31,14 @@ const AccountSettingsPage = () => {
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disableCode, setDisableCode] = useState("");
 
+  // Change Password (all roles)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
   // Account Removal States (Admin Only)
   const [manageableUsers, setManageableUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -101,6 +109,65 @@ const AccountSettingsPage = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredUsers, currentPage]);
+
+  const passwordReqs = useMemo(
+    () => ({
+      length: newPassword.length >= 8,
+      uppercase: /[A-Z]/.test(newPassword),
+      number: /[0-9]/.test(newPassword),
+      special: /[^A-Za-z0-9]/.test(newPassword),
+    }),
+    [newPassword],
+  );
+
+  const passwordMeetsRequirements =
+    passwordReqs.length &&
+    passwordReqs.uppercase &&
+    passwordReqs.number &&
+    passwordReqs.special;
+
+  const resetPasswordForm = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      notifyError("Please fill in all password fields.");
+      return;
+    }
+
+    if (!passwordMeetsRequirements) {
+      notifyError("New password does not meet the security requirements.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      notifyError("New password and confirmation do not match.");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      notifyError("New password must be different from your current password.");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      const res = await api.changePassword(currentPassword, newPassword);
+      toast.success(res?.message || "Password updated successfully.");
+      resetPasswordForm();
+    } catch (err) {
+      notifyError(err.message || "Failed to update password.");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
   const handleStartSetup = async () => {
     setLoading(true);
@@ -212,10 +279,175 @@ const AccountSettingsPage = () => {
         <div>
           <h1 className={styles.pageTitle}>Security & Account Settings</h1>
           <p className={styles.pageSubtitle}>
-            Manage two-factor authentication and account security for your HawksPredict profile.
+            Manage your password, two-factor authentication, and account security for your HawksPredict profile.
           </p>
         </div>
         
+      </div>
+
+      {/* Change Password — available to all roles */}
+      <div className={styles.contentCard}>
+        <div className={styles.contentCardHeader}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Security</div>
+            <div className={styles.contentCardTitle}>Change Password</div>
+            <p className={styles.contentCardMeta}>
+              Update your sign-in password regularly to keep your account secure.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleChangePassword} style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#475569", marginBottom: "0.35rem" }}>
+                Current Password
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
+                  style={{
+                    width: "100%",
+                    padding: "0.65rem 2.5rem 0.65rem 0.75rem",
+                    borderRadius: "8px",
+                    border: "1px solid #d8e0ea",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  aria-label="Toggle current password visibility"
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    border: "none",
+                    background: "transparent",
+                    color: "#64748b",
+                    cursor: "pointer",
+                    padding: "4px",
+                  }}
+                >
+                  <i className={`fas fa-eye${showCurrentPassword ? "-slash" : ""}`} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#475569", marginBottom: "0.35rem" }}>
+                New Password
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  autoComplete="new-password"
+                  style={{
+                    width: "100%",
+                    padding: "0.65rem 2.5rem 0.65rem 0.75rem",
+                    borderRadius: "8px",
+                    border: "1px solid #d8e0ea",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  aria-label="Toggle new password visibility"
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    border: "none",
+                    background: "transparent",
+                    color: "#64748b",
+                    cursor: "pointer",
+                    padding: "4px",
+                  }}
+                >
+                  <i className={`fas fa-eye${showNewPassword ? "-slash" : ""}`} aria-hidden="true" />
+                </button>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.55rem" }}>
+                {[
+                  { key: "length", label: "8+ characters" },
+                  { key: "uppercase", label: "Uppercase" },
+                  { key: "number", label: "Number" },
+                  { key: "special", label: "Special character" },
+                ].map((req) => (
+                  <span
+                    key={req.key}
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      padding: "0.2rem 0.5rem",
+                      borderRadius: "999px",
+                      backgroundColor: passwordReqs[req.key] ? "#e8f5e9" : "#f1f5f9",
+                      color: passwordReqs[req.key] ? "#2e7d32" : "#64748b",
+                      border: `1px solid ${passwordReqs[req.key] ? "#c8e6c9" : "#e2e8f0"}`,
+                    }}
+                  >
+                    {req.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#475569", marginBottom: "0.35rem" }}>
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                autoComplete="new-password"
+                style={{
+                  width: "100%",
+                  padding: "0.65rem 0.75rem",
+                  borderRadius: "8px",
+                  border: "1px solid #d8e0ea",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className={moduleStyles.primaryButton}
+                style={{ flex: 1 }}
+              >
+                {passwordSaving ? "Updating..." : "Update Password"}
+              </button>
+              <button
+                type="button"
+                onClick={resetPasswordForm}
+                disabled={passwordSaving}
+                className={moduleStyles.secondaryButton}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
 
       {/* MFA Management Section */}
