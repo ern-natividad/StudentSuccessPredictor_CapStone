@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { useAuth } from "../../../hooks/useAuth";
@@ -72,11 +72,13 @@ const CurriculumManager = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [publishSearch, setPublishSearch] = useState("");
+  const [publishProgramFilter, setPublishProgramFilter] = useState("All");
 
-  // Modal State for custom prompt (Add AY / Add Program)
+  // Modal State for custom prompt (Add AY)
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
-    type: "", // 'academicYear' or 'program'
+    type: "", // 'academicYear'
     title: "",
     placeholder: "",
     inputValue: "",
@@ -85,6 +87,8 @@ const CurriculumManager = () => {
   // State for Curriculum Deletion Modal
   const [curriculumToDelete, setCurriculumToDelete] = useState(null);
   const [curriculumToView, setCurriculumToView] = useState(null);
+  const [isManageProgramsOpen, setIsManageProgramsOpen] = useState(false);
+  const [newProgramName, setNewProgramName] = useState("");
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -130,6 +134,31 @@ const CurriculumManager = () => {
     loadCurricula();
   }, []);
 
+  const publishProgramOptions = useMemo(() => {
+    const fromList = curricula.map((c) => c.program).filter(Boolean);
+    return ["All", ...Array.from(new Set([...programOptions, ...fromList]))];
+  }, [curricula, programOptions]);
+
+  const filteredPublishedCurricula = useMemo(() => {
+    const query = publishSearch.trim().toLowerCase();
+
+    return curricula.filter((c) => {
+      const matchesProgram =
+        publishProgramFilter === "All" || c.program === publishProgramFilter;
+
+      if (!matchesProgram) return false;
+      if (!query) return true;
+
+      return (
+        String(c.title || "").toLowerCase().includes(query) ||
+        String(c.academicYear || "").toLowerCase().includes(query) ||
+        String(c.department || "").toLowerCase().includes(query) ||
+        String(c.program || "").toLowerCase().includes(query) ||
+        String(c.status || "").toLowerCase().includes(query)
+      );
+    });
+  }, [curricula, publishSearch, publishProgramFilter]);
+
   // Dropdown Selection Handlers
   const handleAcademicYearChange = (e) => {
     const val = e.target.value;
@@ -147,18 +176,66 @@ const CurriculumManager = () => {
   };
 
   const handleProgramChange = (e) => {
-    const val = e.target.value;
-    if (val === "ADD_NEW_PROGRAM") {
-      setModalConfig({
-        isOpen: true,
-        type: "program",
-        title: "Add Program",
-        placeholder: "e.g., Software Engineering",
-        inputValue: "",
-      });
-    } else {
-      setProgram(val);
+    setProgram(e.target.value);
+  };
+
+  const handleAddProgram = (e) => {
+    e.preventDefault();
+    const val = newProgramName.trim();
+
+    if (!val) {
+      toast.error("Program name cannot be empty.");
+      return;
     }
+
+    if (programOptions.includes(val)) {
+      toast.error(`"${val}" is already in the program list.`);
+      return;
+    }
+
+    setProgramOptions((prev) => [...prev, val]);
+    setProgram(val);
+    setNewProgramName("");
+    toast.success(`Program "${val}" added.`);
+  };
+
+  const handleDeleteProgram = (programName) => {
+    if (!programOptions.includes(programName)) {
+      toast.error("That program is not in the list.");
+      return;
+    }
+
+    if (programOptions.length <= 1) {
+      toast.error("At least one program must remain available.");
+      return;
+    }
+
+    const inUseCount = curricula.filter((c) => c.program === programName).length;
+    if (inUseCount > 0) {
+      toast.error(
+        `Cannot delete "${programName}" because ${inUseCount} curriculum record${
+          inUseCount === 1 ? " is" : "s are"
+        } still assigned to it.`,
+      );
+      return;
+    }
+
+    const remaining = programOptions.filter((p) => p !== programName);
+    setProgramOptions(remaining);
+
+    if (program === programName) {
+      setProgram(remaining[0] || INITIAL_PROGRAM_OPTIONS[0]);
+    }
+    if (publishProgramFilter === programName) {
+      setPublishProgramFilter("All");
+    }
+
+    toast.success(`Program "${programName}" deleted.`);
+  };
+
+  const closeManagePrograms = () => {
+    setIsManageProgramsOpen(false);
+    setNewProgramName("");
   };
 
   // Modal Submit Handler
@@ -176,11 +253,6 @@ const CurriculumManager = () => {
         setAcademicYearOptions((prev) => [...prev, val]);
       }
       setAcademicYear(val);
-    } else if (modalConfig.type === "program") {
-      if (!programOptions.includes(val)) {
-        setProgramOptions((prev) => [...prev, val]);
-      }
-      setProgram(val);
     }
 
     closeModal();
@@ -497,19 +569,52 @@ const CurriculumManager = () => {
               marginBottom: "12px",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              justifyContent: "space-between",
+              gap: "12px",
             }}
           >
-            <span
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: "#800000",
+                  display: "inline-block",
+                }}
+              />
+              General Information
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsManageProgramsOpen(true)}
               style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                backgroundColor: "#800000",
-                display: "inline-block",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: "#ffffff",
+                color: "#800000",
+                border: "1px solid #800000",
+                borderRadius: "8px",
+                padding: "6px 12px",
+                fontWeight: "600",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "background-color 0.15s ease, color 0.15s ease",
               }}
-            />
-            General Information
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "#800000";
+                e.currentTarget.style.color = "#ffffff";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.color = "#800000";
+              }}
+            >
+              <i className="fas fa-list-check" aria-hidden="true" />
+              Manage Program
+            </button>
           </div>
 
           <div className={styles.formGrid}>
@@ -551,7 +656,6 @@ const CurriculumManager = () => {
               />
             </div>
 
-            {/* Dropdown with Add Option for Program */}
             <div className={styles.formField}>
               <label className={styles.formLabel}>Program</label>
               <select
@@ -564,9 +668,6 @@ const CurriculumManager = () => {
                     {p}
                   </option>
                 ))}
-                <option value="ADD_NEW_PROGRAM" style={{ fontWeight: "bold", color: "#800000" }}>
-                  + Add New Program...
-                </option>
               </select>
             </div>
           </div>
@@ -982,11 +1083,41 @@ const CurriculumManager = () => {
       {/* Published Curricula List */}
       <div className={styles.moduleCard}>
         <div className={styles.moduleTitleSmall}>Published Curricula</div>
+
+        <div className={styles.performanceToolbar}>
+          <div className={styles.performanceFilters}>
+            <input
+              type="search"
+              className={styles.formInput}
+              placeholder="Search curriculum by title, year, department, or program"
+              value={publishSearch}
+              onChange={(event) => setPublishSearch(event.target.value)}
+              aria-label="Search published curricula"
+            />
+            <select
+              className={styles.formSelect}
+              value={publishProgramFilter}
+              onChange={(event) => setPublishProgramFilter(event.target.value)}
+              aria-label="Filter curricula by program"
+            >
+              {publishProgramOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option === "All" ? "All Programs" : option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {loading ? (
           <div className={styles.placeholderChart}>Loading curricula…</div>
         ) : curricula.length === 0 ? (
           <div className={styles.placeholderChart}>
             No curricula published yet.
+          </div>
+        ) : filteredPublishedCurricula.length === 0 ? (
+          <div className={styles.placeholderChart}>
+            No curricula match your search or program filter.
           </div>
         ) : (
           <div className={styles.tableWrapper}>
@@ -1002,7 +1133,7 @@ const CurriculumManager = () => {
                 </tr>
               </thead>
               <tbody className={styles.tableStriped}>
-                {curricula.map((c) => (
+                {filteredPublishedCurricula.map((c) => (
                   <tr key={c.id}>
                     <td>{c.title}</td>
                     <td>{c.academicYear}</td>
@@ -1120,7 +1251,7 @@ const CurriculumManager = () => {
         )}
       </div>
 
-      {/* CUSTOM MODAL for Add Academic Year / Add Program */}
+      {/* CUSTOM MODAL for Add Academic Year */}
       {modalConfig.isOpen && (
         <div
           style={{
@@ -1233,6 +1364,187 @@ const CurriculumManager = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MANAGE PROGRAMS MODAL */}
+      {isManageProgramsOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(3px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 9999,
+          }}
+          onClick={closeManagePrograms}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "12px",
+              width: "min(520px, 100%)",
+              padding: "28px 32px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.25)",
+              maxHeight: "85vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "1.35rem",
+                fontWeight: "700",
+                color: "#800000",
+              }}
+            >
+              Manage Programs
+            </h2>
+            <p
+              style={{
+                margin: "0 0 20px 0",
+                color: "#64748b",
+                fontSize: "0.9rem",
+                lineHeight: 1.45,
+              }}
+            >
+              Add or remove programs available in the curriculum form. Programs with
+              existing curriculum records cannot be deleted.
+            </p>
+
+            <form
+              onSubmit={handleAddProgram}
+              style={{
+                display: "flex",
+                gap: "10px",
+                marginBottom: "20px",
+              }}
+            >
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="e.g., Software Engineering"
+                value={newProgramName}
+                onChange={(e) => setNewProgramName(e.target.value)}
+                style={{ flex: 1 }}
+                aria-label="New program name"
+              />
+              <button
+                type="submit"
+                style={{
+                  backgroundColor: "#800000",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 16px",
+                  fontWeight: "600",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Add Program
+              </button>
+            </form>
+
+            <div
+              style={{
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                overflow: "hidden",
+                marginBottom: "20px",
+              }}
+            >
+              {programOptions.length === 0 ? (
+                <div
+                  style={{
+                    padding: "16px",
+                    color: "#64748b",
+                    fontSize: "0.9rem",
+                    textAlign: "center",
+                  }}
+                >
+                  No programs available.
+                </div>
+              ) : (
+                programOptions.map((p, index) => (
+                  <div
+                    key={p}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      padding: "12px 14px",
+                      borderTop: index === 0 ? "none" : "1px solid #f1f5f9",
+                      backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.925rem",
+                        fontWeight: "600",
+                        color: "#0f172a",
+                      }}
+                    >
+                      {p}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProgram(p)}
+                      title={`Delete ${p}`}
+                      aria-label={`Delete ${p}`}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "34px",
+                        height: "34px",
+                        borderRadius: "8px",
+                        border: "1px solid #fecaca",
+                        backgroundColor: "#ffffff",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = "#fef2f2";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = "#ffffff";
+                      }}
+                    >
+                      <i className="fas fa-trash-can" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={closeManagePrograms}
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#cbd5e1",
+                color: "#1e293b",
+                fontWeight: "600",
+                fontSize: "0.95rem",
+                cursor: "pointer",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8c5d6")}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cbd5e1")}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
