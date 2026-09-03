@@ -4,6 +4,13 @@ import { useToast } from "../../../components/Common/Toast";
 import { supabase } from "../../../lib/supabaseClient";
 import { getPublishedCurricula } from "../../../services/curriculumService";
 import CurriculumAppraisalSheet from "../../admin/components/CurriculumAppraisalSheet";
+import {
+  compareCurriculumCourses,
+  downloadCurriculumAppraisal,
+  formatVersionTimestamp,
+  getCourseTotalUnits,
+  getUniqueCurriculumVersions,
+} from "../../../utils/curriculumAppraisalUtils";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -25,6 +32,7 @@ const CurriculumViewer = () => {
   const [published, setPublished] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterProgram, setFilterProgram] = useState("");
+  const [compareByCurriculumId, setCompareByCurriculumId] = useState({});
 
   const loadCurricula = async () => {
     try {
@@ -103,55 +111,74 @@ const CurriculumViewer = () => {
     );
   };
 
-  // Version diff: compare a selected version to current
-  const [selectedVersionIndex, setSelectedVersionIndex] = useState(null);
-  const currentForCompare = (c) => ({
-    title: c.title,
-    courses: c.courses || [],
-  });
-  const versionForCompare = (c, idx) => ({
-    title: c.versions[idx].title,
-    courses: c.versions[idx].courses || [],
-  });
+  // Version diff: compare a selected snapshot to the current published sheet
+  const handleCompareChange = (curriculumId, value) => {
+    setCompareByCurriculumId((prev) => ({
+      ...prev,
+      [curriculumId]: value === "" ? "" : Number(value),
+    }));
+  };
 
-  const renderDiff = (curr, ver) => {
-    if (!curr || !ver) return null;
-    const added = curr.courses.filter((x) => !ver.courses.includes(x));
-    const removed = ver.courses.filter((x) => !curr.courses.includes(x));
+  const renderCourseLabel = (course) =>
+    `${course.code || "Untitled"} — ${course.title || "No description"} (${getCourseTotalUnits(course)} u)`;
+
+  const renderDiff = (currentCourses, versionCourses) => {
+    const { added, removed, changed } = compareCurriculumCourses(
+      currentCourses,
+      versionCourses,
+    );
+
+    if (added.length === 0 && removed.length === 0 && changed.length === 0) {
+      return (
+        <div style={{ marginTop: 8, color: "#64748b", fontSize: "0.9rem" }}>
+          No course differences from the selected version.
+        </div>
+      );
+    }
+
     return (
       <div
         style={{
-          marginTop: 8,
-          border: "1px solid #eee",
-          padding: 8,
-          borderRadius: 4,
+          marginTop: 12,
+          border: "1px solid #e2e8f0",
+          borderRadius: 10,
+          padding: 14,
+          background: "#f8fafc",
         }}
       >
-        <div style={{ fontWeight: 600 }}>Version Diff</div>
-        {added.length === 0 && removed.length === 0 ? (
-          <div style={{ marginTop: 6 }}>No changes in course list.</div>
-        ) : (
-          <div style={{ marginTop: 6 }}>
-            {added.length > 0 && (
-              <div style={{ color: "green" }}>
-                <div style={{ fontWeight: 600 }}>Added</div>
-                <ul>
-                  {added.map((a, i) => (
-                    <li key={i}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {removed.length > 0 && (
-              <div style={{ color: "crimson", marginTop: 6 }}>
-                <div style={{ fontWeight: 600 }}>Removed</div>
-                <ul>
-                  {removed.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
+          Changes from selected version
+        </div>
+        {added.length > 0 && (
+          <div style={{ color: "#15803d", marginBottom: 8 }}>
+            <div style={{ fontWeight: 700 }}>Added ({added.length})</div>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {added.map((course, index) => (
+                <li key={`added-${course.code}-${index}`}>{renderCourseLabel(course)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {removed.length > 0 && (
+          <div style={{ color: "#b91c1c", marginBottom: 8 }}>
+            <div style={{ fontWeight: 700 }}>Removed ({removed.length})</div>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {removed.map((course, index) => (
+                <li key={`removed-${course.code}-${index}`}>{renderCourseLabel(course)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {changed.length > 0 && (
+          <div style={{ color: "#b45309" }}>
+            <div style={{ fontWeight: 700 }}>Updated ({changed.length})</div>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {changed.map((item, index) => (
+                <li key={`changed-${item.current.code}-${index}`}>
+                  {item.current.code}: {item.previous.title} → {item.current.title}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -206,7 +233,18 @@ const CurriculumViewer = () => {
           </div>
         ) : (
           <div style={{ marginTop: 12 }}>
-            {visible.map((c) => (
+            {visible.map((c) => {
+              const uniqueVersions = getUniqueCurriculumVersions(
+                c.versions || [],
+                c,
+              );
+              const selectedCompareIndex = compareByCurriculumId[c.id];
+              const selectedVersion =
+                typeof selectedCompareIndex === "number"
+                  ? uniqueVersions[selectedCompareIndex]
+                  : null;
+
+              return (
               <div
                 key={c.id}
                 className={styles.moduleCardSmall}
@@ -228,32 +266,33 @@ const CurriculumViewer = () => {
                       Total Units: {c.courses ? c.courses.length : 0}
                     </div>
                   </div>
-                  <div style={{ minWidth: 220 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        justifyContent: "flex-end",
-                      }}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      className={styles.performanceIconButton}
+                      onClick={() => downloadCurriculumAppraisal(c)}
+                      title="Download curriculum"
+                      aria-label={`Download ${c.title}`}
                     >
+                      <i className="fas fa-download" aria-hidden="true" />
+                    </button>
+                    {uniqueVersions.length > 0 ? (
+                    <div style={{ minWidth: 220 }}>
                       <select
                         className={styles.formSelect}
-                        onChange={(e) =>
-                          setSelectedVersionIndex(
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                          )
-                        }
+                        value={compareByCurriculumId[c.id] ?? ""}
+                        onChange={(e) => handleCompareChange(c.id, e.target.value)}
+                        aria-label={`Compare versions of ${c.title}`}
                       >
-                        <option value="">Compare version...</option>
-                        {(c.versions || []).map((v, idx) => (
-                          <option key={idx} value={idx}>
-                            {v.versionedAt}
+                        <option value="">Current published version</option>
+                        {uniqueVersions.map((version, idx) => (
+                          <option key={`${c.id}-v-${version.versionedAt}-${idx}`} value={idx}>
+                            Compare: {formatVersionTimestamp(version.versionedAt)}
                           </option>
                         ))}
                       </select>
                     </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -273,6 +312,40 @@ const CurriculumViewer = () => {
                     compact
                   />
                 </div>
+
+                {selectedVersion && (
+                    <div style={{ marginTop: 12 }}>
+                      {renderDiff(c.courses || [], selectedVersion.courses || [])}
+                      <details style={{ marginTop: 12 }}>
+                        <summary
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            color: "#334155",
+                          }}
+                        >
+                          View selected previous version
+                        </summary>
+                        <div style={{ marginTop: 10 }}>
+                          <CurriculumAppraisalSheet
+                            courses={selectedVersion.courses || []}
+                            title={selectedVersion.title || c.title}
+                            program={selectedVersion.program || c.program}
+                            academicYear={
+                              selectedVersion.academicYear || c.academicYear
+                            }
+                            department={
+                              selectedVersion.department || c.department
+                            }
+                            includeEmpty={false}
+                            showGradeColumn
+                            showAdvisingHistory
+                            compact
+                          />
+                        </div>
+                      </details>
+                    </div>
+                  )}
 
                 {c.attachments && c.attachments.length > 0 && (
                   <div style={{ marginTop: 8 }}>
@@ -303,37 +376,9 @@ const CurriculumViewer = () => {
                     ))}
                   </div>
                 )}
-
-                {c.versions && c.versions.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <details>
-                      <summary>Version history ({c.versions.length})</summary>
-                      <div style={{ marginTop: 8 }}>
-                        {c.versions.map((v, idx) => (
-                          <div key={idx} style={{ marginBottom: 8 }}>
-                            <div style={{ fontWeight: 600 }}>
-                              {v.title} — {v.versionedAt}
-                            </div>
-                            <div>{(v.courses || []).join(", ")}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  </div>
-                )}
-
-                {selectedVersionIndex !== null &&
-                  c.versions &&
-                  c.versions[selectedVersionIndex] && (
-                    <div style={{ marginTop: 8 }}>
-                      {renderDiff(
-                        currentForCompare(c),
-                        versionForCompare(c, selectedVersionIndex),
-                      )}
-                    </div>
-                  )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

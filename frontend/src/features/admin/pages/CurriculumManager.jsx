@@ -9,6 +9,10 @@ import {
   deleteCurriculum,
   approveCurriculum,
 } from "../../../services/curriculumService";
+import {
+  downloadCurriculumAppraisal,
+  getUniqueCurriculumVersions,
+} from "../../../utils/curriculumAppraisalUtils";
 import styles from "../../../styles/Modules.module.css";
 import CurriculumAppraisalSheet from "../components/CurriculumAppraisalSheet";
 
@@ -388,6 +392,16 @@ const CurriculumManager = () => {
           return;
         }
 
+        const nextVersions = getUniqueCurriculumVersions(
+          [buildVersionSnapshot(c), ...(c.versions || [])],
+          {
+            title: title.trim(),
+            academicYear,
+            program,
+            courses,
+          },
+        );
+
         await updateCurriculum(editingId, {
           title: title.trim(),
           academicYear,
@@ -396,7 +410,7 @@ const CurriculumManager = () => {
           program,
           attachments,
           status,
-          versions: [buildVersionSnapshot(c), ...(c.versions || [])],
+          versions: nextVersions,
         });
         toast.success("Curriculum updated successfully.");
       } else {
@@ -1123,6 +1137,27 @@ const CurriculumManager = () => {
                           <i className="fas fa-eye" aria-hidden="true" />
                         </button>
 
+                        <button
+                          type="button"
+                          style={{
+                            ...iconButtonStyle,
+                            color: "#334155",
+                          }}
+                          onClick={() => downloadCurriculumAppraisal(c)}
+                          title="Download Curriculum"
+                          aria-label={`Download ${c.title}`}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f1f5f9";
+                            e.currentTarget.style.borderColor = "#cbd5e1";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                          }}
+                        >
+                          <i className="fas fa-download" aria-hidden="true" />
+                        </button>
+
                         {/* Edit Button Icon */}
                         <button
                           type="button"
@@ -1609,6 +1644,14 @@ const CurriculumManager = () => {
                 justifyContent: "flex-end",
               }}
             >
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => downloadCurriculumAppraisal(curriculumToView)}
+              >
+                <i className="fas fa-download" aria-hidden="true" style={{ marginRight: 6 }} />
+                Download
+              </button>
               <button
                 type="button"
                 className={styles.secondaryButton}
