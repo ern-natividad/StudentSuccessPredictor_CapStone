@@ -10,6 +10,7 @@ import {
   approveCurriculum,
 } from "../../../services/curriculumService";
 import styles from "../../../styles/Modules.module.css";
+import CurriculumAppraisalSheet from "../components/CurriculumAppraisalSheet";
 
 const moduleLinks = [
   {
@@ -500,57 +501,10 @@ const CurriculumManager = () => {
     boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
   };
 
-  const applyIconHover = (event, colors) => {
-    event.currentTarget.style.backgroundColor = colors.background;
-    event.currentTarget.style.borderColor = colors.border;
-  };
-
-  const resetIconHover = (event) => {
-    event.currentTarget.style.backgroundColor = "#ffffff";
-    event.currentTarget.style.borderColor = "#e2e8f0";
-  };
-
-  const renderCourseActionButtons = (onEdit, onDelete, labelPrefix) => (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-      }}
-    >
-      <button
-        type="button"
-        style={{ ...iconButtonStyle, color: "#334155" }}
-        onClick={onEdit}
-        title="Edit Course"
-        aria-label={`Edit ${labelPrefix}`}
-        onMouseOver={(event) =>
-          applyIconHover(event, { background: "#f1f5f9", border: "#cbd5e1" })
-        }
-        onMouseOut={resetIconHover}
-      >
-        <i className="fas fa-pen-to-square" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        style={{ ...iconButtonStyle, color: "#ef4444" }}
-        onClick={onDelete}
-        title="Delete Course"
-        aria-label={`Delete ${labelPrefix}`}
-        onMouseOver={(event) =>
-          applyIconHover(event, { background: "#fef2f2", border: "#fecaca" })
-        }
-        onMouseOut={resetIconHover}
-      >
-        <i className="fas fa-trash-can" aria-hidden="true" />
-      </button>
-    </div>
-  );
-
   return (
     <ModuleShell
       title="Curriculum Manager"
-      description="Post and manage curricula for programs. Instructors and advisers can view posted curricula."
+      description="Create and publish curricula in Student Appraisal Sheet format (First Year to Fourth Year)."
       activeKey="curriculum-manager"
       menuItems={moduleLinks}
     >
@@ -770,11 +724,10 @@ const CurriculumManager = () => {
                       })
                     }
                   >
-                    <option>1Y</option>
-                    <option>2Y</option>
-                    <option>3Y</option>
-                    <option>4Y</option>
-                    <option>Summer</option>
+                    <option value="1Y">1st Year</option>
+                    <option value="2Y">2nd Year</option>
+                    <option value="3Y">3rd Year</option>
+                    <option value="4Y">4th Year</option>
                   </select>
                 </div>
                 <div className={styles.formField}>
@@ -950,46 +903,42 @@ const CurriculumManager = () => {
               </div>
             </div>
 
-            {/* Added Courses Table */}
+            {/* Appraisal Sheet Preview — First Year through Fourth Year */}
             {courses.length > 0 && (
               <div style={{ marginTop: 16 }}>
-                <div style={{ fontWeight: 600, marginBottom: 8, color: "#334155" }}>
-                  Courses Added ({courses.length})
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: 8,
+                    color: "#334155",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span>
+                    Curriculum Appraisal Format ({courses.length} courses)
+                  </span>
+                  <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>
+                    Grouped dynamically from First Year to Fourth Year
+                  </span>
                 </div>
-                <div className={styles.tableWrapper}>
-                  <table className={styles.moduleTable}>
-                    <thead>
-                      <tr>
-                        <th>Code</th>
-                        <th>Title</th>
-                        <th>Year</th>
-                        <th>Sem</th>
-                        <th>Units</th>
-                        <th>Type</th>
-                        <th style={{ textAlign: "center", width: "108px" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className={styles.tableStriped}>
-                      {courses.map((course, idx) => (
-                        <tr key={idx}>
-                          <td>{course.code}</td>
-                          <td>{course.title}</td>
-                          <td>{course.yearLevel}</td>
-                          <td>{course.semester}</td>
-                          <td>{course.units}</td>
-                          <td>{course.type}</td>
-                          <td style={{ textAlign: "center" }}>
-                            {renderCourseActionButtons(
-                              () => handleEditCourse(idx),
-                              () => handleDeleteCourse(idx),
-                              `${course.code} ${course.title}`,
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <CurriculumAppraisalSheet
+                  courses={courses}
+                  title={title}
+                  program={program}
+                  academicYear={academicYear}
+                  department={department}
+                  includeEmpty
+                  showGradeColumn
+                  showAdvisingHistory
+                  editable
+                  onEditCourse={handleEditCourse}
+                  onDeleteCourse={handleDeleteCourse}
+                  compact
+                />
               </div>
             )}
           </div>
@@ -1549,7 +1498,7 @@ const CurriculumManager = () => {
         </div>
       )}
 
-      {/* VIEW CURRICULUM MODAL */}
+      {/* VIEW CURRICULUM MODAL — Student Appraisal Sheet format */}
       {curriculumToView && (
         <div
           style={{
@@ -1569,10 +1518,10 @@ const CurriculumManager = () => {
             style={{
               background: "#ffffff",
               borderRadius: "16px",
-              width: "min(920px, 100%)",
-              maxHeight: "90vh",
+              width: "min(1100px, 100%)",
+              maxHeight: "92vh",
               overflowY: "auto",
-              padding: "28px 32px",
+              padding: "24px 28px",
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
             }}
             onClick={(e) => e.stopPropagation()}
@@ -1583,23 +1532,25 @@ const CurriculumManager = () => {
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 gap: "16px",
-                marginBottom: "20px",
+                marginBottom: "16px",
               }}
             >
               <div>
                 <h2
                   style={{
                     margin: "0 0 8px 0",
-                    fontSize: "1.45rem",
+                    fontSize: "1.35rem",
                     fontWeight: "700",
                     color: "#800000",
                   }}
                 >
                   {curriculumToView.title}
                 </h2>
-                <div style={{ color: "#64748b", fontSize: "0.95rem" }}>
-                  {curriculumToView.academicYear} · {curriculumToView.department} ·{" "}
-                  {curriculumToView.program}
+                <div style={{ color: "#64748b", fontSize: "0.9rem" }}>
+                  Published appraisal format · {curriculumToView.status}
+                  {curriculumToView.approvedByName
+                    ? ` · Approved by ${curriculumToView.approvedByName}`
+                    : ""}
                 </div>
               </div>
               <button
@@ -1616,67 +1567,16 @@ const CurriculumManager = () => {
               </button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "12px",
-                marginBottom: "20px",
-              }}
-            >
-              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
-                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Status</div>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>{curriculumToView.status}</div>
-              </div>
-              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
-                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Courses</div>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>
-                  {(curriculumToView.courses || []).length}
-                </div>
-              </div>
-              <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
-                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Approved By</div>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>
-                  {curriculumToView.approvedByName || "Not yet approved"}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ fontWeight: 600, marginBottom: 10, color: "#334155" }}>
-              Courses ({curriculumToView.courses?.length || 0})
-            </div>
-            {(curriculumToView.courses || []).length > 0 ? (
-              <div className={styles.tableWrapper}>
-                <table className={styles.moduleTable}>
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th>Title</th>
-                      <th>Year</th>
-                      <th>Sem</th>
-                      <th>Units</th>
-                      <th>Type</th>
-                      <th>Prerequisites</th>
-                    </tr>
-                  </thead>
-                  <tbody className={styles.tableStriped}>
-                    {curriculumToView.courses.map((course, idx) => (
-                      <tr key={idx}>
-                        <td>{course.code}</td>
-                        <td>{course.title}</td>
-                        <td>{course.yearLevel}</td>
-                        <td>{course.semester}</td>
-                        <td>{course.units}</td>
-                        <td>{course.type}</td>
-                        <td>{course.prerequisites || "None"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className={styles.placeholderChart}>No courses added yet.</div>
-            )}
+            <CurriculumAppraisalSheet
+              courses={curriculumToView.courses || []}
+              title={curriculumToView.title}
+              program={curriculumToView.program}
+              academicYear={curriculumToView.academicYear}
+              department={curriculumToView.department}
+              includeEmpty
+              showGradeColumn
+              showAdvisingHistory
+            />
 
             {curriculumToView.attachments?.length > 0 && (
               <div style={{ marginTop: 20 }}>

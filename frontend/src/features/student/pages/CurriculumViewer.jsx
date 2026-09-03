@@ -3,6 +3,7 @@ import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { supabase } from "../../../lib/supabaseClient";
 import { getPublishedCurricula } from "../../../services/curriculumService";
+import CurriculumAppraisalSheet from "../../admin/components/CurriculumAppraisalSheet";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -60,58 +61,6 @@ const CurriculumViewer = () => {
   const visible = filterProgram
     ? published.filter((c) => c.program === filterProgram)
     : published;
-
-  const coursesByYear = (courses) => {
-    if (!courses) return {};
-    const groups = {};
-    courses.forEach((c) => {
-      const key = c.semester || "Other";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(c);
-    });
-    return groups;
-  };
-
-  const renderCourse = (course) => {
-    if (typeof course === "string") {
-      return <div>{course}</div>;
-    }
-    return (
-      <div
-        style={{
-          marginBottom: 8,
-          padding: 8,
-          backgroundColor: "#fafafa",
-          borderRadius: 4,
-        }}
-      >
-        <div style={{ fontWeight: 600 }}>
-          {course.code} — {course.title}
-        </div>
-        <div style={{ fontSize: "0.9em", color: "#555", marginTop: 4 }}>
-          Units: {course.units} (Lec: {course.lec}, Lab: {course.lab}) | Type:{" "}
-          {course.type}
-        </div>
-        {course.prerequisites && (
-          <div style={{ fontSize: "0.9em", color: "#666", marginTop: 2 }}>
-            Prerequisites: {course.prerequisites}
-          </div>
-        )}
-        {course.description && (
-          <div
-            style={{
-              fontSize: "0.85em",
-              color: "#777",
-              marginTop: 4,
-              fontStyle: "italic",
-            }}
-          >
-            {course.description}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const downloadAttachment = (att) => {
     const a = document.createElement("a");
@@ -310,30 +259,19 @@ const CurriculumViewer = () => {
 
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                    Courses by Semester
+                    Student Appraisal Sheet Format
                   </div>
-                  {Object.entries(coursesByYear(c.courses || [])).map(
-                    ([semester, courses]) => (
-                      <details key={semester} style={{ marginBottom: 12 }}>
-                        <summary
-                          style={{
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            padding: 8,
-                            backgroundColor: "#f0f0f0",
-                            borderRadius: 4,
-                          }}
-                        >
-                          {semester} — {courses.length} courses
-                        </summary>
-                        <div style={{ marginTop: 8, marginLeft: 8 }}>
-                          {courses.map((course, idx) => (
-                            <div key={idx}>{renderCourse(course)}</div>
-                          ))}
-                        </div>
-                      </details>
-                    ),
-                  )}
+                  <CurriculumAppraisalSheet
+                    courses={c.courses || []}
+                    title={c.title}
+                    program={c.program}
+                    academicYear={c.academicYear}
+                    department={c.department}
+                    includeEmpty={false}
+                    showGradeColumn
+                    showAdvisingHistory
+                    compact
+                  />
                 </div>
 
                 {c.attachments && c.attachments.length > 0 && (

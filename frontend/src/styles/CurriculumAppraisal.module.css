@@ -1,0 +1,285 @@
+.sheet {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.compact {
+  padding: 14px;
+}
+
+.sheetHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0f172a;
+}
+
+.headerBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoMark {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #800000;
+  color: #800000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.sheetTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+}
+
+.programLine {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #800000;
+}
+
+.headerMeta {
+  font-size: 0.8rem;
+  color: #334155;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.identityRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.identityRow > div {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.identityRow span {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.identityRow em {
+  flex: 1;
+  border-bottom: 1px solid #94a3b8;
+  height: 1em;
+  font-style: normal;
+}
+
+.semesterBlock {
+  margin-bottom: 22px;
+}
+
+.semesterHeading {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.yearLabel {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  color: #0f172a;
+}
+
+.semesterLabel {
+  margin-top: 2px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-style: italic;
+  color: #334155;
+}
+
+.semesterLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.semesterLayout.fullWidth {
+  grid-template-columns: 1fr;
+}
+
+.coursePanel,
+.advisingPanel {
+  min-width: 0;
+}
+
+.appraisalTable,
+.advisingTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.78rem;
+  background: #fff;
+}
+
+.appraisalTable th,
+.appraisalTable td,
+.advisingTable th,
+.advisingTable td {
+  border: 1px solid #0f172a;
+  padding: 5px 6px;
+  vertical-align: middle;
+}
+
+.appraisalTable thead th,
+.advisingTable thead th {
+  background: #f8fafc;
+  font-weight: 700;
+  text-align: center;
+}
+
+.gradeCell {
+  width: 48px;
+  min-height: 24px;
+}
+
+.codeCell {
+  width: 72px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.descCell {
+  text-align: left;
+}
+
+.prereqCell {
+  width: 72px;
+  text-align: center;
+}
+
+.numCell {
+  width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.emptyCell {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 12px 8px !important;
+}
+
+.totalRow {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.totalLabel {
+  text-align: right;
+  padding-right: 10px !important;
+}
+
+.actionsCell {
+  width: 78px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  margin: 0 2px;
+}
+
+.deleteBtn {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.advisingPanel {
+  border: 1px solid #0f172a;
+  padding: 8px;
+  background: #fff;
+}
+
+.advisingTitle {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.advisingMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.advisingTable th:nth-child(1),
+.advisingTable td:nth-child(1) {
+  width: 30%;
+}
+
+.advisingTable th:nth-child(2),
+.advisingTable td:nth-child(2) {
+  width: 18%;
+  text-align: center;
+}
+
+.adviserLine {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.adviserLine em {
+  flex: 1;
+  border-bottom: 1px solid #0f172a;
+  height: 1em;
+  font-style: normal;
+}
+
+@media (max-width: 900px) {
+  .semesterLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .identityRow {
+    grid-template-columns: 1fr;
+  }
+
+  .headerMeta {
+    text-align: left;
+  }
+}
