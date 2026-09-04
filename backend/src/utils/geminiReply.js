@@ -151,14 +151,16 @@ export const buildOfflineAdvisingReply = (
   ].join("\n");
 };
 
-/** Prefer configured model, then stable Flash fallbacks. */
+/** Prefer configured model, then stable Flash fallbacks that this API key can call. */
 export const buildGeminiModelCandidates = (preferredModel) => {
   const preferred = String(preferredModel || "").trim();
   const fallbacks = [
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3-flash-preview",
+    "gemini-flash-lite-latest",
     "gemini-flash-latest",
   ];
 
