@@ -380,7 +380,13 @@ const StudentManagementPage = () => {
         grade: selectedGrade,
         remarks: gradeForm.remarks.trim() || "",
       };
+
       const result = await api.createStudentGrade(payload);
+      if (!result?.grade?.subject_code) {
+        throw new Error(
+          "Grade saved, but subject code was not stored. Restart the backend and try again.",
+        );
+      }
       setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
       setGradeForm(createEmptyGradeForm());
       setIsGradeModalOpen(false);
@@ -423,6 +429,11 @@ const StudentManagementPage = () => {
         remarks: editGradeForm.remarks.trim() || "",
       };
       const result = await api.updateStudentGrade(editingGradeRecord.id, payload);
+      if (!result?.grade?.subject_code) {
+        throw new Error(
+          "Grade updated, but subject code was not stored. Restart the backend and try again.",
+        );
+      }
       const nextGrades = studentGrades.map((record) =>
         record.id === editingGradeRecord.id ? result.grade : record,
       );

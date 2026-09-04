@@ -73,55 +73,26 @@ const normalizeSubjectPart = (value) =>
     .toUpperCase();
 
 /**
- * Resolve subject code + description from a grade record.
- * Supports dedicated fields and common free-text patterns:
- * "CE 101 - Intro", "IT 413 CYBERSECURITY", "EPIC 1", "PATHFIT".
+ * Prefer DB columns: subject_code + subject_name.
+ * Only fall back to parsing subject_name when code was never stored.
  */
 const resolveSubject = (record) => {
-  const explicitCode = normalizeSubjectPart(
-    record.subject_code || record.code || "",
-  );
-  const explicitDescription = normalizeSubjectPart(
-    record.subject_description || record.description || "",
+  const code = normalizeSubjectPart(record.subject_code || record.code || "");
+  const description = normalizeSubjectPart(
+    record.subject_name ||
+      record.subject_description ||
+      record.description ||
+      "",
   );
 
-  if (explicitCode || explicitDescription) {
+  if (code || description) {
     return {
-      code: explicitCode || "—",
-      description: explicitDescription || "—",
+      code: code || "—",
+      description: description || "—",
     };
   }
 
-  const text = String(record.subject_name || "").trim();
-  if (!text) return { code: "—", description: "—" };
-
-  const dashed = text.match(/^(.+?)\s*[-–—:]\s+(.+)$/);
-  if (dashed?.[1] && dashed?.[2]) {
-    return {
-      code: normalizeSubjectPart(dashed[1]),
-      description: normalizeSubjectPart(dashed[2]),
-    };
-  }
-
-  const codeWithTitle = text.match(
-    /^([A-Za-z]{1,12}\s*\d{1,4}[A-Za-z]?)\s+(.+)$/,
-  );
-  if (codeWithTitle?.[1] && codeWithTitle?.[2]) {
-    return {
-      code: normalizeSubjectPart(codeWithTitle[1]),
-      description: normalizeSubjectPart(codeWithTitle[2]),
-    };
-  }
-
-  // Whole value is a course code (e.g. "EPIC 1", "CE101", "PATHFIT").
-  if (/^[A-Za-z]{1,12}(\s*\d{1,4}[A-Za-z]?)?$/i.test(text)) {
-    const code = normalizeSubjectPart(text);
-    return { code, description: code };
-  }
-
-  // Free-text title only — still show it under Subject Code so the column is never blank.
-  const label = normalizeSubjectPart(text);
-  return { code: label, description: label };
+  return { code: "—", description: "—" };
 };
 
 const escapeCsv = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;

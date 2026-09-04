@@ -47,13 +47,24 @@ const normalizeSchoolYear = (value) => {
 };
 
 const validateGradePayload = (payload) => {
-  const subject_code = payload.subject_code?.trim() || null;
-  const subject_name = payload.subject_name?.trim();
+  const subject_code = String(
+    payload.subject_code ?? payload.subjectCode ?? payload.code ?? "",
+  ).trim();
+  const subject_name = String(
+    payload.subject_name ?? payload.subjectName ?? payload.subject ?? "",
+  ).trim();
   const semester = payload.semester?.trim();
-  const school_year = payload.school_year?.trim();
-  if (!subject_name || !semester || !school_year) {
-    throw new HttpError(400, "Subject name, semester, and school year are required.");
+  const school_year = String(
+    payload.school_year ?? payload.schoolYear ?? "",
+  ).trim();
+
+  if (!subject_code || !subject_name || !semester || !school_year) {
+    throw new HttpError(
+      400,
+      "Subject code, subject name, semester, and school year are required.",
+    );
   }
+
   return {
     subject_code,
     subject_name,
@@ -94,9 +105,19 @@ export const createStudentGrade = async (req, res) => {
     throw new HttpError(404, "Student account not found.");
   }
 
+  const insertRow = {
+    user_id: userId,
+    subject_code: grade.subject_code,
+    subject_name: grade.subject_name,
+    semester: grade.semester,
+    school_year: grade.school_year,
+    grade: grade.grade,
+    remarks: grade.remarks,
+  };
+
   const { data, error } = await supabase
     .from("student_grades")
-    .insert({ user_id: userId, ...grade })
+    .insert(insertRow)
     .select(GRADE_SELECT_COLUMNS)
     .single();
   if (error) throw error;
@@ -105,9 +126,18 @@ export const createStudentGrade = async (req, res) => {
 
 export const updateStudentGrade = async (req, res) => {
   const grade = validateGradePayload(req.body);
+  const updateRow = {
+    subject_code: grade.subject_code,
+    subject_name: grade.subject_name,
+    semester: grade.semester,
+    school_year: grade.school_year,
+    grade: grade.grade,
+    remarks: grade.remarks,
+  };
+
   const { data, error } = await supabase
     .from("student_grades")
-    .update(grade)
+    .update(updateRow)
     .eq("id", req.params.id)
     .select(GRADE_SELECT_COLUMNS)
     .maybeSingle();
