@@ -302,6 +302,7 @@ const issueSessionForUser = (user) => {
       email: user.email,
       fullName: user.full_name,
       role: user.role,
+      program: user.program || null,
       twoFactorEnabled: user.two_factor_enabled,
       profilePicture: user.profile_picture || null,
     },
@@ -321,7 +322,7 @@ export const logout = async (authUser, meta = {}) => {
 export const getCurrentUser = async (authUser) => {
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, email, full_name, role, two_factor_enabled, profile_picture")
+    .select("id, email, full_name, role, program, two_factor_enabled, profile_picture")
     .eq("id", authUser.sub)
     .maybeSingle();
 
@@ -333,6 +334,7 @@ export const getCurrentUser = async (authUser) => {
     email: user.email,
     fullName: user.full_name,
     role: user.role,
+    program: user.program || null,
     twoFactorEnabled: user.two_factor_enabled,
     profilePicture: user.profile_picture || null,
   };
@@ -341,6 +343,10 @@ export const getCurrentUser = async (authUser) => {
 export const updateUserProfile = async (authUser, payload) => {
   const fullName = payload.fullName?.trim();
   const profilePicture = payload.profilePicture;
+  const program =
+    payload.program === undefined
+      ? undefined
+      : String(payload.program || "").trim() || null;
 
   if (!fullName) {
     throw new HttpError(400, "Full name is required.");
@@ -367,21 +373,49 @@ export const updateUserProfile = async (authUser, payload) => {
     updates.profile_picture = profilePicture || null;
   }
 
+  if (program !== undefined) {
+    updates.program = program;
+  }
+
   const { data: user, error } = await supabase
     .from("users")
     .update(updates)
     .eq("id", authUser.sub)
-    .select("id, email, full_name, role, two_factor_enabled, profile_picture")
+    .select("id, email, full_name, role, program, two_factor_enabled, profile_picture")
     .maybeSingle();
 
   if (error) throw error;
   if (!user) throw new HttpError(404, "User not found.");
+
+  if (program !== undefined) {
+    if (user.role === "student") {
+      const { error: studentInfoError } = await supabase
+        .from("student_info")
+        .update({ program })
+        .eq("user_id", user.id);
+      if (studentInfoError && studentInfoError.code !== "PGRST116") {
+        // Ignore missing student_info row; management can create it later.
+        console.warn("Unable to sync student_info.program:", studentInfoError.message);
+      }
+    }
+
+    if (user.role === "staff") {
+      const { error: adviserInfoError } = await supabase
+        .from("adviser_info")
+        .update({ program })
+        .eq("user_id", user.id);
+      if (adviserInfoError && adviserInfoError.code !== "PGRST116") {
+        console.warn("Unable to sync adviser_info.program:", adviserInfoError.message);
+      }
+    }
+  }
 
   return {
     id: user.id,
     email: user.email,
     fullName: user.full_name,
     role: user.role,
+    program: user.program || null,
     twoFactorEnabled: user.two_factor_enabled,
     profilePicture: user.profile_picture || null,
   };

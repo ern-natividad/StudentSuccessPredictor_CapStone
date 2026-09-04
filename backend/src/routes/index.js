@@ -6,6 +6,7 @@ import gradeRoutes from "./gradeRoutes.js";
 import predictionRoutes from "./predictionRoutes.js";
 import recommendationRoutes from "./recommendationRoutes.js";
 import academicPerformanceRoutes from "./academicPerformanceRoutes.js";
+import programRoutes from "./programRoutes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/grades', gradeRoutes);
 router.use('/predictions', predictionRoutes);
 router.use('/v1/recommendations', recommendationRoutes);
 router.use('/academic-performance', academicPerformanceRoutes);
+router.use('/programs', programRoutes);
 
 export default router;
