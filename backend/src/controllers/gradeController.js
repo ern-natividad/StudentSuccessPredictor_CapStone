@@ -9,12 +9,26 @@ const parseGrade = (value) => {
     .trim()
     .toUpperCase();
 
-  // Always store as text so INC and numeric grades share one column type.
-  if (raw === "INC" || raw === "1" || raw === "2" || raw === "3" || raw === "5") {
-    return raw;
+  if (raw === "INC") return "INC";
+
+  const allowed = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5];
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric)) {
+    throw new HttpError(
+      400,
+      "Grade must be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5.",
+    );
   }
 
-  throw new HttpError(400, "Grade must be 1, 2, 3, INC, or 5.");
+  const matched = allowed.find((grade) => Math.abs(grade - numeric) < 0.001);
+  if (matched === undefined) {
+    throw new HttpError(
+      400,
+      "Grade must be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5.",
+    );
+  }
+
+  return String(matched);
 };
 
 const normalizeSemester = (value) => {

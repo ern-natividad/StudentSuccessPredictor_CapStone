@@ -299,15 +299,18 @@ export const addStudentGrade = asyncHandler(async (req, res) => {
     .trim()
     .toUpperCase();
   const isInc = rawGrade === "INC";
-  const grade = isInc ? "INC" : Number(rawGrade);
+  const allowedNumeric = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5];
+  const numeric = Number(rawGrade);
+  const matched = allowedNumeric.find(
+    (g) => Number.isFinite(numeric) && Math.abs(g - numeric) < 0.001,
+  );
+  const grade = isInc ? "INC" : matched !== undefined ? String(matched) : null;
 
-  if (
-    !subject ||
-    (!isInc && (!Number.isFinite(grade) || ![1, 2, 3, 5].includes(grade)))
-  ) {
-    return res
-      .status(400)
-      .json({ error: "A subject and a grade of 1, 2, 3, INC, or 5 are required." });
+  if (!subject || grade === null) {
+    return res.status(400).json({
+      error:
+        "A subject and a grade of 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5 are required.",
+    });
   }
 
   const { data: student, error: fetchError } = await supabase

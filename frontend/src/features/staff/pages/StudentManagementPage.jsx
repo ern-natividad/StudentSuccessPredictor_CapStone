@@ -25,12 +25,17 @@ import {
   getStaffSectionLabel,
   getStudentSectionValue,
 } from "../../../utils/adviserAssignmentUtils";
+import {
+  GRADE_INPUT_HELP_TEXT,
+  isValidGradeValue,
+  normalizeGradeValue,
+  remarksFromGrade,
+} from "../../../utils/gradeValueUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
-const GRADE_VALUE_OPTIONS = ["1", "2", "3", "INC", "5"];
 const REMARKS_OPTIONS = ["Pass", "Fail", "INC"];
 
 const createEmptyGradeForm = () => ({
@@ -39,7 +44,7 @@ const createEmptyGradeForm = () => ({
   semester: "1",
   schoolYear: getCurrentAcademicYear(),
   grade: "",
-  remarks: "Pass",
+  remarks: "",
 });
 
 const SCHOOL_YEAR_OPTIONS = buildSchoolYearOptions(6);
@@ -62,15 +67,7 @@ const modalFieldInputStyle = {
   boxSizing: "border-box",
 };
 
-const normalizeGradeFormValue = (value) => {
-  const raw = String(value ?? "").trim().toUpperCase();
-  if (GRADE_VALUE_OPTIONS.includes(raw)) return raw;
-  const numeric = Number(value);
-  if (Number.isFinite(numeric) && GRADE_VALUE_OPTIONS.includes(String(numeric))) {
-    return String(numeric);
-  }
-  return "";
-};
+const normalizeGradeFormValue = (value) => normalizeGradeValue(value) || "";
 
 const normalizeRemarksValue = (value) => {
   const raw = String(value ?? "").trim();
@@ -226,11 +223,33 @@ const StudentManagementPage = () => {
   );
 
   const handleGradeChange = (field, value) => {
-    setGradeForm((prev) => ({ ...prev, [field]: value }));
+    setGradeForm((prev) => {
+      if (field !== "grade") {
+        return { ...prev, [field]: value };
+      }
+
+      const nextRemarks = remarksFromGrade(value);
+      return {
+        ...prev,
+        grade: value,
+        remarks: nextRemarks || (String(value).trim() ? prev.remarks : ""),
+      };
+    });
   };
 
   const handleEditGradeChange = (field, value) => {
-    setEditGradeForm((prev) => ({ ...prev, [field]: value }));
+    setEditGradeForm((prev) => {
+      if (field !== "grade") {
+        return { ...prev, [field]: value };
+      }
+
+      const nextRemarks = remarksFromGrade(value);
+      return {
+        ...prev,
+        grade: value,
+        remarks: nextRemarks || (String(value).trim() ? prev.remarks : ""),
+      };
+    });
   };
 
   const openGradeModal = (studentId) => {
@@ -252,7 +271,9 @@ const StudentManagementPage = () => {
       semester: semesterCode === "—" ? "1" : semesterCode,
       schoolYear: getSchoolYearFromRecord(record),
       grade: normalizeGradeFormValue(record.grade),
-      remarks: normalizeRemarksValue(record.remarks),
+      remarks:
+        remarksFromGrade(record.grade) ||
+        normalizeRemarksValue(record.remarks),
     });
   };
 
@@ -347,18 +368,18 @@ const StudentManagementPage = () => {
   };
 
   const handleAddGrade = async () => {
-    const allowedGrades = new Set(["1", "2", "3", "INC", "5"]);
-    const selectedGrade = String(gradeForm.grade ?? "").trim().toUpperCase();
+    const selectedGrade = normalizeGradeValue(gradeForm.grade);
+    const remarks = remarksFromGrade(selectedGrade) || gradeForm.remarks.trim();
 
     if (
       !selectedStudent ||
       !gradeForm.subjectCode.trim() ||
       !gradeForm.subject.trim() ||
       !gradeForm.schoolYear.trim() ||
-      !allowedGrades.has(selectedGrade)
+      !isValidGradeValue(selectedGrade)
     ) {
       toast.error(
-        "Enter a subject code, description, school year, and select a grade (1, 2, 3, INC, or 5).",
+        `Enter a subject code, description, school year, and a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
       );
       return;
     }
@@ -372,7 +393,7 @@ const StudentManagementPage = () => {
         semester: gradeForm.semester,
         school_year: gradeForm.schoolYear.trim(),
         grade: selectedGrade,
-        remarks: gradeForm.remarks.trim() || "",
+        remarks,
       };
 
       const result = await api.createStudentGrade(payload);
@@ -399,15 +420,18 @@ const StudentManagementPage = () => {
   const handleUpdateGrade = async () => {
     if (!editingGradeRecord || !selectedStudent) return;
 
-    const selectedGrade = String(editGradeForm.grade ?? "").trim().toUpperCase();
+    const selectedGrade = normalizeGradeValue(editGradeForm.grade);
+    const remarks =
+      remarksFromGrade(selectedGrade) || editGradeForm.remarks.trim();
+
     if (
       !editGradeForm.subjectCode.trim() ||
       !editGradeForm.subject.trim() ||
       !editGradeForm.schoolYear.trim() ||
-      !GRADE_VALUE_OPTIONS.includes(selectedGrade)
+      !isValidGradeValue(selectedGrade)
     ) {
       toast.error(
-        "Enter a subject code, description, school year, and select a grade (1, 2, 3, INC, or 5).",
+        `Enter a subject code, description, school year, and a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
       );
       return;
     }
@@ -420,7 +444,7 @@ const StudentManagementPage = () => {
         semester: editGradeForm.semester,
         school_year: editGradeForm.schoolYear.trim(),
         grade: selectedGrade,
-        remarks: editGradeForm.remarks.trim() || "",
+        remarks,
       };
       const result = await api.updateStudentGrade(editingGradeRecord.id, payload);
       if (!result?.grade?.subject_code) {
@@ -1042,35 +1066,35 @@ const StudentManagementPage = () => {
 
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={modalFieldLabelStyle}>Grade</label>
-                <select
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="e.g., 1.25 or INC"
                   value={gradeForm.grade}
                   onChange={(e) => handleGradeChange("grade", e.target.value)}
                   style={modalFieldInputStyle}
-                >
-                  <option value="" disabled>
-                    Select grade
-                  </option>
-                  {GRADE_VALUE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  {GRADE_INPUT_HELP_TEXT}
+                </p>
               </div>
 
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={modalFieldLabelStyle}>Remarks</label>
-                <select
+                <input
+                  type="text"
                   value={gradeForm.remarks}
-                  onChange={(e) => handleGradeChange("remarks", e.target.value)}
-                  style={modalFieldInputStyle}
-                >
-                  {REMARKS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  readOnly
+                  style={{
+                    ...modalFieldInputStyle,
+                    backgroundColor: "#f8fafc",
+                    color: "#334155",
+                    cursor: "default",
+                  }}
+                />
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  Auto-set from grade: 3 and below = Pass, INC = INC, 5 = Fail.
+                </p>
               </div>
 
               <div
@@ -1311,39 +1335,37 @@ const StudentManagementPage = () => {
 
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={modalFieldLabelStyle}>Grade</label>
-                <select
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="e.g., 1.25 or INC"
                   value={editGradeForm.grade}
                   onChange={(e) =>
                     handleEditGradeChange("grade", e.target.value)
                   }
                   style={modalFieldInputStyle}
-                >
-                  <option value="" disabled>
-                    Select grade
-                  </option>
-                  {GRADE_VALUE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  {GRADE_INPUT_HELP_TEXT}
+                </p>
               </div>
 
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={modalFieldLabelStyle}>Remarks</label>
-                <select
+                <input
+                  type="text"
                   value={editGradeForm.remarks}
-                  onChange={(e) =>
-                    handleEditGradeChange("remarks", e.target.value)
-                  }
-                  style={modalFieldInputStyle}
-                >
-                  {REMARKS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  readOnly
+                  style={{
+                    ...modalFieldInputStyle,
+                    backgroundColor: "#f8fafc",
+                    color: "#334155",
+                    cursor: "default",
+                  }}
+                />
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  Auto-set from grade: 3 and below = Pass, INC = INC, 5 = Fail.
+                </p>
               </div>
 
               <div
