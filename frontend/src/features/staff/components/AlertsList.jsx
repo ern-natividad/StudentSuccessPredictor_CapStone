@@ -109,7 +109,7 @@ const AlertsList = () => {
                     commonStyles["riskBadge." + alert.sev]
                   }`}
                 >
-                  {alert.sev}
+                  {alert.riskLevel || alert.sev}
                 </span>
                 <br />
                 <button

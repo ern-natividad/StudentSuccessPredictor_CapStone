@@ -1,12 +1,38 @@
 import { supabase } from "../lib/supabaseClient";
+import { api, isBackendAuthEnabled } from "../services/api";
 import { filterStudentsForAdviser } from "./adviserAssignmentUtils";
 
+const normalizeRiskLabel = (value) => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "critical") return "Critical";
+  if (raw === "high") return "High";
+  if (raw === "medium") return "Medium";
+  if (raw === "low") return "Low";
+  return "";
+};
+
+const riskLabelToSeverity = (riskLabel) => {
+  const raw = String(riskLabel || "").trim().toLowerCase();
+  if (raw === "critical") return "critical";
+  if (raw === "high") return "high";
+  if (raw === "medium") return "medium";
+  return "low";
+};
+
+const getUserFromJoin = (users) =>
+  Array.isArray(users) ? users[0] : users;
+
+/**
+ * Same risk source as Students List:
+ * prediction.risk_level → student_info.risk_level → Low
+ */
 export const fetchEarlyAlerts = async () => {
   const { data: studentRecords, error: fetchError } = await supabase
     .from("student_info")
     .select(`
       id,
       student_id,
+      user_id,
       department,
       program,
       section,
@@ -24,28 +50,60 @@ export const fetchEarlyAlerts = async () => {
 
   if (fetchError) throw fetchError;
 
-  return (studentRecords || [])
-    .filter((student) => student.risk_level || student.users?.account_locked)
+  const records = studentRecords || [];
+
+  const predictionsByUserId = {};
+  if (isBackendAuthEnabled() && records.length > 0) {
+    await Promise.all(
+      records.map(async (student) => {
+        const userObj = getUserFromJoin(student.users);
+        const userId = userObj?.id || student.user_id;
+        if (!userId) return;
+
+        try {
+          const result = await api.getStudentPrediction(userId);
+          predictionsByUserId[userId] = result.prediction || null;
+        } catch {
+          predictionsByUserId[userId] = null;
+        }
+      }),
+    );
+  }
+
+  return records
     .map((student) => {
-      const userObj = Array.isArray(student.users) ? student.users[0] : student.users;
+      const userObj = getUserFromJoin(student.users);
+      const userId = userObj?.id || student.user_id || "";
+      const prediction = predictionsByUserId[userId] || null;
+
+      const predictedRisk = normalizeRiskLabel(prediction?.risk_level);
+      const storedRisk = normalizeRiskLabel(student.risk_level);
+      const riskLabel = predictedRisk || storedRisk || "Low";
+
+      // Keep student_info in sync with the same risk Students List uses.
+      if (
+        predictedRisk &&
+        predictedRisk !== storedRisk &&
+        (student.user_id || userId)
+      ) {
+        void supabase
+          .from("student_info")
+          .update({ risk_level: predictedRisk })
+          .eq("user_id", student.user_id || userId);
+      }
+
+      const accountLocked = Boolean(userObj?.account_locked);
+      let severity = riskLabelToSeverity(riskLabel);
+      if (accountLocked) severity = "critical";
+
       const studentIdStr = student.student_id ? ` (${student.student_id})` : "";
       const displayName =
         (userObj?.full_name || userObj?.email || "Student Account") + studentIdStr;
 
-      let severity = "low";
-      const rawRisk = String(student.risk_level || "").toLowerCase();
-
-      if (userObj?.account_locked || rawRisk === "critical") {
-        severity = "critical";
-      } else if (rawRisk === "high") {
-        severity = "high";
-      } else if (rawRisk === "medium") {
-        severity = "medium";
-      }
-
-      let description = `Student flagged with ${student.risk_level || "low"} risk level.`;
-      if (userObj?.account_locked) {
-        description = "Account is locked due to security or administrative policy.";
+      let description = `Student flagged with ${riskLabel} risk level.`;
+      if (accountLocked) {
+        description =
+          "Account is locked due to security or administrative policy.";
       }
 
       const formattedTime = student.created_at
@@ -58,15 +116,18 @@ export const fetchEarlyAlerts = async () => {
         : "Recently";
 
       return {
-        id: student.id,
+        id: student.id || userId || student.student_id,
         studentId: student.student_id || "",
-        userId: userObj?.id || "",
+        userId,
         name: displayName,
         desc: description,
         sev: severity,
+        riskLevel: riskLabel,
         time: formattedTime,
+        accountLocked,
       };
-    });
+    })
+    .filter((alert) => alert.riskLevel || alert.accountLocked);
 };
 
 export const scopeEarlyAlerts = ({

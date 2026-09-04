@@ -68,11 +68,21 @@ const sortYearLevels = (years) =>
     return leftIndex - rightIndex;
   });
 
+const normalizeRiskLabel = (value) => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "critical") return "Critical";
+  if (raw === "high") return "High";
+  if (raw === "medium") return "Medium";
+  if (raw === "low") return "Low";
+  return "";
+};
+
 const DashboardOverview = () => {
   const { isAdmin, visibleStudents, visibleStudentIds } =
     useRoleScopedStudents();
   const { alerts, loading: alertsLoading } = useEarlyAlerts();
   const [performanceRows, setPerformanceRows] = useState([]);
+  const [predictionsByUserId, setPredictionsByUserId] = useState({});
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
 
@@ -83,6 +93,7 @@ const DashboardOverview = () => {
       if (!isBackendAuthEnabled() || visibleStudents.length === 0) {
         if (isMounted) {
           setPerformanceRows([]);
+          setPredictionsByUserId({});
           setMetricsLoading(false);
           setMetricsError("");
         }
@@ -104,27 +115,37 @@ const DashboardOverview = () => {
           rows = [];
         }
 
-        if (rows.length === 0) {
-          const predictionResults = await Promise.all(
-            visibleStudents.map(async (student) => {
-              try {
-                const result = await api.getStudentPrediction(student.user_id);
-                const prediction = result.prediction;
-                if (!prediction) return null;
+        // Always load live predictions for risk — same source as Students List / Early Alerts.
+        const predictionEntries = await Promise.all(
+          visibleStudents.map(async (student) => {
+            try {
+              const result = await api.getStudentPrediction(student.user_id);
+              return [student.user_id, result.prediction || null];
+            } catch {
+              return [student.user_id, null];
+            }
+          }),
+        );
+        const livePredictions = Object.fromEntries(predictionEntries);
 
-                return {
-                  student_id: student.student_id,
-                  year_level: student.yearLevel || student.year_level,
-                  current_gpa: prediction.current_gpa,
-                  predicted_gpa: prediction.predicted_gpa,
-                  risk_level: prediction.risk_level || student.risk_level,
-                };
-              } catch {
-                return null;
-              }
-            }),
-          );
-          rows = predictionResults.filter(Boolean);
+        if (rows.length === 0) {
+          rows = visibleStudents
+            .map((student) => {
+              const prediction = livePredictions[student.user_id];
+              if (!prediction) return null;
+              return {
+                student_id: student.student_id,
+                user_id: student.user_id,
+                year_level: student.yearLevel || student.year_level,
+                current_gpa: prediction.current_gpa,
+                predicted_gpa: prediction.predicted_gpa,
+                risk_level:
+                  normalizeRiskLabel(prediction.risk_level) ||
+                  normalizeRiskLabel(student.risk_level) ||
+                  "Low",
+              };
+            })
+            .filter(Boolean);
         }
 
         const scopedRows = isAdmin
@@ -138,11 +159,13 @@ const DashboardOverview = () => {
             );
 
         if (isMounted) {
+          setPredictionsByUserId(livePredictions);
           setPerformanceRows(scopedRows);
         }
       } catch (error) {
         if (isMounted) {
           setPerformanceRows([]);
+          setPredictionsByUserId({});
           setMetricsError(error.message || "Unable to load GPA trend metrics.");
         }
       } finally {
@@ -174,22 +197,32 @@ const DashboardOverview = () => {
         .trim()
         .toLowerCase();
       const row = predictionByStudentId.get(key);
+      const livePrediction = predictionsByUserId[student.user_id] || null;
+
+      // Prefer live prediction risk (same as Early Alerts / Students List).
+      const riskLevel =
+        normalizeRiskLabel(livePrediction?.risk_level) ||
+        normalizeRiskLabel(row?.risk_level) ||
+        normalizeRiskLabel(student.risk_level) ||
+        "Low";
 
       return {
         ...student,
         current_gpa:
+          livePrediction?.current_gpa ??
           row?.current_gpa ??
           (Number(student.current_gpa) > 0 ? student.current_gpa : null),
         predicted_gpa:
+          livePrediction?.predicted_gpa ??
           row?.predicted_gpa ??
           (Number(student.predicted_gpa) > 0 ? student.predicted_gpa : null),
-        risk_level: row?.risk_level || student.risk_level || "Low",
+        risk_level: riskLevel,
         yearLevel: normalizeYearLevel(
           row?.year_level || student.yearLevel || student.year_level,
         ),
       };
     });
-  }, [performanceRows, safeStudents]);
+  }, [performanceRows, predictionsByUserId, safeStudents]);
 
   const riskCounts = {
     Low: enrichedStudents.filter((s) => s.risk_level === "Low").length,
