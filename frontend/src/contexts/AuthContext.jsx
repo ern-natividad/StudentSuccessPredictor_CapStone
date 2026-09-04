@@ -45,12 +45,13 @@ export const AuthProvider = ({ children }) => {
           isAuthenticated: true,
           twoFactorEnabled: profile.twoFactorEnabled,
           profilePicture: profile.profilePicture || null,
+          program: profile.program || "",
         });
       } catch {
         if (cancelled) return;
         sessionStorage.removeItem("authToken");
         clearUserSession();
-        setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false });
+        setUser({ name: "", role: "student", email: "", isAuthenticated: false, twoFactorEnabled: false, program: "" });
       }
     })();
 
@@ -70,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated: true,
       twoFactorEnabled: backendUser.twoFactorEnabled,
       profilePicture: backendUser.profilePicture || null,
+      program: backendUser.program || "",
     });
   };
 

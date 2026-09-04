@@ -92,6 +92,30 @@ const AccountSettingsPage = () => {
     setProfileProgram(user?.program || "");
   }, [user?.program]);
 
+  // Students: refresh assigned program from server (student_info) on page load.
+  useEffect(() => {
+    if (user?.role !== "student" || !user?.isAuthenticated) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await api.getMe();
+        if (cancelled) return;
+        const assignedProgram = profile.program || "";
+        setProfileProgram(assignedProgram);
+        if (typeof updateUserFields === "function") {
+          updateUserFields({ program: assignedProgram });
+        }
+      } catch {
+        // Keep whatever is already in session if refresh fails.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role, user?.isAuthenticated, updateUserFields]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, roleFilter]);
@@ -317,71 +341,103 @@ const AccountSettingsPage = () => {
         <div>
           <h1 className={styles.pageTitle}>Security & Account Settings</h1>
           <p className={styles.pageSubtitle}>
-            Manage your program, password, two-factor authentication, and account security for your HawksPredict profile.
+            Manage your password, two-factor authentication, and account security for your HawksPredict profile.
           </p>
         </div>
         
       </div>
 
-      {/* Profile Program — available to all roles */}
+      {/* Profile Program — students view only; staff/admin can edit their own */}
       <div className={styles.contentCard}>
         <div className={styles.contentCardHeader}>
           <div>
             <div className={styles.contentCardEyebrow}>Profile</div>
             <div className={styles.contentCardTitle}>Engineering Program</div>
             <p className={styles.contentCardMeta}>
-              Select the engineering program associated with your account. Admins
-              manage the available list in Curriculum Manager → Manage Program.
+              {user?.role === "student"
+                ? "Your program is assigned by staff or an administrator. You can view it here, but only they can change it."
+                : "Select the engineering program associated with your account. Admins manage the available list in Curriculum Manager → Manage Program."}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSaveProgram} style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "13px",
-              fontWeight: "700",
-              color: "#475569",
-              marginBottom: "0.35rem",
-            }}
-          >
-            Program
-          </label>
-          <select
-            value={profileProgram}
-            onChange={(e) => setProfileProgram(e.target.value)}
-            disabled={programsLoading || programSaving}
-            style={{
-              width: "100%",
-              padding: "0.65rem 0.75rem",
-              borderRadius: "8px",
-              border: "1px solid #d8e0ea",
-              fontSize: "14px",
-              boxSizing: "border-box",
-              backgroundColor: "#ffffff",
-            }}
-          >
-            <option value="">Select a program</option>
-            {programNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-            {profileProgram && !programNames.includes(profileProgram) ? (
-              <option value={profileProgram}>{profileProgram}</option>
-            ) : null}
-          </select>
+        {user?.role === "student" ? (
+          <div style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "700",
+                color: "#475569",
+                marginBottom: "0.35rem",
+              }}
+            >
+              Program
+            </label>
+            <div
+              style={{
+                width: "100%",
+                padding: "0.65rem 0.75rem",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "#f8fafc",
+                color: profileProgram ? "#0f172a" : "#64748b",
+                fontWeight: 600,
+              }}
+            >
+              {profileProgram || "No program assigned yet"}
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveProgram} style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "700",
+                color: "#475569",
+                marginBottom: "0.35rem",
+              }}
+            >
+              Program
+            </label>
+            <select
+              value={profileProgram}
+              onChange={(e) => setProfileProgram(e.target.value)}
+              disabled={programsLoading || programSaving}
+              style={{
+                width: "100%",
+                padding: "0.65rem 0.75rem",
+                borderRadius: "8px",
+                border: "1px solid #d8e0ea",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <option value="">Select a program</option>
+              {programNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+              {profileProgram && !programNames.includes(profileProgram) ? (
+                <option value={profileProgram}>{profileProgram}</option>
+              ) : null}
+            </select>
 
-          <button
-            type="submit"
-            disabled={programSaving || programsLoading}
-            className={moduleStyles.primaryButton}
-            style={{ marginTop: "1rem" }}
-          >
-            {programSaving ? "Saving..." : "Save Program"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={programSaving || programsLoading}
+              className={moduleStyles.primaryButton}
+              style={{ marginTop: "1rem" }}
+            >
+              {programSaving ? "Saving..." : "Save Program"}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Change Password — available to all roles */}

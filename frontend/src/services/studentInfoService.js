@@ -22,14 +22,31 @@ export const upsertStudentInfo = async (userId, updates) => {
     .maybeSingle();
 
   if (updateError) throw updateError;
-  if (updated) return updated;
 
-  const { data: inserted, error: insertError } = await supabase
-    .from("student_info")
-    .insert(payload)
-    .select(STUDENT_INFO_COLUMNS)
-    .single();
+  let record = updated;
+  if (!record) {
+    const { data: inserted, error: insertError } = await supabase
+      .from("student_info")
+      .insert(payload)
+      .select(STUDENT_INFO_COLUMNS)
+      .single();
 
-  if (insertError) throw insertError;
-  return inserted;
+    if (insertError) throw insertError;
+    record = inserted;
+  }
+
+  // Keep the student profile program in sync with staff/admin assignment.
+  const { error: userProgramError } = await supabase
+    .from("users")
+    .update({ program: payload.program })
+    .eq("id", userId);
+
+  if (userProgramError) {
+    console.warn(
+      "Unable to sync users.program from student_info:",
+      userProgramError.message,
+    );
+  }
+
+  return record;
 };
