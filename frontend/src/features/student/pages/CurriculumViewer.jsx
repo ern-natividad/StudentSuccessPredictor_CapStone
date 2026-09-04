@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
+import { usePrograms } from "../../../hooks/usePrograms";
 import { supabase } from "../../../lib/supabaseClient";
 import { getPublishedCurricula } from "../../../services/curriculumService";
 import CurriculumAppraisalSheet from "../../admin/components/CurriculumAppraisalSheet";
@@ -29,6 +30,7 @@ const moduleLinks = [
 
 const CurriculumViewer = () => {
   const toast = useToast();
+  const { programNames } = usePrograms();
   const [published, setPublished] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterProgram, setFilterProgram] = useState("");
@@ -208,17 +210,14 @@ const CurriculumViewer = () => {
               onChange={(e) => setFilterProgram(e.target.value)}
             >
               <option value="">All Programs</option>
-              <option value="Civil Engineering">Civil Engineering</option>
-              <option value="Electrical Engineering">
-                Electrical Engineering
-              </option>
-              <option value="Industrial Engineering">
-                Industrial Engineering
-              </option>
-              <option value="Computer Engineering">Computer Engineering</option>
-              <option value="Mechanical Engineering">
-                Mechanical Engineering
-              </option>
+              {programNames.map((programName) => (
+                <option key={programName} value={programName}>
+                  {programName}
+                </option>
+              ))}
+              {filterProgram && !programNames.includes(filterProgram) ? (
+                <option value={filterProgram}>{filterProgram}</option>
+              ) : null}
             </select>
           </div>
         </div>

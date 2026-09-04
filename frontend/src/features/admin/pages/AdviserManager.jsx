@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useToast } from "../../../components/Common/Toast";
+import { usePrograms } from "../../../hooks/usePrograms";
 import { upsertAdviserInfo } from "../../../services/adviserInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
 import {
@@ -21,15 +22,6 @@ import commonStyles from "../../../styles/Common.module.css";
 const STORAGE_KEY_REMOVED_ROWS = "adviser_overview_removed_ids";
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const DEFAULT_SECTION_OPTIONS = ["A", "B", "C"];
-const PROGRAM_OPTIONS = [
-  ALL_PROGRAMS_OPTION,
-  "Civil Engineering",
-  "Electrical Engineering",
-  "Industrial Engineering",
-  "Computer Engineering",
-  "Mechanical Engineering",
-  "Geodetic Engineering",
-];
 
 const countStudentsForAdviser = (
   studentList,
@@ -58,12 +50,18 @@ const AdviserManager = () => {
     directoryError,
   } = useDashboard();
 
+  const { programNames } = usePrograms();
+  const programOptions = useMemo(
+    () => [ALL_PROGRAMS_OPTION, ...programNames],
+    [programNames],
+  );
+
   const [selectedEditRowId, setSelectedEditRowId] = useState(null);
   const [viewSectionId, setViewSectionId] = useState(null);
   const [editStaffId, setEditStaffId] = useState(staffMembers[0]?.id || "");
   const [editSectionIds, setEditSectionIds] = useState(["A"]);
   const [editYearAssigned, setEditYearAssigned] = useState(YEAR_LEVEL_OPTIONS[0]);
-  const [editProgram, setEditProgram] = useState(PROGRAM_OPTIONS[0]);
+  const [editProgram, setEditProgram] = useState(ALL_PROGRAMS_OPTION);
   const [editRole, setEditRole] = useState("Adviser");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
@@ -72,7 +70,7 @@ const AdviserManager = () => {
   const [newTeacherYearAssigned, setNewTeacherYearAssigned] = useState(
     YEAR_LEVEL_OPTIONS[0],
   );
-  const [newTeacherProgram, setNewTeacherProgram] = useState(PROGRAM_OPTIONS[0]);
+  const [newTeacherProgram, setNewTeacherProgram] = useState(ALL_PROGRAMS_OPTION);
   const [isSaving, setIsSaving] = useState(false);
   const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
 
@@ -227,7 +225,7 @@ const AdviserManager = () => {
     setNewTeacherRole("Adviser");
     setNewTeacherSectionIds(["A"]);
     setNewTeacherYearAssigned(YEAR_LEVEL_OPTIONS[0]);
-    setNewTeacherProgram(PROGRAM_OPTIONS[0]);
+    setNewTeacherProgram(ALL_PROGRAMS_OPTION);
     setIsAddModalOpen(true);
   };
 
@@ -980,7 +978,7 @@ const AdviserManager = () => {
                     width: "100%",
                   }}
                 >
-                  {PROGRAM_OPTIONS.map((option) => (
+                  {programOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>

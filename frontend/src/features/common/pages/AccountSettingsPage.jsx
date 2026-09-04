@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useToast } from "../../../components/Common/Toast";
+import { usePrograms } from "../../../hooks/usePrograms";
 import { api } from "../../../services/api";
 import { getUserDirectory } from "../../../services/userDirectory";
 import styles from "../../../styles/Dashboard.module.css";
@@ -11,6 +12,7 @@ const AccountSettingsPage = () => {
   const toast = useToast();
   const user = authContext.user;
   const updateUserFields = authContext.updateUserFields;
+  const { programNames, loading: programsLoading } = usePrograms();
 
   // Extract token from context or fallback session sources
   const token =
@@ -38,6 +40,10 @@ const AccountSettingsPage = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+
+  // Profile program (all roles)
+  const [profileProgram, setProfileProgram] = useState(user?.program || "");
+  const [programSaving, setProgramSaving] = useState(false);
 
   // Account Removal States (Admin Only)
   const [manageableUsers, setManageableUsers] = useState([]);
@@ -81,6 +87,10 @@ const AccountSettingsPage = () => {
   useEffect(() => {
     if (user?.role === "admin") loadManageableAccounts();
   }, [user?.role, loadManageableAccounts]);
+
+  useEffect(() => {
+    setProfileProgram(user?.program || "");
+  }, [user?.program]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -132,6 +142,34 @@ const AccountSettingsPage = () => {
     setConfirmPassword("");
     setShowCurrentPassword(false);
     setShowNewPassword(false);
+  };
+
+  const handleSaveProgram = async (e) => {
+    e.preventDefault();
+    const fullName = user?.fullName || user?.full_name || user?.name || "";
+    if (!fullName) {
+      notifyError("Your profile name is missing. Please refresh and try again.");
+      return;
+    }
+
+    try {
+      setProgramSaving(true);
+      const updated = await api.updateProfile({
+        fullName,
+        program: profileProgram || null,
+      });
+      if (typeof updateUserFields === "function") {
+        updateUserFields({
+          program: updated.program || "",
+          fullName: updated.fullName,
+        });
+      }
+      toast.success("Program updated.");
+    } catch (err) {
+      notifyError(err.message || "Unable to update program.");
+    } finally {
+      setProgramSaving(false);
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -279,10 +317,71 @@ const AccountSettingsPage = () => {
         <div>
           <h1 className={styles.pageTitle}>Security & Account Settings</h1>
           <p className={styles.pageSubtitle}>
-            Manage your password, two-factor authentication, and account security for your HawksPredict profile.
+            Manage your program, password, two-factor authentication, and account security for your HawksPredict profile.
           </p>
         </div>
         
+      </div>
+
+      {/* Profile Program — available to all roles */}
+      <div className={styles.contentCard}>
+        <div className={styles.contentCardHeader}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Profile</div>
+            <div className={styles.contentCardTitle}>Engineering Program</div>
+            <p className={styles.contentCardMeta}>
+              Select the engineering program associated with your account. Admins
+              manage the available list in Curriculum Manager → Manage Program.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveProgram} style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: "700",
+              color: "#475569",
+              marginBottom: "0.35rem",
+            }}
+          >
+            Program
+          </label>
+          <select
+            value={profileProgram}
+            onChange={(e) => setProfileProgram(e.target.value)}
+            disabled={programsLoading || programSaving}
+            style={{
+              width: "100%",
+              padding: "0.65rem 0.75rem",
+              borderRadius: "8px",
+              border: "1px solid #d8e0ea",
+              fontSize: "14px",
+              boxSizing: "border-box",
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <option value="">Select a program</option>
+            {programNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+            {profileProgram && !programNames.includes(profileProgram) ? (
+              <option value={profileProgram}>{profileProgram}</option>
+            ) : null}
+          </select>
+
+          <button
+            type="submit"
+            disabled={programSaving || programsLoading}
+            className={moduleStyles.primaryButton}
+            style={{ marginTop: "1rem" }}
+          >
+            {programSaving ? "Saving..." : "Save Program"}
+          </button>
+        </form>
       </div>
 
       {/* Change Password — available to all roles */}

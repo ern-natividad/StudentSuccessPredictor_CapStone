@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useToast } from "../../../components/Common/Toast";
+import { usePrograms } from "../../../hooks/usePrograms";
 import { api } from "../../../services/api";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
@@ -31,14 +32,6 @@ const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
 const GRADE_VALUE_OPTIONS = ["1", "2", "3", "INC", "5"];
 const REMARKS_OPTIONS = ["Pass", "Fail", "INC"];
-const PROGRAM_OPTIONS = [
-  "Civil Engineering",
-  "Electrical Engineering",
-  "Industrial Engineering",
-  "Computer Engineering",
-  "Mechanical Engineering",
-  "Geodetic Engineering",
-];
 
 const createEmptyGradeForm = () => ({
   subjectCode: "",
@@ -89,10 +82,10 @@ const normalizeRemarksValue = (value) => {
   return "Pass";
 };
 
-const createEmptyStudentInfoForm = () => ({
+const createEmptyStudentInfoForm = (defaultProgram = "") => ({
   student_id: "",
   department: "Engineering",
-  program: PROGRAM_OPTIONS[0],
+  program: defaultProgram,
   section: "",
   year_level: YEAR_LEVEL_OPTIONS[0],
   risk_level: "Low",
@@ -104,6 +97,7 @@ const getStudentSectionLabel = (student, getSectionById) =>
 const StudentManagementPage = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const { programNames } = usePrograms();
   const {
     students,
     staffMembers,
@@ -283,9 +277,9 @@ const StudentManagementPage = () => {
 
     const resolvedProgram =
       student.program ||
-      (PROGRAM_OPTIONS.includes(student.department)
+      (programNames.includes(student.department)
         ? student.department
-        : PROGRAM_OPTIONS[0]);
+        : programNames[0] || "");
 
     setSelectedStudentId(studentId);
     setStudentInfoForm({
@@ -1726,11 +1720,17 @@ const StudentManagementPage = () => {
                     width: "100%",
                   }}
                 >
-                  {PROGRAM_OPTIONS.map((option) => (
+                  {programNames.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
                   ))}
+                  {studentInfoForm.program &&
+                  !programNames.includes(studentInfoForm.program) ? (
+                    <option value={studentInfoForm.program}>
+                      {studentInfoForm.program}
+                    </option>
+                  ) : null}
                 </select>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
                   Choose which engineering program this student belongs to.

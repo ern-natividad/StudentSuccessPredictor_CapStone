@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { useAuth } from "../../../hooks/useAuth";
+import { usePrograms } from "../../../hooks/usePrograms";
 import {
   getAllCurricula,
   createCurriculum,
@@ -30,14 +31,6 @@ const moduleLinks = [
   { key: "ai-advising", label: "AI Advising", path: "/modules/ai-advising" },
 ];
 
-const INITIAL_PROGRAM_OPTIONS = [
-  "Civil Engineering",
-  "Electrical Engineering",
-  "Industrial Engineering",
-  "Computer Engineering",
-  "Mechanical Engineering",
-];
-
 const INITIAL_ACADEMIC_YEARS = [
   "2024-2025",
   "2025-2026",
@@ -60,16 +53,23 @@ const readFilesAsDataUrl = (files) => {
 const CurriculumManager = () => {
   const toast = useToast();
   const { user } = useAuth();
+  const {
+    programs,
+    programNames,
+    loading: programsLoading,
+    addProgram,
+    editProgram,
+    removeProgram,
+  } = usePrograms();
 
   // Dynamic state for dropdown options
   const [academicYearOptions, setAcademicYearOptions] = useState(INITIAL_ACADEMIC_YEARS);
-  const [programOptions, setProgramOptions] = useState(INITIAL_PROGRAM_OPTIONS);
 
   // Form field states
   const [title, setTitle] = useState("");
   const [academicYear, setAcademicYear] = useState(INITIAL_ACADEMIC_YEARS[1]);
   const [department, setDepartment] = useState("Engineering");
-  const [program, setProgram] = useState(INITIAL_PROGRAM_OPTIONS[0]);
+  const [program, setProgram] = useState("");
   const [status, setStatus] = useState("Draft");
   const [attachments, setAttachments] = useState([]);
   const [curricula, setCurricula] = useState([]);
@@ -94,6 +94,11 @@ const CurriculumManager = () => {
   const [curriculumToView, setCurriculumToView] = useState(null);
   const [isManageProgramsOpen, setIsManageProgramsOpen] = useState(false);
   const [newProgramName, setNewProgramName] = useState("");
+  const [newProgramCode, setNewProgramCode] = useState("");
+  const [editingProgramId, setEditingProgramId] = useState(null);
+  const [editingProgramName, setEditingProgramName] = useState("");
+  const [editingProgramCode, setEditingProgramCode] = useState("");
+  const [isSavingProgram, setIsSavingProgram] = useState(false);
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -118,13 +123,8 @@ const CurriculumManager = () => {
 
       if (Array.isArray(data)) {
         const fetchedAYs = data.map((c) => c.academicYear).filter(Boolean);
-        const fetchedPrograms = data.map((c) => c.program).filter(Boolean);
-
         setAcademicYearOptions((prev) =>
           Array.from(new Set([...prev, ...fetchedAYs]))
-        );
-        setProgramOptions((prev) =>
-          Array.from(new Set([...prev, ...fetchedPrograms]))
         );
       }
     } catch (err) {
@@ -139,10 +139,18 @@ const CurriculumManager = () => {
     loadCurricula();
   }, []);
 
+  useEffect(() => {
+    if (!program && programNames.length > 0) {
+      setProgram(programNames[0]);
+    } else if (program && programNames.length > 0 && !programNames.includes(program)) {
+      setProgram(programNames[0]);
+    }
+  }, [program, programNames]);
+
   const publishProgramOptions = useMemo(() => {
     const fromList = curricula.map((c) => c.program).filter(Boolean);
-    return ["All", ...Array.from(new Set([...programOptions, ...fromList]))];
-  }, [curricula, programOptions]);
+    return ["All", ...Array.from(new Set([...programNames, ...fromList]))];
+  }, [curricula, programNames]);
 
   const filteredPublishedCurricula = useMemo(() => {
     const query = publishSearch.trim().toLowerCase();
@@ -184,63 +192,111 @@ const CurriculumManager = () => {
     setProgram(e.target.value);
   };
 
-  const handleAddProgram = (e) => {
+  const handleAddProgram = async (e) => {
     e.preventDefault();
     const val = newProgramName.trim();
+    const code = newProgramCode.trim();
 
     if (!val) {
       toast.error("Program name cannot be empty.");
       return;
     }
 
-    if (programOptions.includes(val)) {
-      toast.error(`"${val}" is already in the program list.`);
-      return;
+    try {
+      setIsSavingProgram(true);
+      await addProgram({ name: val, code });
+      setProgram(val);
+      setNewProgramName("");
+      setNewProgramCode("");
+      toast.success(`Program "${val}" added.`);
+    } catch (err) {
+      toast.error(err.message || "Unable to add program.");
+    } finally {
+      setIsSavingProgram(false);
     }
-
-    setProgramOptions((prev) => [...prev, val]);
-    setProgram(val);
-    setNewProgramName("");
-    toast.success(`Program "${val}" added.`);
   };
 
-  const handleDeleteProgram = (programName) => {
-    if (!programOptions.includes(programName)) {
-      toast.error("That program is not in the list.");
+  const startEditProgram = (programRow) => {
+    setEditingProgramId(programRow.id);
+    setEditingProgramName(programRow.name || "");
+    setEditingProgramCode(programRow.code || "");
+  };
+
+  const cancelEditProgram = () => {
+    setEditingProgramId(null);
+    setEditingProgramName("");
+    setEditingProgramCode("");
+  };
+
+  const handleSaveProgramEdit = async () => {
+    const name = editingProgramName.trim();
+    if (!editingProgramId || !name) {
+      toast.error("Program name cannot be empty.");
       return;
     }
 
-    if (programOptions.length <= 1) {
+    try {
+      setIsSavingProgram(true);
+      const previous = programs.find((row) => row.id === editingProgramId);
+      await editProgram(editingProgramId, {
+        name,
+        code: editingProgramCode.trim(),
+      });
+      if (previous?.name && program === previous.name) {
+        setProgram(name);
+      }
+      if (previous?.name && publishProgramFilter === previous.name) {
+        setPublishProgramFilter(name);
+      }
+      cancelEditProgram();
+      toast.success(`Program updated to "${name}".`);
+    } catch (err) {
+      toast.error(err.message || "Unable to update program.");
+    } finally {
+      setIsSavingProgram(false);
+    }
+  };
+
+  const handleDeleteProgram = async (programRow) => {
+    if (!programRow?.id) return;
+
+    if (programs.length <= 1) {
       toast.error("At least one program must remain available.");
       return;
     }
 
-    const inUseCount = curricula.filter((c) => c.program === programName).length;
+    const inUseCount = curricula.filter((c) => c.program === programRow.name).length;
     if (inUseCount > 0) {
       toast.error(
-        `Cannot delete "${programName}" because ${inUseCount} curriculum record${
+        `Cannot delete "${programRow.name}" because ${inUseCount} curriculum record${
           inUseCount === 1 ? " is" : "s are"
         } still assigned to it.`,
       );
       return;
     }
 
-    const remaining = programOptions.filter((p) => p !== programName);
-    setProgramOptions(remaining);
-
-    if (program === programName) {
-      setProgram(remaining[0] || INITIAL_PROGRAM_OPTIONS[0]);
+    try {
+      setIsSavingProgram(true);
+      await removeProgram(programRow.id);
+      if (program === programRow.name) {
+        setProgram(programNames.find((name) => name !== programRow.name) || "");
+      }
+      if (publishProgramFilter === programRow.name) {
+        setPublishProgramFilter("All");
+      }
+      toast.success(`Program "${programRow.name}" deleted.`);
+    } catch (err) {
+      toast.error(err.message || "Unable to delete program.");
+    } finally {
+      setIsSavingProgram(false);
     }
-    if (publishProgramFilter === programName) {
-      setPublishProgramFilter("All");
-    }
-
-    toast.success(`Program "${programName}" deleted.`);
   };
 
   const closeManagePrograms = () => {
     setIsManageProgramsOpen(false);
     setNewProgramName("");
+    setNewProgramCode("");
+    cancelEditProgram();
   };
 
   // Modal Submit Handler
@@ -272,7 +328,7 @@ const CurriculumManager = () => {
     setAcademicYear(academicYearOptions[0] || "2025-2026");
     setCourses([]);
     setDepartment("Engineering");
-    setProgram(programOptions[0] || INITIAL_PROGRAM_OPTIONS[0]);
+    setProgram(programNames[0] || "");
     setStatus("Draft");
     setAttachments([]);
     setEditingId(null);
@@ -443,16 +499,13 @@ const CurriculumManager = () => {
     if (c.academicYear && !academicYearOptions.includes(c.academicYear)) {
       setAcademicYearOptions((prev) => [...prev, c.academicYear]);
     }
-    if (c.program && !programOptions.includes(c.program)) {
-      setProgramOptions((prev) => [...prev, c.program]);
-    }
 
     setEditingId(c.id);
     setTitle(c.title || "");
     setAcademicYear(c.academicYear || academicYearOptions[0]);
     setCourses(c.courses || []);
     setDepartment(c.department || "Engineering");
-    setProgram(c.program || programOptions[0]);
+    setProgram(c.program || programNames[0] || "");
     setAttachments(c.attachments || []);
     setStatus(c.status || "Draft");
     resetCourseForm();
@@ -631,11 +684,14 @@ const CurriculumManager = () => {
                 value={program}
                 onChange={handleProgramChange}
               >
-                {programOptions.map((p) => (
+                {programNames.map((p) => (
                   <option key={p} value={p}>
                     {p}
                   </option>
                 ))}
+                {program && !programNames.includes(program) ? (
+                  <option value={program}>{program}</option>
+                ) : null}
               </select>
             </div>
           </div>
@@ -1398,14 +1454,16 @@ const CurriculumManager = () => {
                 lineHeight: 1.45,
               }}
             >
-              Add or remove programs available in the curriculum form. Programs with
-              existing curriculum records cannot be deleted.
+              Add, edit, or remove engineering programs. Changes are saved to the
+              shared programs catalog used across profiles, curriculum, advisers,
+              and student management. Programs still in use cannot be deleted.
             </p>
 
             <form
               onSubmit={handleAddProgram}
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "1fr 120px auto",
                 gap: "10px",
                 marginBottom: "20px",
               }}
@@ -1413,14 +1471,22 @@ const CurriculumManager = () => {
               <input
                 type="text"
                 className={styles.formInput}
-                placeholder="e.g., Software Engineering"
+                placeholder="Program name (e.g., Software Engineering)"
                 value={newProgramName}
                 onChange={(e) => setNewProgramName(e.target.value)}
-                style={{ flex: 1 }}
                 aria-label="New program name"
+              />
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="Code"
+                value={newProgramCode}
+                onChange={(e) => setNewProgramCode(e.target.value)}
+                aria-label="New program code"
               />
               <button
                 type="submit"
+                disabled={isSavingProgram || programsLoading}
                 style={{
                   backgroundColor: "#800000",
                   color: "#ffffff",
@@ -1429,11 +1495,12 @@ const CurriculumManager = () => {
                   padding: "10px 16px",
                   fontWeight: "600",
                   fontSize: "0.875rem",
-                  cursor: "pointer",
+                  cursor: isSavingProgram ? "not-allowed" : "pointer",
                   whiteSpace: "nowrap",
+                  opacity: isSavingProgram ? 0.75 : 1,
                 }}
               >
-                Add Program
+                {isSavingProgram ? "Saving..." : "Add"}
               </button>
             </form>
 
@@ -1445,7 +1512,7 @@ const CurriculumManager = () => {
                 marginBottom: "20px",
               }}
             >
-              {programOptions.length === 0 ? (
+              {programsLoading ? (
                 <div
                   style={{
                     padding: "16px",
@@ -1454,12 +1521,23 @@ const CurriculumManager = () => {
                     textAlign: "center",
                   }}
                 >
-                  No programs available.
+                  Loading programs…
+                </div>
+              ) : programs.length === 0 ? (
+                <div
+                  style={{
+                    padding: "16px",
+                    color: "#64748b",
+                    fontSize: "0.9rem",
+                    textAlign: "center",
+                  }}
+                >
+                  No programs available. Add one above.
                 </div>
               ) : (
-                programOptions.map((p, index) => (
+                programs.map((row, index) => (
                   <div
-                    key={p}
+                    key={row.id}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1470,41 +1548,131 @@ const CurriculumManager = () => {
                       backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "0.925rem",
-                        fontWeight: "600",
-                        color: "#0f172a",
-                      }}
-                    >
-                      {p}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProgram(p)}
-                      title={`Delete ${p}`}
-                      aria-label={`Delete ${p}`}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "8px",
-                        border: "1px solid #fecaca",
-                        backgroundColor: "#ffffff",
-                        color: "#ef4444",
-                        cursor: "pointer",
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = "#fef2f2";
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = "#ffffff";
-                      }}
-                    >
-                      <i className="fas fa-trash-can" aria-hidden="true" />
-                    </button>
+                    {editingProgramId === row.id ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 100px",
+                          gap: "8px",
+                          flex: 1,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          className={styles.formInput}
+                          value={editingProgramName}
+                          onChange={(e) => setEditingProgramName(e.target.value)}
+                          aria-label="Edit program name"
+                        />
+                        <input
+                          type="text"
+                          className={styles.formInput}
+                          value={editingProgramCode}
+                          onChange={(e) => setEditingProgramCode(e.target.value)}
+                          aria-label="Edit program code"
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: "0.925rem",
+                            fontWeight: "600",
+                            color: "#0f172a",
+                          }}
+                        >
+                          {row.name}
+                        </div>
+                        {row.code ? (
+                          <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                            Code: {row.code}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      {editingProgramId === row.id ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleSaveProgramEdit}
+                            disabled={isSavingProgram}
+                            title="Save program"
+                            aria-label={`Save ${row.name}`}
+                            style={{
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              border: "1px solid #bbf7d0",
+                              backgroundColor: "#ffffff",
+                              color: "#15803d",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <i className="fas fa-check" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditProgram}
+                            title="Cancel edit"
+                            aria-label="Cancel edit"
+                            style={{
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              backgroundColor: "#ffffff",
+                              color: "#64748b",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <i className="fas fa-xmark" aria-hidden="true" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEditProgram(row)}
+                            title={`Edit ${row.name}`}
+                            aria-label={`Edit ${row.name}`}
+                            style={{
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              backgroundColor: "#ffffff",
+                              color: "#334155",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <i className="fas fa-pen-to-square" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProgram(row)}
+                            disabled={isSavingProgram}
+                            title={`Delete ${row.name}`}
+                            aria-label={`Delete ${row.name}`}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "34px",
+                              height: "34px",
+                              borderRadius: "8px",
+                              border: "1px solid #fecaca",
+                              backgroundColor: "#ffffff",
+                              color: "#ef4444",
+                              cursor: isSavingProgram ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            <i className="fas fa-trash-can" aria-hidden="true" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
