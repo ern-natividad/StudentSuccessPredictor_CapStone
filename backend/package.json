@@ -6,6 +6,7 @@
   "description": "Express + Supabase backend adding account lockout, Google Authenticator MFA, and audit logging to HawkPredict.",
   "scripts": {
     "start": "node src/server.js",
+    "start:keep": "node scripts/keepAlive.mjs",
     "dev": "node --watch src/server.js",
     "test": "node --test test/**/*.test.js"
   },

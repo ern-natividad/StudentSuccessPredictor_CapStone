@@ -151,17 +151,15 @@ export const buildOfflineAdvisingReply = (
   ].join("\n");
 };
 
-/** Prefer configured model, then stable Flash fallbacks that this API key can call. */
+/** Prefer configured model, then proven Flash fallbacks for this API key. */
 export const buildGeminiModelCandidates = (preferredModel) => {
   const preferred = String(preferredModel || "").trim();
   const fallbacks = [
     "gemini-3.6-flash",
     "gemini-3.5-flash",
+    "gemini-3-flash-preview",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
-    "gemini-3-flash-preview",
-    "gemini-flash-lite-latest",
-    "gemini-flash-latest",
   ];
 
   return [...new Set([preferred, ...fallbacks].filter(Boolean))];
@@ -195,11 +193,20 @@ export const sendAdvisingChatMessage = async ({
         return { result, modelName };
       } catch (error) {
         lastError = error;
+        const unavailable = isModelUnavailableError(error);
         const canFallback = shouldFallbackGeminiModel(error);
         const hasMoreAttempts = attempt < maxAttemptsPerModel;
         const hasMoreModels = modelIndex < candidates.length - 1;
 
-        if (canFallback && hasMoreAttempts) {
+        // 404 / invalid model: skip retries and move on immediately.
+        if (unavailable && hasMoreModels) {
+          console.warn(
+            `[advising] Model "${modelName}" not available; trying next fallback.`,
+          );
+          break;
+        }
+
+        if (canFallback && hasMoreAttempts && !unavailable) {
           console.warn(
             `[advising] Model "${modelName}" attempt ${attempt} failed (${error?.status || error?.message}); retrying...`,
           );

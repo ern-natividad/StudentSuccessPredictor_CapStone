@@ -106,3 +106,12 @@ server.on("error", (error) => {
   console.error(error);
   process.exit(1);
 });
+
+// Keep the process alive through unexpected async failures (e.g. Gemini).
+process.on("uncaughtException", (error) => {
+  console.error("[uncaughtException] Backend will keep running:", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection] Backend will keep running:", reason);
+});
