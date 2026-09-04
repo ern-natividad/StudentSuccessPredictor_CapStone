@@ -1,14 +1,17 @@
 import { supabase } from "../config/supabaseClient.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
+const GRADE_SELECT_COLUMNS =
+  "id, user_id, subject_code, subject_name, semester, school_year, grade, remarks, created_at";
+
 const parseGrade = (value) => {
   const raw = String(value ?? "")
     .trim()
     .toUpperCase();
 
-  if (raw === "INC") return "INC";
-  if (raw === "1" || raw === "2" || raw === "3" || raw === "5") {
-    return Number(raw);
+  // Always store as text so INC and numeric grades share one column type.
+  if (raw === "INC" || raw === "1" || raw === "2" || raw === "3" || raw === "5") {
+    return raw;
   }
 
   throw new HttpError(400, "Grade must be 1, 2, 3, INC, or 5.");
@@ -27,15 +30,35 @@ const normalizeSemester = (value) => {
   throw new HttpError(400, "Semester must be 1, 2, or S.");
 };
 
+const normalizeSchoolYear = (value) => {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})\s*[-–/]\s*(\d{4})$/);
+  if (!match) {
+    throw new HttpError(400, "School year must use the format YYYY-YYYY (e.g. 2025-2026).");
+  }
+
+  const start = Number(match[1]);
+  const end = Number(match[2]);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end !== start + 1) {
+    throw new HttpError(400, "School year end must be one year after the start (e.g. 2025-2026).");
+  }
+
+  return `${start}-${end}`;
+};
+
 const validateGradePayload = (payload) => {
+  const subject_code = payload.subject_code?.trim() || null;
   const subject_name = payload.subject_name?.trim();
   const semester = payload.semester?.trim();
-  if (!subject_name || !semester) {
-    throw new HttpError(400, "Subject name and semester are required.");
+  const school_year = payload.school_year?.trim();
+  if (!subject_name || !semester || !school_year) {
+    throw new HttpError(400, "Subject name, semester, and school year are required.");
   }
   return {
+    subject_code,
     subject_name,
     semester: normalizeSemester(semester),
+    school_year: normalizeSchoolYear(school_year),
     grade: parseGrade(payload.grade),
     remarks: payload.remarks?.trim() || null,
   };
@@ -49,7 +72,7 @@ export const getStudentGrades = async (req, res) => {
 
   const { data, error } = await supabase
     .from("student_grades")
-    .select("id, user_id, subject_name, semester, grade, remarks, created_at")
+    .select(GRADE_SELECT_COLUMNS)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -74,7 +97,7 @@ export const createStudentGrade = async (req, res) => {
   const { data, error } = await supabase
     .from("student_grades")
     .insert({ user_id: userId, ...grade })
-    .select("id, user_id, subject_name, semester, grade, remarks, created_at")
+    .select(GRADE_SELECT_COLUMNS)
     .single();
   if (error) throw error;
   res.status(201).json({ grade: data });
@@ -86,7 +109,7 @@ export const updateStudentGrade = async (req, res) => {
     .from("student_grades")
     .update(grade)
     .eq("id", req.params.id)
-    .select("id, user_id, subject_name, semester, grade, remarks, created_at")
+    .select(GRADE_SELECT_COLUMNS)
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, "Grade record not found.");
@@ -97,7 +120,7 @@ export const getMyGrades = async (req, res) => {
   const studentId = req.user.sub;
   const { data, error } = await supabase
     .from("student_grades")
-    .select("id, user_id, subject_name, semester, grade, remarks, created_at")
+    .select(GRADE_SELECT_COLUMNS)
     .eq("user_id", studentId)
     .order("created_at", { ascending: false });
   if (error) throw error;

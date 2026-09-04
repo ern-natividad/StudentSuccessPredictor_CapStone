@@ -3,20 +3,19 @@ import { useAuth } from "../../../hooks/useAuth";
 import { api, isBackendAuthEnabled, isEmptyDataError } from "../../../services/api";
 import { useToast } from "../../../components/Common/Toast";
 import {
-  SEMESTER_FILTER_OPTIONS,
   enrichGradeRecord,
   getUniqueAcademicYears,
-  matchesSemesterFilter,
 } from "../../../utils/gradeSemesterUtils";
 import styles from "../../../styles/Dashboard.module.css";
-import commonStyles from "../../../styles/Common.module.css";
 
 const NO_GRADES_MESSAGE =
   "No grade records are available yet. Your grades will appear here once academic staff record them.";
 
+const SEMESTER_ORDER = ["1", "2", "S"];
+
 const SEMESTER_LABELS = {
-  "1": "1st Semester",
-  "2": "2nd Semester",
+  "1": "First Semester",
+  "2": "Second Semester",
   S: "Summer",
 };
 
@@ -26,36 +25,20 @@ const parseNumericGrade = (value) => {
 };
 
 const averageNumericGrades = (records) => {
-  const values = records
-    .map((record) => parseNumericGrade(record.grade))
+  const numericOnly = records
+    .map((record) => {
+      if (String(record.grade ?? "").trim().toUpperCase() === "INC") return null;
+      return parseNumericGrade(record.grade);
+    })
     .filter((value) => value !== null);
-  if (values.length === 0) return null;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-};
 
-const getGradeTone = (grade, remarks = "") => {
-  const rawGrade = String(grade ?? "").trim().toUpperCase();
-  const remark = String(remarks).toLowerCase();
-  if (
-    rawGrade === "INC" ||
-    remark.includes("fail") ||
-    remark.includes("drop") ||
-    remark.includes("incomplete") ||
-    remark === "inc"
-  ) {
-    return "fail";
-  }
-  const numeric = parseNumericGrade(grade);
-  if (numeric === null) return "neutral";
-  if (numeric <= 1) return "excellent";
-  if (numeric <= 2) return "good";
-  if (numeric <= 3) return "pass";
-  return "fail";
+  if (numericOnly.length === 0) return null;
+  return numericOnly.reduce((sum, value) => sum + value, 0) / numericOnly.length;
 };
 
 const isPassingRecord = (record) => {
   const rawGrade = String(record.grade ?? "").trim().toUpperCase();
-  if (rawGrade === "INC") return false;
+  if (rawGrade === "INC" || rawGrade === "") return false;
 
   const remark = String(record.remarks || "").toLowerCase();
   if (remark.includes("fail") || remark.includes("drop") || remark === "inc") {
@@ -66,24 +49,79 @@ const isPassingRecord = (record) => {
   return numeric <= 3;
 };
 
-const formatSemesterLabel = (code) => SEMESTER_LABELS[code] || code || "—";
-
-const formatRecordedDate = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+const isFailingGrade = (grade, remarks = "") => {
+  const rawGrade = String(grade ?? "").trim().toUpperCase();
+  const remark = String(remarks).toLowerCase();
+  if (rawGrade === "INC" || remark.includes("fail") || remark.includes("drop")) {
+    return true;
+  }
+  const numeric = parseNumericGrade(grade);
+  return numeric !== null && numeric > 3;
 };
 
-const gradeToneClass = {
-  excellent: styles.gradeValueExcellent,
-  good: styles.gradeValueGood,
-  pass: styles.gradeValuePass,
-  fail: styles.gradeValueFail,
-  neutral: styles.gradeValueNeutral,
+const formatGradeDisplay = (grade) => {
+  if (grade === null || grade === undefined || grade === "") return "";
+  const numeric = parseNumericGrade(grade);
+  if (numeric === null) return String(grade).trim();
+  return numeric.toFixed(2);
+};
+
+const normalizeSubjectPart = (value) =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+/**
+ * Resolve subject code + description from a grade record.
+ * Supports dedicated fields and common free-text patterns:
+ * "CE 101 - Intro", "IT 413 CYBERSECURITY", "EPIC 1", "PATHFIT".
+ */
+const resolveSubject = (record) => {
+  const explicitCode = normalizeSubjectPart(
+    record.subject_code || record.code || "",
+  );
+  const explicitDescription = normalizeSubjectPart(
+    record.subject_description || record.description || "",
+  );
+
+  if (explicitCode || explicitDescription) {
+    return {
+      code: explicitCode || "—",
+      description: explicitDescription || "—",
+    };
+  }
+
+  const text = String(record.subject_name || "").trim();
+  if (!text) return { code: "—", description: "—" };
+
+  const dashed = text.match(/^(.+?)\s*[-–—:]\s+(.+)$/);
+  if (dashed?.[1] && dashed?.[2]) {
+    return {
+      code: normalizeSubjectPart(dashed[1]),
+      description: normalizeSubjectPart(dashed[2]),
+    };
+  }
+
+  const codeWithTitle = text.match(
+    /^([A-Za-z]{1,12}\s*\d{1,4}[A-Za-z]?)\s+(.+)$/,
+  );
+  if (codeWithTitle?.[1] && codeWithTitle?.[2]) {
+    return {
+      code: normalizeSubjectPart(codeWithTitle[1]),
+      description: normalizeSubjectPart(codeWithTitle[2]),
+    };
+  }
+
+  // Whole value is a course code (e.g. "EPIC 1", "CE101", "PATHFIT").
+  if (/^[A-Za-z]{1,12}(\s*\d{1,4}[A-Za-z]?)?$/i.test(text)) {
+    const code = normalizeSubjectPart(text);
+    return { code, description: code };
+  }
+
+  // Free-text title only — still show it under Subject Code so the column is never blank.
+  const label = normalizeSubjectPart(text);
+  return { code: label, description: label };
 };
 
 const escapeCsv = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
@@ -95,8 +133,7 @@ const MyGradesPage = () => {
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [gradeError, setGradeError] = useState("");
   const [emptyMessage, setEmptyMessage] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
-  const [academicYearFilter, setAcademicYearFilter] = useState("");
+  const [selectedYear, setSelectedYear] = useState(null);
 
   useEffect(() => {
     const loadGrades = async () => {
@@ -140,58 +177,101 @@ const MyGradesPage = () => {
     [gradeRecords],
   );
 
-  const academicYearOptions = useMemo(
+  const academicYears = useMemo(
     () => getUniqueAcademicYears(gradeRecords),
     [gradeRecords],
   );
 
-  const filteredGrades = useMemo(
+  const gradesByYear = useMemo(() => {
+    const groups = {};
+    enrichedGrades.forEach((record) => {
+      const year = record.academicYear || "Unknown";
+      if (!groups[year]) groups[year] = [];
+      groups[year].push(record);
+    });
+    return groups;
+  }, [enrichedGrades]);
+
+  const yearCards = useMemo(
     () =>
-      enrichedGrades.filter(
-        (record) =>
-          matchesSemesterFilter(record.semester, semesterFilter) &&
-          (!academicYearFilter || record.academicYear === academicYearFilter),
-      ),
-    [enrichedGrades, semesterFilter, academicYearFilter],
+      academicYears.map((year) => {
+        const records = gradesByYear[year] || [];
+        const gwa = averageNumericGrades(records);
+        return {
+          year,
+          courseCount: records.length,
+          gwa: gwa === null ? "—" : gwa.toFixed(2),
+          passed: records.filter(isPassingRecord).length,
+          failed: records.filter((record) =>
+            isFailingGrade(record.grade, record.remarks),
+          ).length,
+        };
+      }),
+    [academicYears, gradesByYear],
   );
 
-  const summary = useMemo(() => {
-    const gwa = averageNumericGrades(filteredGrades);
-    const passed = filteredGrades.filter(isPassingRecord).length;
+  const selectedYearRecords = useMemo(() => {
+    if (!selectedYear) return [];
+    return gradesByYear[selectedYear] || [];
+  }, [gradesByYear, selectedYear]);
+
+  const semesterSections = useMemo(() => {
+    const buckets = { "1": [], "2": [], S: [] };
+    selectedYearRecords.forEach((record) => {
+      const code = record.semesterCode === "—" ? "1" : record.semesterCode;
+      if (!buckets[code]) buckets[code] = [];
+      buckets[code].push(record);
+    });
+
+    return SEMESTER_ORDER.filter((code) => (buckets[code] || []).length > 0).map(
+      (code) => ({
+        code,
+        label: SEMESTER_LABELS[code] || code,
+        records: buckets[code],
+      }),
+    );
+  }, [selectedYearRecords]);
+
+  const selectedYearSummary = useMemo(() => {
+    const gwa = averageNumericGrades(selectedYearRecords);
     return {
       gwa: gwa === null ? "—" : gwa.toFixed(2),
-      courses: filteredGrades.length,
-      passed,
-      attention: Math.max(filteredGrades.length - passed, 0),
+      courses: selectedYearRecords.length,
+      passed: selectedYearRecords.filter(isPassingRecord).length,
     };
-  }, [filteredGrades]);
+  }, [selectedYearRecords]);
+
+  const overallSummary = useMemo(() => {
+    const gwa = averageNumericGrades(enrichedGrades);
+    return {
+      gwa: gwa === null ? "—" : gwa.toFixed(2),
+      courses: enrichedGrades.length,
+      years: academicYears.length,
+    };
+  }, [enrichedGrades, academicYears]);
 
   const studentName =
     user?.full_name || user?.fullName || user?.name || "Student";
 
-  const handleExport = () => {
-    if (filteredGrades.length === 0) {
+  const handleExportYear = () => {
+    const records = selectedYear ? selectedYearRecords : enrichedGrades;
+    if (records.length === 0) {
       toast.error("No grade records available to export.");
       return;
     }
 
-    const headers = [
-      "Subject",
-      "Semester",
-      "Academic Year",
-      "Grade",
-      "Remarks",
-      "Date Posted",
-    ];
-
-    const rows = filteredGrades.map((record) => [
-      record.subject_name,
-      formatSemesterLabel(record.semesterCode),
-      record.academicYear,
-      record.grade,
-      record.remarks || "",
-      formatRecordedDate(record.created_at),
-    ]);
+    const headers = ["Subject Code", "Description", "Semester", "Academic Year", "Grade", "Remarks"];
+    const rows = records.map((record) => {
+      const { code, description } = resolveSubject(record);
+      return [
+        code,
+        description,
+        SEMESTER_LABELS[record.semesterCode] || record.semesterCode,
+        record.academicYear,
+        formatGradeDisplay(record.grade),
+        record.remarks || "",
+      ];
+    });
 
     const csv = [headers, ...rows]
       .map((row) => row.map(escapeCsv).join(","))
@@ -201,7 +281,9 @@ const MyGradesPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "my-grades.csv";
+    link.download = selectedYear
+      ? `my-grades-SY-${selectedYear}.csv`
+      : "my-grades.csv";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -215,8 +297,9 @@ const MyGradesPage = () => {
         <div>
           <h1 className={styles.pageTitle}>My Grades</h1>
           <p className={styles.pageSubtitle}>
-            Official academic record for {studentName}. Review your GWA and
-            course marks by semester.
+            {selectedYear
+              ? `You are viewing grades for School Year ${selectedYear}.`
+              : `Welcome, ${studentName}. Pick a school year below to open your grades.`}
           </p>
         </div>
         <div className={styles.pageHeaderBadge}>Student Portal</div>
@@ -256,165 +339,166 @@ const MyGradesPage = () => {
             </p>
           </div>
         </div>
-      ) : (
+      ) : !selectedYear ? (
         <>
           <div className={styles.summaryGrid}>
             <div className={styles.summaryCard}>
-              <div className={styles.summaryValue}>{summary.gwa}</div>
-              <div className={styles.summaryLabel}>Average GWA</div>
+              <div className={styles.summaryValue}>{overallSummary.gwa}</div>
+              <div className={styles.summaryLabel}>Overall GWA</div>
             </div>
             <div className={styles.summaryCard}>
-              <div className={styles.summaryValue}>{summary.courses}</div>
-              <div className={styles.summaryLabel}>Courses</div>
+              <div className={styles.summaryValue}>{overallSummary.courses}</div>
+              <div className={styles.summaryLabel}>Total Courses</div>
             </div>
             <div className={styles.summaryCard}>
-              <div className={styles.summaryValue}>{summary.passed}</div>
-              <div className={styles.summaryLabel}>Passed</div>
-            </div>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryValue}>{summary.attention}</div>
-              <div className={styles.summaryLabel}>Needs attention</div>
+              <div className={styles.summaryValue}>{overallSummary.years}</div>
+              <div className={styles.summaryLabel}>School Years</div>
             </div>
           </div>
 
           <div className={styles.contentCard}>
             <div className={styles.contentCardHeader}>
               <div>
-                <div className={styles.contentCardEyebrow}>Academic record</div>
-                <div className={styles.contentCardTitle}>Grade History</div>
-              </div>
-              <div className={styles.contentCardHint}>
-                {filteredGrades.length} of {enrichedGrades.length} courses
+                <div className={styles.contentCardEyebrow}>Academic years</div>
+                <div className={styles.contentCardTitle}>Select a School Year</div>
+                <p className={styles.syHelpText}>
+                  Start here. Click one school year card below to open your
+                  semester grades for that year.
+                </p>
               </div>
             </div>
 
-            <div className={styles.listToolbar} style={{ marginTop: 16 }}>
-              <div className={styles.listToolbarFilters}>
-                <select
-                  className={styles.gradesFilterSelect}
-                  value={semesterFilter}
-                  onChange={(event) => setSemesterFilter(event.target.value)}
-                  aria-label="Filter by semester"
+            <div className={styles.syCardGrid}>
+              {yearCards.map((card) => (
+                <button
+                  key={card.year}
+                  type="button"
+                  className={styles.syYearCard}
+                  onClick={() => setSelectedYear(card.year)}
                 >
-                  {SEMESTER_FILTER_OPTIONS.map((option) => (
-                    <option key={option.value || "all"} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <div className={styles.syYearLabel}>School Year</div>
+                  <div className={styles.syYearValue}>SY {card.year}</div>
+                  <div className={styles.syYearMeta}>
+                    <span>{card.courseCount} course{card.courseCount === 1 ? "" : "s"}</span>
+                    <span>GWA {card.gwa}</span>
+                  </div>
+                  <div className={styles.syYearCta}>
+                    Click to view grades
+                    <i className="fas fa-arrow-right" aria-hidden="true" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={styles.summaryGrid}>
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryValue}>{selectedYearSummary.gwa}</div>
+              <div className={styles.summaryLabel}>GWA this year</div>
+            </div>
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryValue}>{selectedYearSummary.courses}</div>
+              <div className={styles.summaryLabel}>Courses this year</div>
+            </div>
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryValue}>{selectedYearSummary.passed}</div>
+              <div className={styles.summaryLabel}>Passed subjects</div>
+            </div>
+          </div>
 
-                <select
-                  className={styles.gradesFilterSelect}
-                  value={academicYearFilter}
-                  onChange={(event) => setAcademicYearFilter(event.target.value)}
-                  aria-label="Filter by academic year"
-                  style={{ minWidth: 160 }}
-                >
-                  <option value="">All academic years</option>
-                  {academicYearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+          <div className={`${styles.contentCard} ${styles.syGradeReportCard}`}>
+            <div className={styles.syBackRow}>
               <button
                 type="button"
-                className={styles.toolbarIconButton}
-                onClick={handleExport}
-                title="Export to CSV"
-                aria-label="Export to CSV"
-                disabled={filteredGrades.length === 0}
+                className={styles.syBackButton}
+                onClick={() => setSelectedYear(null)}
               >
-                <i className="fas fa-file-export" aria-hidden="true" />
+                <i className="fas fa-arrow-left" aria-hidden="true" />
+                Back to All School Years
               </button>
             </div>
 
-            {filteredGrades.length === 0 ? (
-              <div className={styles.gradesEmptyState}>
-                <div className={styles.gradesEmptyIcon}>
-                  <i className="fas fa-filter" aria-hidden="true" />
-                </div>
-                <p className={styles.gradesEmptyTitle}>No matching courses</p>
-                <p className={styles.gradesEmptyText}>
-                  No grade records match the selected filters. Try another
-                  semester or academic year.
+            <div className={styles.contentCardHeader}>
+              <div>
+                <div className={styles.contentCardEyebrow}>Grade report</div>
+                <div className={styles.contentCardTitle}>SY {selectedYear}</div>
+                <p className={styles.syHelpText}>
+                  Your subjects are grouped by semester. Grades in red need
+                  attention (failed or incomplete).
                 </p>
               </div>
-            ) : (
-              <div className={styles.gradesTableShell}>
-                <div className={commonStyles.tableWrapper}>
-                  <table className={`${commonStyles.table} ${styles.gradesTable}`}>
-                    <colgroup>
-                      <col style={{ width: "32%" }} />
-                      <col style={{ width: "16%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "12%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "12%" }} />
-                    </colgroup>
-                    <thead className={commonStyles.tableHead}>
-                      <tr>
-                        <th style={{ textAlign: "left" }}>Course</th>
-                        <th style={{ textAlign: "left" }}>Semester</th>
-                        <th style={{ textAlign: "center" }}>Academic Year</th>
-                        <th style={{ textAlign: "center" }}>Grade</th>
-                        <th style={{ textAlign: "left" }}>Remarks</th>
-                        <th style={{ textAlign: "center" }}>Posted</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredGrades.map((record) => {
-                        const tone = getGradeTone(record.grade, record.remarks);
-                        return (
-                          <tr key={record.id} className={commonStyles.tableRow}>
-                            <td style={{ textAlign: "left" }}>
-                              <span className={styles.gradesSubjectName}>
-                                {record.subject_name}
-                              </span>
-                            </td>
-                            <td style={{ textAlign: "left" }}>
-                              <span className={styles.gradesMutedText}>
-                                {formatSemesterLabel(record.semesterCode)}
-                              </span>
-                            </td>
-                            <td
-                              style={{ textAlign: "center" }}
-                              className={styles.gradesMutedText}
+              <button
+                type="button"
+                className={styles.syExportButton}
+                onClick={handleExportYear}
+                title="Download this school year as CSV"
+                aria-label="Download this school year as CSV"
+              >
+                <i className="fas fa-file-export" aria-hidden="true" />
+                Export grades
+              </button>
+            </div>
+
+            <div className={styles.syTermStack}>
+              {semesterSections.map((section) => (
+                <div key={section.code} className={styles.syTermBlock}>
+                  <div className={styles.syTermHeading}>
+                    SY {selectedYear} ({section.label})
+                  </div>
+                  <div className={styles.syTermTableWrap}>
+                    <table className={styles.syTermTable}>
+                      <thead>
+                        <tr>
+                          <th>Subject Code</th>
+                          <th>Description</th>
+                          <th>Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {section.records.map((record, index) => {
+                          const { code, description } = resolveSubject(record);
+                          const failing = isFailingGrade(
+                            record.grade,
+                            record.remarks,
+                          );
+                          const gradeText = formatGradeDisplay(record.grade);
+
+                          return (
+                            <tr
+                              key={record.id || `${section.code}-${index}`}
+                              className={
+                                index % 2 === 1 ? styles.syTermRowAlt : undefined
+                              }
                             >
-                              {record.academicYear}
-                            </td>
-                            <td style={{ textAlign: "center" }}>
-                              <span
-                                className={`${styles.gradeValueBadge} ${gradeToneClass[tone]}`}
+                              <td className={styles.syCodeCell}>{code}</td>
+                              <td className={styles.syDescCell}>{description}</td>
+                              <td
+                                className={`${styles.syGradeCell} ${
+                                  failing ? styles.syGradeFail : ""
+                                }`}
                               >
-                                {record.grade}
-                              </span>
-                            </td>
-                            <td style={{ textAlign: "left" }}>
-                              {record.remarks ? (
-                                <span className={styles.gradeRemarkBadge}>
-                                  {record.remarks}
-                                </span>
-                              ) : (
-                                <span className={styles.gradesMutedText}>—</span>
-                              )}
-                            </td>
-                            <td
-                              style={{ textAlign: "center" }}
-                              className={styles.gradesMutedText}
-                            >
-                              {formatRecordedDate(record.created_at)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                                {gradeText || "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+
+              {semesterSections.length === 0 && (
+                <div className={styles.gradesEmptyState}>
+                  <p className={styles.gradesEmptyTitle}>No grades for this year</p>
+                  <p className={styles.gradesEmptyText}>
+                    There are no posted grade records under SY {selectedYear}.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

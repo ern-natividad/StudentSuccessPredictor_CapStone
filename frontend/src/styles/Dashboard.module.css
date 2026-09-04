@@ -1539,3 +1539,247 @@
   color: #64748b;
   line-height: 1.5;
 }
+
+.syCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.syHelpText {
+  margin: 8px 0 0;
+  max-width: 560px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.syYearCard {
+  appearance: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 32px 22px 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.syYearCard:hover {
+  transform: translateY(-3px);
+  border-color: #f1a0a0;
+  box-shadow: 0 10px 24px rgba(128, 0, 0, 0.1);
+}
+
+.syYearCard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.16);
+}
+
+.syYearLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.syYearValue {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #800000;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.syYearMeta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.syYearCta {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #800000;
+}
+
+.syGradeReportCard {
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.syBackRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.syBackButton {
+  appearance: none;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.syBackButton:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.syExportButton {
+  appearance: none;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #800000;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.syExportButton:hover {
+  background: #fdf2f2;
+  border-color: #fecaca;
+}
+
+.syTermStack {
+  display: grid;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.syTermBlock {
+  min-width: 0;
+}
+
+.syTermHeading {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.syTermTableWrap {
+  border: 2px solid #94a3b8;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.syTermTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.syTermTable thead th {
+  background: #374151;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+.syTermTable thead th:last-child {
+  text-align: center;
+  width: 18%;
+}
+
+.syTermTable thead th:first-child {
+  width: 24%;
+}
+
+.syTermTable td {
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  border-top: 1px solid #e5e7eb;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.syTermRowAlt td {
+  background: #f3f4f6;
+}
+
+.syCodeCell {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.syDescCell {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.syGradeCell {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.syGradeFail {
+  color: #dc2626;
+}
+
+@media (max-width: 720px) {
+  .syCardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .syYearValue {
+    font-size: 1.45rem;
+  }
+
+  .contentCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .syTermTable thead th:first-child,
+  .syTermTable thead th:last-child {
+    width: auto;
+  }
+}
+
