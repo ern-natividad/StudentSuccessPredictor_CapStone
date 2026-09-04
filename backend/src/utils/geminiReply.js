@@ -7,6 +7,8 @@ const ASSIGNMENT_REFUSAL_REPLY =
 const OUT_OF_SCOPE_REPLY =
   "I can't answer that. I'm here to help with academic advising — your grades, risk level, study plans, and course strategies.";
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const isAssignmentHelpRequest = (message) => {
   const normalized = String(message || "").toLowerCase();
   return (
@@ -19,6 +21,12 @@ const isBlockedCandidate = (finishReason) =>
   ["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"].includes(
     finishReason,
   );
+
+const formatMetric = (value, digits = 2) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : String(value);
+};
 
 export const isModelUnavailableError = (error) => {
   const message = (error?.message || "").toLowerCase();
@@ -41,7 +49,9 @@ export const isGeminiServiceError = (error) => {
 
   if (isModelUnavailableError(error)) return false;
 
-  if (status === 429 || status === 503 || status === 500) return true;
+  if (status === 429 || status === 503 || status === 500 || status === 502) {
+    return true;
+  }
 
   return (
     message.includes("fetch failed") ||
@@ -50,11 +60,18 @@ export const isGeminiServiceError = (error) => {
     message.includes("socket hang up") ||
     message.includes("quota exceeded") ||
     message.includes("rate limit") ||
+    message.includes("high demand") ||
+    message.includes("try again later") ||
+    message.includes("service unavailable") ||
+    message.includes("temporarily unavailable") ||
     message.includes("api key not valid") ||
-    message.includes("invalid api key") ||
-    message.includes("service unavailable")
+    message.includes("invalid api key")
   );
 };
+
+/** Overload / model-missing — safe to try another model or retry. */
+export const shouldFallbackGeminiModel = (error) =>
+  isModelUnavailableError(error) || isGeminiServiceError(error);
 
 export const resolveAdvisingReply = (message, result) => {
   if (isAssignmentHelpRequest(message)) {
@@ -94,21 +111,62 @@ export const resolveAdvisingReply = (message, result) => {
   return OUT_OF_SCOPE_REPLY;
 };
 
-/** Prefer configured model, then stable fallbacks. */
+/**
+ * Snapshot-based reply when Gemini is overloaded or unreachable.
+ * Keeps advising usable during demos / defense.
+ */
+export const buildOfflineAdvisingReply = (
+  snapshot = {},
+  message = "",
+  viewerRole = "student",
+) => {
+  if (isAssignmentHelpRequest(message)) {
+    return ASSIGNMENT_REFUSAL_REPLY;
+  }
+
+  const isStudent = viewerRole === "student";
+  const your = isStudent ? "your" : "this student's";
+  const you = isStudent ? "you" : "the student";
+  const risk = snapshot.riskLevel || "Unknown";
+  const focus = snapshot.focusAreas || "current coursework and weaker subjects";
+  const currentGwa = formatMetric(snapshot.currentGpa);
+  const predictedGwa = formatMetric(snapshot.predictedGpa);
+  const gradeCount = snapshot.gradeCount ?? snapshot.grades?.length ?? 0;
+
+  return [
+    `Here is advising guidance based on ${your} academic snapshot:`,
+    "",
+    `- Risk level: **${risk}**`,
+    `- Current GWA: **${currentGwa}** | Predicted GWA: **${predictedGwa}**`,
+    `- Grades on record: **${gradeCount}**`,
+    `- Focus areas: ${focus}`,
+    "",
+    "Recommended next steps:",
+    `1. Prioritize subjects tied to the focus areas above and review recent assessments.`,
+    `2. Schedule 4–6 focused study hours this week, with short reviews after each class.`,
+    `3. If risk is Medium or High, meet a human academic adviser to adjust course load and support.`,
+    `4. Track attendance, deadlines, and incomplete grades over the next two weeks.`,
+    "",
+    `Ask about a specific subject, weekly schedule, or risk-reduction plan if ${you} want a more detailed follow-up.`,
+  ].join("\n");
+};
+
+/** Prefer configured model, then stable Flash fallbacks. */
 export const buildGeminiModelCandidates = (preferredModel) => {
   const preferred = String(preferredModel || "").trim();
   const fallbacks = [
-    "gemini-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-3.6-flash",
     "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-flash-latest",
   ];
 
   return [...new Set([preferred, ...fallbacks].filter(Boolean))];
 };
 
 /**
- * Try the preferred Gemini model, then fallbacks when the model is unavailable.
+ * Try preferred Gemini model, then fallbacks on overload / unavailable models.
  */
 export const sendAdvisingChatMessage = async ({
   genAI,
@@ -116,28 +174,46 @@ export const sendAdvisingChatMessage = async ({
   systemInstruction,
   history,
   message,
+  maxAttemptsPerModel = 2,
 }) => {
   const candidates = buildGeminiModelCandidates(preferredModel);
   let lastError = null;
 
-  for (const modelName of candidates) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction,
-      });
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(message);
-      return { result, modelName };
-    } catch (error) {
-      lastError = error;
-      if (isModelUnavailableError(error) && candidates.length > 1) {
-        console.warn(
-          `[advising] Model "${modelName}" unavailable; trying next fallback.`,
-        );
-        continue;
+  for (let modelIndex = 0; modelIndex < candidates.length; modelIndex += 1) {
+    const modelName = candidates[modelIndex];
+
+    for (let attempt = 1; attempt <= maxAttemptsPerModel; attempt += 1) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction,
+        });
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessage(message);
+        return { result, modelName };
+      } catch (error) {
+        lastError = error;
+        const canFallback = shouldFallbackGeminiModel(error);
+        const hasMoreAttempts = attempt < maxAttemptsPerModel;
+        const hasMoreModels = modelIndex < candidates.length - 1;
+
+        if (canFallback && hasMoreAttempts) {
+          console.warn(
+            `[advising] Model "${modelName}" attempt ${attempt} failed (${error?.status || error?.message}); retrying...`,
+          );
+          await sleep(350 * attempt);
+          continue;
+        }
+
+        if (canFallback && hasMoreModels) {
+          console.warn(
+            `[advising] Model "${modelName}" unavailable/overloaded; trying next fallback.`,
+          );
+          break;
+        }
+
+        throw error;
       }
-      throw error;
     }
   }
 

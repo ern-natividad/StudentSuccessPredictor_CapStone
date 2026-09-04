@@ -185,41 +185,73 @@ const AIAcademicAdvisingModule = () => {
   };
 
   const requestAiReply = async ({ prompt, historyMessages, signal }) => {
-    let response;
-    try {
-      response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        signal,
-        body: JSON.stringify({
-          message: prompt,
-          history: toApiHistory(historyMessages),
-          studentSnapshot: snapshot,
-        }),
-      });
-    } catch (networkError) {
-      if (isAbortError(networkError)) throw networkError;
-      throw new Error(
-        "Unable to reach the AI server. Please verify that the backend is running on port 5001.",
-      );
-    }
+    const maxAttempts = 2;
+    let lastError = null;
 
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error("Your session expired. Please sign in again to continue chatting.");
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (signal?.aborted) {
+        throw new DOMException("Aborted", "AbortError");
       }
-      if (response.status === 502 || response.status === 503) {
-        throw new Error(
-          data.error ||
-            "The AI advising service is temporarily unavailable. Please try again shortly.",
+
+      let response;
+      try {
+        response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          signal,
+          body: JSON.stringify({
+            message: prompt,
+            history: toApiHistory(historyMessages),
+            studentSnapshot: snapshot,
+          }),
+        });
+      } catch (networkError) {
+        if (isAbortError(networkError)) throw networkError;
+        lastError = new Error(
+          "Unable to reach the AI server. Please verify that the backend is running on port 5001.",
+        );
+        if (attempt < maxAttempts) continue;
+        throw lastError;
+      }
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        return (
+          data.reply ||
+          "I couldn't process your request at this moment. Please ask about your grades, risk level, or study plan."
         );
       }
-      throw new Error(data.error || "Failed to receive AI response.");
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          "Your session expired. Please sign in again to continue chatting.",
+        );
+      }
+
+      // Transient upstream issues — retry once, then show a calm advising reply.
+      if (
+        (response.status === 502 || response.status === 503 || response.status >= 500) &&
+        attempt < maxAttempts
+      ) {
+        lastError = new Error(data.error || "Temporary AI service issue.");
+        continue;
+      }
+
+      if (response.status === 502 || response.status === 503 || response.status >= 500) {
+        return (
+          data.reply ||
+          data.error ||
+          "I can still help from your academic snapshot. Ask about your risk level, GWA, study plan, or a specific subject."
+        );
+      }
+
+      lastError = new Error(data.error || "Failed to receive AI response.");
+      if (attempt < maxAttempts) continue;
+      throw lastError;
     }
 
-    return data.reply || "I couldn't process your request at this moment.";
+    throw lastError || new Error("Failed to receive AI response.");
   };
 
   const handleAsk = async (promptText = query) => {

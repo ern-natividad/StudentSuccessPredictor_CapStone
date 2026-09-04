@@ -8,7 +8,7 @@ import { formatGeminiHistory } from "./utils/geminiChat.js";
 import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
 import { buildAdvisingSystemInstruction } from "./utils/advisingPrompt.js";
 import {
-  isGeminiServiceError,
+  buildOfflineAdvisingReply,
   resolveAdvisingReply,
   sendAdvisingChatMessage,
 } from "./utils/geminiReply.js";
@@ -30,9 +30,9 @@ app.post(
   requireAuth,
   requireRole("admin", "staff", "student"),
   async (req, res, next) => {
-  try {
-    const { message, history, studentSnapshot } = req.body;
+  const { message, history, studentSnapshot } = req.body || {};
 
+  try {
     if (!message) {
       return res.status(400).json({ error: "Message query is required." });
     }
@@ -69,19 +69,15 @@ app.post(
   } catch (error) {
     console.error("Gemini AI Advising Error:", error);
 
-    if (isGeminiServiceError(error)) {
-      return next(
-        new HttpError(
-          502,
-          "The AI advising service is temporarily unavailable. Please try again shortly.",
-        ),
-      );
-    }
-
+    // Never fail the chat UI during demos: return snapshot-based guidance.
     return res.status(200).json({
       success: true,
-      reply:
-        "I can't answer that right now. Please ask about your academic plan, grades, or study strategies.",
+      offline: true,
+      reply: buildOfflineAdvisingReply(
+        studentSnapshot || {},
+        message,
+        req.user?.role || "student",
+      ),
     });
   }
   },
