@@ -7,7 +7,11 @@ import { errorHandler, notFoundHandler, HttpError } from "./middleware/errorHand
 import { formatGeminiHistory } from "./utils/geminiChat.js";
 import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
 import { buildAdvisingSystemInstruction } from "./utils/advisingPrompt.js";
-import { isGeminiServiceError, resolveAdvisingReply } from "./utils/geminiReply.js";
+import {
+  isGeminiServiceError,
+  resolveAdvisingReply,
+  sendAdvisingChatMessage,
+} from "./utils/geminiReply.js";
 
 const app = express();
 
@@ -33,27 +37,34 @@ app.post(
       return res.status(400).json({ error: "Message query is required." });
     }
 
+    if (!env.geminiApiKey && !process.env.GEMINI_API_KEY) {
+      return next(
+        new HttpError(
+          503,
+          "AI advising is not configured. Ask an administrator to set GEMINI_API_KEY.",
+        ),
+      );
+    }
+
     const systemInstruction = buildAdvisingSystemInstruction(
       studentSnapshot || {},
       req.user.role,
     );
 
-    const model = genAI.getGenerativeModel({
-      model: env.geminiModel,
-      systemInstruction: systemInstruction,
-    });
-
     const formattedHistory = formatGeminiHistory(history);
-
-    const chat = model.startChat({
+    const { result, modelName } = await sendAdvisingChatMessage({
+      genAI,
+      preferredModel: env.geminiModel,
+      systemInstruction,
       history: formattedHistory,
+      message,
     });
-    const result = await chat.sendMessage(message);
     const replyText = resolveAdvisingReply(message, result);
 
     return res.status(200).json({
       success: true,
       reply: replyText,
+      model: modelName,
     });
   } catch (error) {
     console.error("Gemini AI Advising Error:", error);

@@ -20,9 +20,26 @@ const isBlockedCandidate = (finishReason) =>
     finishReason,
   );
 
+export const isModelUnavailableError = (error) => {
+  const message = (error?.message || "").toLowerCase();
+  const status = error?.status || error?.statusCode;
+
+  return (
+    status === 404 ||
+    message.includes("not found") ||
+    message.includes("not supported") ||
+    message.includes("unknown model") ||
+    message.includes("invalid model") ||
+    message.includes("no longer available") ||
+    message.includes("is not available")
+  );
+};
+
 export const isGeminiServiceError = (error) => {
   const message = (error?.message || "").toLowerCase();
   const status = error?.status || error?.statusCode;
+
+  if (isModelUnavailableError(error)) return false;
 
   if (status === 429 || status === 503 || status === 500) return true;
 
@@ -75,4 +92,54 @@ export const resolveAdvisingReply = (message, result) => {
   }
 
   return OUT_OF_SCOPE_REPLY;
+};
+
+/** Prefer configured model, then stable fallbacks. */
+export const buildGeminiModelCandidates = (preferredModel) => {
+  const preferred = String(preferredModel || "").trim();
+  const fallbacks = [
+    "gemini-flash-latest",
+    "gemini-2.5-flash",
+    "gemini-3.6-flash",
+    "gemini-2.0-flash",
+  ];
+
+  return [...new Set([preferred, ...fallbacks].filter(Boolean))];
+};
+
+/**
+ * Try the preferred Gemini model, then fallbacks when the model is unavailable.
+ */
+export const sendAdvisingChatMessage = async ({
+  genAI,
+  preferredModel,
+  systemInstruction,
+  history,
+  message,
+}) => {
+  const candidates = buildGeminiModelCandidates(preferredModel);
+  let lastError = null;
+
+  for (const modelName of candidates) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction,
+      });
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(message);
+      return { result, modelName };
+    } catch (error) {
+      lastError = error;
+      if (isModelUnavailableError(error) && candidates.length > 1) {
+        console.warn(
+          `[advising] Model "${modelName}" unavailable; trying next fallback.`,
+        );
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new Error("No Gemini model candidates available.");
 };

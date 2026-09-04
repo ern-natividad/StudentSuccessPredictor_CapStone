@@ -1,6 +1,7 @@
 /**
  * Converts frontend chat messages into Gemini-compatible history.
- * Gemini requires the first history entry to have role "user".
+ * Gemini requires the first history entry to have role "user" and
+ * alternating user/model turns.
  */
 export const formatGeminiHistory = (history = []) => {
   const formatted = history
@@ -20,5 +21,16 @@ export const formatGeminiHistory = (history = []) => {
     formatted.pop();
   }
 
-  return formatted;
+  // Ensure roles alternate (Gemini rejects consecutive same-role turns).
+  const alternating = [];
+  for (const entry of formatted) {
+    const previous = alternating[alternating.length - 1];
+    if (previous && previous.role === entry.role) {
+      previous.parts[0].text = `${previous.parts[0].text}\n\n${entry.parts[0].text}`;
+      continue;
+    }
+    alternating.push(entry);
+  }
+
+  return alternating;
 };

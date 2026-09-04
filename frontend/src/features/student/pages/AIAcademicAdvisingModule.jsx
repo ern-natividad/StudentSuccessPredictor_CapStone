@@ -27,6 +27,16 @@ const getAuthHeaders = () => {
   };
 };
 
+/** Keep only sender/text pairs Gemini expects; drop the welcome bot turn. */
+const toApiHistory = (messages = []) =>
+  messages
+    .filter((message, index) => !(index === 0 && message.sender === "bot"))
+    .filter((message) => String(message?.text || "").trim())
+    .map((message) => ({
+      sender: message.sender === "user" ? "user" : "bot",
+      text: String(message.text).trim(),
+    }));
+
 const formatGpa = (value) =>
   value === null || value === undefined ? "—" : Number(value).toFixed(2);
 
@@ -175,20 +185,37 @@ const AIAcademicAdvisingModule = () => {
   };
 
   const requestAiReply = async ({ prompt, historyMessages, signal }) => {
-    const response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      signal,
-      body: JSON.stringify({
-        message: prompt,
-        history: historyMessages,
-        studentSnapshot: snapshot,
-      }),
-    });
+    let response;
+    try {
+      response = await fetch(`${getApiRoot()}/api/v1/advising/chat`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        signal,
+        body: JSON.stringify({
+          message: prompt,
+          history: toApiHistory(historyMessages),
+          studentSnapshot: snapshot,
+        }),
+      });
+    } catch (networkError) {
+      if (isAbortError(networkError)) throw networkError;
+      throw new Error(
+        "Unable to reach the AI server. Please verify that the backend is running on port 5001.",
+      );
+    }
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Your session expired. Please sign in again to continue chatting.");
+      }
+      if (response.status === 502 || response.status === 503) {
+        throw new Error(
+          data.error ||
+            "The AI advising service is temporarily unavailable. Please try again shortly.",
+        );
+      }
       throw new Error(data.error || "Failed to receive AI response.");
     }
 
@@ -211,9 +238,7 @@ const AIAcademicAdvisingModule = () => {
       text: cleanedPrompt,
     };
 
-    const historyForApi = messages.filter(
-      (message, index) => !(index === 0 && message.sender === "bot"),
-    );
+    const historyForApi = messages;
 
     const controller = beginAiRequest();
     setMessages((prev) => [...prev, userMessage]);
@@ -285,9 +310,7 @@ const AIAcademicAdvisingModule = () => {
       return;
     }
 
-    const historyBeforeEdit = messages
-      .slice(0, editIndex)
-      .filter((message, index) => !(index === 0 && message.sender === "bot"));
+    const historyBeforeEdit = messages.slice(0, editIndex);
 
     const updatedUserMessage = {
       id: editingMessageId,

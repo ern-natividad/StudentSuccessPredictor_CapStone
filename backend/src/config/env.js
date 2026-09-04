@@ -18,7 +18,7 @@ export const env = {
   port: Number(process.env.PORT || 5001),
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
   geminiApiKey: required("GEMINI_API_KEY"),
-  geminiModel: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-flash-latest",
 
   supabaseUrl: required("SUPABASE_URL"),
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
