@@ -1,84 +1,184 @@
 .legalPage {
   min-height: 100vh;
-  background: var(--cream, #faf6ec);
-  padding: 2rem 1rem 3rem;
+  box-sizing: border-box;
+  padding: 24px 16px 40px;
   display: flex;
   justify-content: center;
+  position: relative;
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(circle at top left, rgba(139, 0, 0, 0.18) 0%, transparent 35%),
+    radial-gradient(circle at bottom right, rgba(139, 0, 0, 0.12) 0%, transparent 40%),
+    linear-gradient(135deg, #fff5f5 0%, #fdf2f2 30%, #f8fafc 70%, #eef2f7 100%);
 }
 
-.legalCard {
+.legalPage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(139, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+.legalShell {
   width: 100%;
-  max-width: 760px;
+  max-width: 820px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.legalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(139, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brandLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
   background: #fff;
-  border: 1px solid #e8dfc8;
-  border-radius: 16px;
-  padding: 2rem 2.25rem;
-  box-shadow: 0 8px 32px rgba(28, 26, 19, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.brandEyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b0000;
+  font-weight: 700;
+}
+
+.brandTitle {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #7a5c00;
+  color: #8b0000;
   text-decoration: none;
   font-size: 0.9rem;
-  margin-bottom: 1.5rem;
+  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 0, 0, 0.18);
+  background: #fff;
+  white-space: nowrap;
 }
 
 .backLink:hover {
-  text-decoration: underline;
+  background: #fff5f5;
+  border-color: rgba(139, 0, 0, 0.35);
+}
+
+.legalCard {
+  width: 100%;
+  background: #fff;
+  border: 1px solid rgba(139, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 2rem 2.25rem 2.25rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
 }
 
 .legalCard h1 {
-  font-family: "Playfair Display", serif;
-  color: #1c1a13;
-  margin: 0 0 0.5rem;
-  font-size: 2rem;
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.75rem, 3vw, 2.15rem);
+  line-height: 1.2;
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .updated {
-  color: #6b6456;
+  color: #64748b;
   font-size: 0.875rem;
-  margin-bottom: 2rem;
+  margin: 0 0 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .legalCard section {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.legalCard section:last-of-type {
+  margin-bottom: 0;
 }
 
 .legalCard h2 {
-  font-size: 1.1rem;
-  color: #1c1a13;
-  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  color: #8b0000;
+  margin: 0 0 0.55rem;
+  font-weight: 700;
 }
 
 .legalCard p,
 .legalCard li {
-  color: #3d3a32;
-  line-height: 1.65;
+  color: #334155;
+  line-height: 1.7;
   font-size: 0.95rem;
+  margin: 0;
+}
+
+.legalCard p + p {
+  margin-top: 0.65rem;
 }
 
 .legalCard ul {
-  margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
+  margin: 0.55rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.4rem;
 }
 
 .legalCard a {
-  color: #7a5c00;
+  color: #8b0000;
+  font-weight: 600;
 }
 
 .footerLinks {
   margin-top: 2rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #e8dfc8;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
 }
 
 .footerLinks a {
-  color: #7a5c00;
+  color: #8b0000;
   font-weight: 600;
   text-decoration: none;
+  font-size: 0.92rem;
 }
 
 .footerLinks a:hover {
@@ -86,11 +186,24 @@
 }
 
 @media (max-width: 640px) {
+  .legalPage {
+    padding: 16px 12px 32px;
+  }
+
+  .legalHeader {
+    padding: 12px 14px;
+  }
+
   .legalCard {
-    padding: 1.5rem;
+    padding: 1.35rem 1.2rem 1.5rem;
   }
 
   .legalCard h1 {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
+  }
+
+  .backLink {
+    width: 100%;
+    justify-content: center;
   }
 }

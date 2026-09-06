@@ -296,11 +296,17 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
           />
           <label htmlFor="terms">
             I agree to the{" "}
-            <Link to="/terms-of-service">
+            <Link
+              to="/terms-of-service"
+              state={{ from: roleConfig.path || `/auth/${roleConfig.id}` }}
+            >
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link to="/privacy-policy">
+            <Link
+              to="/privacy-policy"
+              state={{ from: roleConfig.path || `/auth/${roleConfig.id}` }}
+            >
               Privacy Policy
             </Link>
           </label>
