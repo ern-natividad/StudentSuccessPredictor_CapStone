@@ -4,7 +4,12 @@ import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Modules.module.css";
 import { useAdvisingContext } from "../../../hooks/useAdvisingContext";
+import { useAuth } from "../../../hooks/useAuth";
 import { ROLE_QUICK_PROMPTS } from "../../../utils/advisingSnapshot";
+import {
+  loadAdvisingChat,
+  saveAdvisingChat,
+} from "../../../utils/advisingChatStorage";
 import { renderChatMarkdown } from "../../../utils/renderChatMarkdown";
 
 const moduleLinks = [
@@ -42,6 +47,7 @@ const formatGpa = (value) =>
 
 const AIAcademicAdvisingModule = () => {
   const toast = useToast();
+  const { user } = useAuth();
   const {
     role,
     snapshot,
@@ -63,8 +69,10 @@ const AIAcademicAdvisingModule = () => {
   const composerInputRef = useRef(null);
   const editTextareaRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const activeContextKeyRef = useRef(null);
 
   const quickPrompts = ROLE_QUICK_PROMPTS[role] || ROLE_QUICK_PROMPTS.student;
+  const chatUserId = user?.id || "anon";
   const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
   const canSend = !isThinking && !loading && Boolean(snapshot);
 
@@ -125,23 +133,36 @@ const AIAcademicAdvisingModule = () => {
   useEffect(() => {
     if (loading) return;
 
+    const contextChanged = activeContextKeyRef.current !== contextKey;
+    activeContextKeyRef.current = contextKey;
+
+    if (!contextChanged) return;
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
 
-    setMessages([
-      {
-        id: 1,
-        sender: "bot",
-        text: welcomeMessage,
-      },
-    ]);
+    const savedMessages = loadAdvisingChat(chatUserId, contextKey);
+    setMessages(
+      savedMessages || [
+        {
+          id: 1,
+          sender: "bot",
+          text: welcomeMessage,
+        },
+      ],
+    );
     setEditingMessageId(null);
     setEditDraft("");
     setQuery("");
     setIsThinking(false);
-  }, [contextKey, loading, welcomeMessage]);
+  }, [contextKey, loading, welcomeMessage, chatUserId]);
+
+  useEffect(() => {
+    if (loading || !contextKey || messages.length === 0) return;
+    saveAdvisingChat(chatUserId, contextKey, messages);
+  }, [messages, chatUserId, contextKey, loading]);
 
   useEffect(() => {
     if (!editingMessageId) return;
