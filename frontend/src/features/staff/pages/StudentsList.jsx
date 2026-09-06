@@ -3,6 +3,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useToast } from "../../../components/Common/Toast";
 import { api, isBackendAuthEnabled } from "../../../services/api";
+import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
@@ -137,54 +138,59 @@ const StudentsList = () => {
     return filtered;
   }, [enrichedStudents, riskLevel, searchTerm]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filteredStudents.length === 0) {
       toast.error("No students available to export.");
       return;
     }
 
-    const headers = [
-      "Student ID",
-      "Name",
-      "Year Level",
-      "Current GPA",
-      "Predicted GPA",
-      "Confidence",
-      "Risk Level",
-    ];
-
-    const rows = filteredStudents.map((student) => [
-      student.student_id,
-      student.full_name,
-      student.yearLevel || "N/A",
-      student.current_gpa == null ? "" : Number(student.current_gpa).toFixed(2),
-      student.predicted_gpa == null
-        ? ""
-        : Number(student.predicted_gpa).toFixed(2),
-      student.confidence_score == null ? "" : `${Number(student.confidence_score)}%`,
-      student.risk_level || "Low",
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
-          .join(","),
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = isAdmin
-      ? "all-students.csv"
-      : "assigned-students.csv";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Student list exported as CSV.");
+    try {
+      await downloadStyledExcel({
+        fileName: isAdmin ? "all-students.xlsx" : "assigned-students.xlsx",
+        sheetName: "Students",
+        title: isAdmin ? "All Students Directory" : "Assigned Students Directory",
+        subtitle: "WMSU HAWKS · Student Success Predictor",
+        meta: [
+          {
+            label: "Filter",
+            value: riskLevel ? `Risk = ${riskLevel}` : "All risk levels",
+          },
+          {
+            label: "Search",
+            value: searchTerm.trim() || "None",
+          },
+          { label: "Students", value: String(filteredStudents.length) },
+        ],
+        columns: [
+          { header: "Student ID", width: 16 },
+          { header: "Name", width: 28 },
+          { header: "Year Level", width: 12, align: "center" },
+          { header: "Current GPA", width: 13, align: "center" },
+          { header: "Predicted GPA", width: 14, align: "center" },
+          { header: "Confidence", width: 12, align: "center" },
+          { header: "Risk Level", width: 12, align: "center" },
+        ],
+        rows: filteredStudents.map((student) => [
+          student.student_id,
+          student.full_name,
+          student.yearLevel || "N/A",
+          student.current_gpa == null
+            ? ""
+            : Number(student.current_gpa).toFixed(2),
+          student.predicted_gpa == null
+            ? ""
+            : Number(student.predicted_gpa).toFixed(2),
+          student.confidence_score == null
+            ? ""
+            : `${Number(student.confidence_score)}%`,
+          student.risk_level || "Low",
+        ]),
+      });
+      toast.success("Student list exported as Excel.");
+    } catch (exportError) {
+      console.error(exportError);
+      toast.error("Unable to export student list.");
+    }
   };
 
   return (
@@ -279,8 +285,8 @@ const StudentsList = () => {
             type="button"
             className={styles.toolbarIconButton}
             onClick={handleExport}
-            title="Export to CSV"
-            aria-label="Export to CSV"
+            title="Export to Excel"
+            aria-label="Export to Excel"
             disabled={filteredStudents.length === 0}
           >
             <i className="fas fa-file-export" aria-hidden="true" />

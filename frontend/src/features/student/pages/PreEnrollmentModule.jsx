@@ -4,6 +4,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { normalizeApplicantPayload } from "../../../utils/dataNormalization";
+import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -156,7 +157,7 @@ const PreEnrollmentModule = () => {
 
   const getExportRows = () => filteredHistory;
 
-  const handleExportCSV = () => {
+  const handleExportExcel = async () => {
     setExportMenuOpen(false);
     const rows = getExportRows();
 
@@ -165,33 +166,39 @@ const PreEnrollmentModule = () => {
       return;
     }
 
-    const headers = ["Applicant ID", "Name", "Program", "Confidence", "Status"];
-    const csvRows = rows.map((item) => [
-      item.id,
-      item.name,
-      item.program,
-      `${item.confidence}%`,
-      item.status,
-    ]);
-
-    const csv = [headers, ...csvRows]
-      .map((row) =>
-        row
-          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
-          .join(","),
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pre-enrollment-recommendations.csv";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Recommendation history exported as CSV.");
+    try {
+      await downloadStyledExcel({
+        fileName: "pre-enrollment-recommendations.xlsx",
+        sheetName: "Recommendations",
+        title: "Pre-Enrollment Degree Recommendations",
+        subtitle: "WMSU HAWKS · Student Success Predictor",
+        meta: [
+          {
+            label: "Search",
+            value: searchTerm.trim() || "None",
+          },
+          { label: "Records", value: String(rows.length) },
+        ],
+        columns: [
+          { header: "Applicant ID", width: 16 },
+          { header: "Name", width: 26 },
+          { header: "Program", width: 22 },
+          { header: "Confidence", width: 12, align: "center" },
+          { header: "Status", width: 14, align: "center" },
+        ],
+        rows: rows.map((item) => [
+          item.id,
+          item.name,
+          item.program,
+          `${item.confidence}%`,
+          item.status,
+        ]),
+      });
+      toast.success("Recommendation history exported as Excel.");
+    } catch (exportError) {
+      console.error(exportError);
+      toast.error("Unable to export recommendation history.");
+    }
   };
 
   const handleExportPDF = () => {
@@ -721,10 +728,10 @@ const PreEnrollmentModule = () => {
                     type="button"
                     className={styles.exportMenuItem}
                     role="menuitem"
-                    onClick={handleExportCSV}
+                    onClick={handleExportExcel}
                   >
-                    <i className="fas fa-file-csv" aria-hidden="true" />
-                    Export CSV
+                    <i className="fas fa-file-excel" aria-hidden="true" />
+                    Export Excel
                   </button>
                   <button
                     type="button"

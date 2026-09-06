@@ -6,6 +6,7 @@ import {
   enrichGradeRecord,
   getUniqueAcademicYears,
 } from "../../../utils/gradeSemesterUtils";
+import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import styles from "../../../styles/Dashboard.module.css";
 
 const NO_GRADES_MESSAGE =
@@ -94,8 +95,6 @@ const resolveSubject = (record) => {
 
   return { code: "—", description: "—" };
 };
-
-const escapeCsv = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 const MyGradesPage = () => {
   const { user } = useAuth();
@@ -224,42 +223,54 @@ const MyGradesPage = () => {
   const studentName =
     user?.full_name || user?.fullName || user?.name || "Student";
 
-  const handleExportYear = () => {
+  const handleExportYear = async () => {
     const records = selectedYear ? selectedYearRecords : enrichedGrades;
     if (records.length === 0) {
       toast.error("No grade records available to export.");
       return;
     }
 
-    const headers = ["Subject Code", "Description", "Semester", "Academic Year", "Grade", "Remarks"];
-    const rows = records.map((record) => {
-      const { code, description } = resolveSubject(record);
-      return [
-        code,
-        description,
-        SEMESTER_LABELS[record.semesterCode] || record.semesterCode,
-        record.academicYear,
-        formatGradeDisplay(record.grade),
-        record.remarks || "",
-      ];
-    });
-
-    const csv = [headers, ...rows]
-      .map((row) => row.map(escapeCsv).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = selectedYear
-      ? `my-grades-SY-${selectedYear}.csv`
-      : "my-grades.csv";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Grade records exported as CSV.");
+    try {
+      await downloadStyledExcel({
+        fileName: selectedYear
+          ? `my-grades-SY-${selectedYear}.xlsx`
+          : "my-grades.xlsx",
+        sheetName: selectedYear ? `SY ${selectedYear}` : "Grades",
+        title: "Official Grade Report",
+        subtitle: "WMSU HAWKS · Student Success Predictor",
+        meta: [
+          { label: "Student", value: studentName },
+          {
+            label: "School Year",
+            value: selectedYear || "All years",
+          },
+          { label: "Records", value: String(records.length) },
+        ],
+        columns: [
+          { header: "Subject Code", width: 14 },
+          { header: "Description", width: 36, wrap: true },
+          { header: "Semester", width: 16 },
+          { header: "Academic Year", width: 14, align: "center" },
+          { header: "Grade", width: 10, align: "center" },
+          { header: "Remarks", width: 12, align: "center" },
+        ],
+        rows: records.map((record) => {
+          const { code, description } = resolveSubject(record);
+          return [
+            code,
+            description,
+            SEMESTER_LABELS[record.semesterCode] || record.semesterCode,
+            record.academicYear,
+            formatGradeDisplay(record.grade),
+            record.remarks || "",
+          ];
+        }),
+      });
+      toast.success("Grade report exported as Excel.");
+    } catch (exportError) {
+      console.error(exportError);
+      toast.error("Unable to export grade report.");
+    }
   };
 
   return (
@@ -404,8 +415,8 @@ const MyGradesPage = () => {
                 type="button"
                 className={styles.syExportButton}
                 onClick={handleExportYear}
-                title="Download this school year as CSV"
-                aria-label="Download this school year as CSV"
+                title="Download this school year as Excel"
+                aria-label="Download this school year as Excel"
               >
                 <i className="fas fa-file-export" aria-hidden="true" />
                 Export grades

@@ -3,6 +3,7 @@ import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { api, isBackendAuthEnabled } from "../../../services/api";
+import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -157,53 +158,56 @@ const AcademicPerformanceModule = () => {
     toast.success("Academic performance forecasts refreshed.");
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filteredStudents.length === 0) {
       toast.error("No records available to export.");
       return;
     }
 
-    const headers = [
-      "Student ID",
-      "Name",
-      "Program",
-      "Year Level",
-      "Actual GWA",
-      "Predicted GWA",
-      "Abs. Error",
-      "Error Rate (%)",
-      "Risk Level",
-      "Recommendation",
-    ];
-
-    const rows = filteredStudents.map((student) => [
-      student.student_id,
-      student.full_name,
-      student.program,
-      student.year_level,
-      Number(student.current_gpa).toFixed(2),
-      Number(student.predicted_gpa).toFixed(2),
-      Number(student.abs_error || 0).toFixed(2),
-      Number(student.percent_error || 0).toFixed(1),
-      student.risk_level,
-      student.recommendation,
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","),
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `academic-performance-${filters.academicYear}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    try {
+      await downloadStyledExcel({
+        fileName: `academic-performance-${filters.academicYear}.xlsx`,
+        sheetName: "Forecast",
+        title: "Academic Performance Forecast Report",
+        subtitle: "WMSU HAWKS · Student Success Predictor",
+        meta: [
+          { label: "Academic Year", value: filters.academicYear },
+          {
+            label: "Risk Filter",
+            value: filters.riskLevel || "All",
+          },
+          { label: "Students", value: String(filteredStudents.length) },
+        ],
+        columns: [
+          { header: "Student ID", width: 16 },
+          { header: "Name", width: 26 },
+          { header: "Program", width: 18 },
+          { header: "Year Level", width: 12, align: "center" },
+          { header: "Actual GWA", width: 12, align: "center" },
+          { header: "Predicted GWA", width: 14, align: "center" },
+          { header: "Abs. Error", width: 11, align: "center" },
+          { header: "Error Rate (%)", width: 13, align: "center" },
+          { header: "Risk Level", width: 12, align: "center" },
+          { header: "Recommendation", width: 32, wrap: true },
+        ],
+        rows: filteredStudents.map((student) => [
+          student.student_id,
+          student.full_name,
+          student.program,
+          student.year_level,
+          Number(student.current_gpa).toFixed(2),
+          Number(student.predicted_gpa).toFixed(2),
+          Number(student.abs_error || 0).toFixed(2),
+          Number(student.percent_error || 0).toFixed(1),
+          student.risk_level,
+          student.recommendation,
+        ]),
+      });
+      toast.success("Performance forecast exported as Excel.");
+    } catch (exportError) {
+      console.error(exportError);
+      toast.error("Unable to export performance forecast.");
+    }
   };
 
   return (
@@ -323,8 +327,8 @@ const AcademicPerformanceModule = () => {
               type="button"
               className={styles.performanceIconButton}
               onClick={handleExport}
-              title="Export to CSV"
-              aria-label="Export to CSV"
+              title="Export to Excel"
+              aria-label="Export to Excel"
             >
               <i className="fas fa-file-export" aria-hidden="true" />
             </button>
