@@ -37,7 +37,7 @@ const AlertsList = () => {
     directoryError: contextError,
     refreshAdminNotifications,
   } = useDashboard();
-  const { isAdmin } = useRoleScopedStudents();
+  const { isAdmin, visibleStudentIds, visibleUserIds } = useRoleScopedStudents();
   const toast = useToast();
 
   const { alerts, loading, error, refetch } = useEarlyAlerts();
@@ -99,6 +99,20 @@ const AlertsList = () => {
       ),
     [mergedAlerts],
   );
+
+  const resolvedCases = useMemo(() => {
+    const rows = interventions.filter((item) => item.status === "resolved");
+    if (isAdmin) return rows;
+
+    return rows.filter((item) => {
+      const studentId = String(item.student_id || "").trim().toLowerCase();
+      const userId = String(item.student_user_id || "").trim().toLowerCase();
+      return (
+        (studentId && visibleStudentIds.has(studentId)) ||
+        (userId && visibleUserIds.has(userId))
+      );
+    });
+  }, [interventions, isAdmin, visibleStudentIds, visibleUserIds]);
 
   const getAlertIcon = (severity) => {
     const icons = {
@@ -187,6 +201,39 @@ const AlertsList = () => {
     }
   };
 
+  const handleCancelCase = async (intervention) => {
+    try {
+      setBusyId(intervention.id);
+      await api.cancelAlertIntervention(intervention.id);
+      toast.success("Case closed. You can open it again anytime.");
+      await loadInterventions();
+      if (typeof refreshAdminNotifications === "function") {
+        await refreshAdminNotifications();
+      }
+      await refetch();
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to cancel case.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleReopenCase = async (intervention) => {
+    try {
+      setBusyId(intervention.id);
+      await api.reopenAlertIntervention(intervention.id, {
+        note: "Case reopened from Resolved Cases.",
+      });
+      toast.success("Case reopened and moved back to Early Alerts.");
+      await loadInterventions();
+      await refetch();
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to reopen case.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   const handleSaveProgress = async (intervention) => {
     const draft = getDraft(intervention);
     try {
@@ -205,6 +252,28 @@ const AlertsList = () => {
       await refetch();
     } catch (requestError) {
       toast.error(requestError.message || "Unable to update progress.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleCancelProgress = async (intervention) => {
+    try {
+      setBusyId(intervention.id);
+      // Go back to waiting for acknowledgement (Pending Admin).
+      await api.revertAlertInterventionToAcknowledged(intervention.id, {
+        note: "Returned to pending admin acknowledgement.",
+      });
+      toast.success("Case returned to waiting for acknowledgement.");
+      setProgressDrafts((prev) => {
+        const next = { ...prev };
+        delete next[intervention.id];
+        return next;
+      });
+      await loadInterventions();
+      await refetch();
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to cancel progress.");
     } finally {
       setBusyId("");
     }
@@ -275,10 +344,15 @@ const AlertsList = () => {
             const showStaffEscalate = !isAdmin && (!status || status === "resolved");
             const showAdminOpenCase = isAdmin && !status;
             const showAdminAcknowledge = isAdmin && status === "pending_admin";
+            const showCancelPending = status === "pending_admin";
             const showProgress =
               Boolean(status) &&
               status !== "pending_admin" &&
               status !== "resolved";
+            const showCancelProgress =
+              status === "acknowledged" ||
+              status === "monitoring" ||
+              status === "improving";
             const isBusy =
               busyId === alert.id || busyId === intervention?.id;
 
@@ -378,15 +452,34 @@ const AlertsList = () => {
                           }}
                         />
                       </label>
-                      <button
-                        type="button"
-                        className={styles.alertActionBtn}
-                        disabled={isBusy}
-                        onClick={() => handleSaveProgress(intervention)}
-                        style={{ justifySelf: "start" }}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                        }}
                       >
-                        {isBusy ? "Saving…" : "Save progress"}
-                      </button>
+                        <button
+                          type="button"
+                          className={styles.alertActionBtn}
+                          disabled={isBusy}
+                          onClick={() => handleSaveProgress(intervention)}
+                        >
+                          {isBusy ? "Saving…" : "Save progress"}
+                        </button>
+                        {showCancelProgress ? (
+                          <button
+                            type="button"
+                            className={styles.alertActionBtnSecondary}
+                            disabled={isBusy}
+                            onClick={() => handleCancelProgress(intervention)}
+                            title="Return to waiting for acknowledgement"
+                          >
+                            {isBusy ? "Cancelling…" : "Cancel"}
+                          </button>
+                        ) : null}
+                      </div>
 
                       {intervention.events?.length ? (
                         <div style={{ marginTop: "0.35rem" }}>
@@ -466,6 +559,17 @@ const AlertsList = () => {
                       {isBusy ? "Saving…" : "Acknowledge"}
                     </button>
                   ) : null}
+                  {showCancelPending ? (
+                    <button
+                      type="button"
+                      className={styles.alertActionBtnSecondary}
+                      disabled={isBusy}
+                      onClick={() => handleCancelCase(intervention)}
+                      title="Cancel this pending case"
+                    >
+                      {isBusy ? "Closing…" : "Cancel"}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             );
@@ -483,6 +587,63 @@ const AlertsList = () => {
             <div className={commonStyles.emptyState}>Loading alerts…</div>
           )}
         </div>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.cardTitle}>Resolved Cases</div>
+        <p className={styles.pageSubtitle} style={{ marginTop: 0 }}>
+          Accidentally resolved a case? Reopen it here to continue tracking.
+        </p>
+
+        {resolvedCases.length > 0 ? (
+          <div className={styles.tableWrap}>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Risk</th>
+                  <th>Last note</th>
+                  <th>Resolved</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resolvedCases.map((item) => {
+                  const isBusy = busyId === item.id;
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>
+                          {item.student_name || "Student"}
+                        </div>
+                        <div className={styles.alertDesc}>
+                          {item.student_id || item.student_user_id}
+                        </div>
+                      </td>
+                      <td>{item.risk_level || item.severity || "—"}</td>
+                      <td>{item.latest_note || "—"}</td>
+                      <td>{formatEventTime(item.updated_at)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.alertActionBtn}
+                          disabled={isBusy}
+                          onClick={() => handleReopenCase(item)}
+                        >
+                          {isBusy ? "Opening…" : "Reopen case"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={commonStyles.emptyState}>
+            {isLoading ? "Loading resolved cases…" : "No resolved cases yet."}
+          </div>
+        )}
       </div>
     </div>
   );

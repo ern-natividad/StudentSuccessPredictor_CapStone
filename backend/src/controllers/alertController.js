@@ -328,6 +328,104 @@ export const updateInterventionProgress = async (req, res) => {
   res.status(200).json({ intervention: data });
 };
 
+export const revertInterventionToAcknowledged = async (req, res) => {
+  const actorId = getActorId(req);
+  const intervention = await getInterventionOrThrow(req.params.id);
+
+  const revertible = new Set(["acknowledged", "monitoring", "improving"]);
+  if (!revertible.has(intervention.status)) {
+    throw new HttpError(
+      400,
+      "Only acknowledged, monitoring, or improving cases can return to pending admin review.",
+    );
+  }
+
+  const now = new Date().toISOString();
+  const note =
+    String(req.body?.note || "").trim() ||
+    "Returned to pending admin acknowledgement.";
+
+  const { data, error } = await supabase
+    .from("alert_interventions")
+    .update({
+      status: "pending_admin",
+      acknowledged_by: null,
+      acknowledged_at: null,
+      latest_note: note,
+      updated_at: now,
+    })
+    .eq("id", intervention.id)
+    .select(INTERVENTION_SELECT)
+    .single();
+  if (error) throw error;
+
+  await insertEvent({
+    interventionId: intervention.id,
+    actorUserId: actorId,
+    eventType: "progress_update",
+    status: "pending_admin",
+    note,
+  });
+
+  res.status(200).json({ intervention: data });
+};
+
+export const cancelIntervention = async (req, res) => {
+  const intervention = await getInterventionOrThrow(req.params.id);
+
+  // Allow reset from any active case state back to the original early-alert
+  // (no intervention). Resolved cases stay in Resolved Cases until reopened.
+  if (intervention.status === "resolved") {
+    throw new HttpError(
+      400,
+      "Resolved cases cannot be cancelled here. Reopen them from Resolved Cases instead.",
+    );
+  }
+
+  const { error } = await supabase
+    .from("alert_interventions")
+    .delete()
+    .eq("id", intervention.id);
+  if (error) throw error;
+
+  res.status(200).json({ success: true, id: intervention.id });
+};
+
+export const reopenIntervention = async (req, res) => {
+  const actorId = getActorId(req);
+  const intervention = await getInterventionOrThrow(req.params.id);
+
+  if (intervention.status !== "resolved") {
+    throw new HttpError(400, "Only resolved cases can be reopened.");
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("alert_interventions")
+    .update({
+      status: "monitoring",
+      updated_at: now,
+      latest_note:
+        String(req.body?.note || "").trim() ||
+        intervention.latest_note ||
+        "Case reopened.",
+    })
+    .eq("id", intervention.id)
+    .select(INTERVENTION_SELECT)
+    .single();
+  if (error) throw error;
+
+  await insertEvent({
+    interventionId: intervention.id,
+    actorUserId: actorId,
+    eventType: "progress_update",
+    status: "monitoring",
+    note: String(req.body?.note || "").trim() || "Case reopened.",
+  });
+
+  res.status(200).json({ intervention: data });
+};
+
 export const listAdminNotifications = async (req, res) => {
   const actorId = getActorId(req);
   const unreadOnly = String(req.query.unreadOnly || "") === "true";

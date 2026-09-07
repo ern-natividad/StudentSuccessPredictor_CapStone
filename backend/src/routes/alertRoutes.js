@@ -3,10 +3,13 @@ import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   acknowledgeIntervention,
+  cancelIntervention,
   escalateAlert,
   listAdminNotifications,
   listInterventions,
   markAdminNotificationsRead,
+  reopenIntervention,
+  revertInterventionToAcknowledged,
   updateInterventionProgress,
 } from "../controllers/alertController.js";
 
@@ -45,6 +48,27 @@ router.post(
   requireAuth,
   requireRole("admin"),
   asyncHandler(acknowledgeIntervention),
+);
+
+router.post(
+  "/:id/cancel",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(cancelIntervention),
+);
+
+router.post(
+  "/:id/reopen",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(reopenIntervention),
+);
+
+router.post(
+  "/:id/revert-acknowledged",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(revertInterventionToAcknowledged),
 );
 
 router.patch(

@@ -203,6 +203,21 @@ export const api = {
   acknowledgeAlertIntervention: (interventionId) =>
     request(`/alerts/${interventionId}/acknowledge`, { method: "POST" }),
 
+  cancelAlertIntervention: (interventionId) =>
+    request(`/alerts/${interventionId}/cancel`, { method: "POST" }),
+
+  reopenAlertIntervention: (interventionId, payload = {}) =>
+    request(`/alerts/${interventionId}/reopen`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  revertAlertInterventionToAcknowledged: (interventionId, payload = {}) =>
+    request(`/alerts/${interventionId}/revert-acknowledged`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   updateAlertInterventionProgress: (interventionId, payload) =>
     request(`/alerts/${interventionId}/progress`, {
       method: "PATCH",
