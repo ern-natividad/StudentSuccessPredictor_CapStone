@@ -26,31 +26,43 @@ const HomePage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [flippedCapability, setFlippedCapability] = useState(null);
+
   const features = [
     {
       icon: "fas fa-chart-line",
       title: "Predictive Analytics",
       desc: "AI predictions that flag academic risk early.",
+      detail:
+        "Model student trajectories from grades and diagnostics so advisers can act before risk becomes failure.",
     },
     {
       icon: "fas fa-bell",
       title: "Early Alerts",
       desc: "Timely notices for fast interventions.",
+      detail:
+        "Escalate at-risk learners to staff and admins, then track acknowledgement and intervention progress.",
     },
     {
       icon: "fas fa-clipboard-check",
       title: "Screening Tools",
       desc: "Diagnostic modules for engineering tracks.",
+      detail:
+        "Support pre-enrollment and program-fit screening with CET-aligned inputs and clear recommendations.",
     },
     {
       icon: "fas fa-chart-pie",
       title: "Advanced Reports",
       desc: "Clear views of program-wide trends.",
+      detail:
+        "Export polished academic reports and monitor cohort performance with consistent risk indicators.",
     },
     {
       icon: "fas fa-lock",
       title: "Secure Access",
       desc: "Protected credentials and student data.",
+      detail:
+        "Role-based portals, MFA-ready authentication, and guarded academic records for campus use.",
     },
   ];
 
@@ -336,20 +348,20 @@ const HomePage = () => {
         {/* Feature Showcase — modern glass rail */}
         <section
           style={{
-            marginTop: "var(--space-xl)",
-            marginBottom: "var(--space-3xl)",
+            marginTop: "0.5rem",
+            marginBottom: "1.25rem",
           }}
         >
           <div
             style={{
               textAlign: "center",
-              marginBottom: "1.25rem",
+              marginBottom: "0.75rem",
             }}
           >
             <p
               style={{
-                margin: "0 0 0.4rem",
-                fontSize: "0.7rem",
+                margin: "0 0 0.25rem",
+                fontSize: "0.68rem",
                 fontWeight: 700,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
@@ -362,7 +374,7 @@ const HomePage = () => {
             <h2
               style={{
                 margin: 0,
-                fontSize: "clamp(1.25rem, 2.2vw, 1.65rem)",
+                fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
                 fontWeight: 700,
                 letterSpacing: "-0.02em",
                 color: "#FFFFFF",
@@ -378,9 +390,9 @@ const HomePage = () => {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-              gap: "0.75rem",
-              padding: "0.85rem",
-              borderRadius: "18px",
+              gap: "0.55rem",
+              padding: "0.55rem",
+              borderRadius: "14px",
               background:
                 "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
               border: "1px solid rgba(255, 255, 255, 0.28)",
@@ -389,86 +401,173 @@ const HomePage = () => {
               boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
           >
-            {features.map((feature, idx) => (
-              <div
-                key={idx}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: "0.55rem",
-                  padding: "1rem 0.9rem",
-                  borderRadius: "14px",
-                  background: "rgba(255, 255, 255, 0.92)",
-                  border: "1px solid rgba(255, 255, 255, 0.65)",
-                  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
-                  transition:
-                    "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-                  minHeight: "132px",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 10px 24px rgba(128, 0, 0, 0.12)";
-                  e.currentTarget.style.borderColor = "rgba(128, 0, 0, 0.22)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    "0 2px 8px rgba(15, 23, 42, 0.04)";
-                  e.currentTarget.style.borderColor =
-                    "rgba(255, 255, 255, 0.65)";
-                }}
-              >
-                <div
-                  style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background:
-                      "linear-gradient(145deg, #800000 0%, #9b1c1c 100%)",
-                    color: "#ffffff",
-                    fontSize: "0.9rem",
-                    boxShadow: "0 4px 10px rgba(128, 0, 0, 0.25)",
-                  }}
+            {features.map((feature, idx) => {
+              const isFlipped = flippedCapability === idx;
+              return (
+                <button
+                  key={feature.title}
+                  type="button"
+                  className={`capability-flip${isFlipped ? " is-flipped" : ""}`}
+                  aria-pressed={isFlipped}
+                  aria-label={`${feature.title}. ${isFlipped ? feature.detail : feature.desc}. Activate to flip.`}
+                  onClick={() =>
+                    setFlippedCapability((current) =>
+                      current === idx ? null : idx,
+                    )
+                  }
                 >
-                  <i className={feature.icon} aria-hidden="true" />
-                </div>
-
-                <div>
-                  <h4
-                    style={{
-                      margin: "0 0 0.3rem",
-                      fontSize: "0.88rem",
-                      fontWeight: 700,
-                      letterSpacing: "-0.01em",
-                      color: "#1e293b",
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {feature.title}
-                  </h4>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.76rem",
-                      lineHeight: 1.45,
-                      color: "#64748b",
-                    }}
-                  >
-                    {feature.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
+                  <div className="capability-flip-inner">
+                    <div className="capability-flip-face capability-flip-front">
+                      <div className="capability-flip-icon">
+                        <i className={feature.icon} aria-hidden="true" />
+                      </div>
+                      <h4>{feature.title}</h4>
+                      <p>{feature.desc}</p>
+                      <span className="capability-flip-hint">
+                        Tap to flip
+                      </span>
+                    </div>
+                    <div className="capability-flip-face capability-flip-back">
+                      <div className="capability-flip-icon capability-flip-icon-light">
+                        <i className={feature.icon} aria-hidden="true" />
+                      </div>
+                      <h4>{feature.title}</h4>
+                      <p>{feature.detail}</p>
+                      <span className="capability-flip-hint">
+                        Tap to flip back
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           <style>
             {`
+              .capability-flip {
+                appearance: none;
+                border: none;
+                background: transparent;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                min-height: 118px;
+                perspective: 1000px;
+                cursor: pointer;
+                text-align: left;
+                font: inherit;
+                color: inherit;
+              }
+
+              .capability-flip-inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                min-height: 118px;
+                transform-style: preserve-3d;
+                transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+              }
+
+              .capability-flip:hover .capability-flip-inner,
+              .capability-flip:focus-visible .capability-flip-inner,
+              .capability-flip.is-flipped .capability-flip-inner {
+                transform: rotateY(180deg);
+              }
+
+              .capability-flip:focus-visible {
+                outline: 2px solid rgba(255, 255, 255, 0.85);
+                outline-offset: 2px;
+                border-radius: 12px;
+              }
+
+              .capability-flip-face {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.35rem;
+                padding: 0.7rem 0.7rem 0.55rem;
+                border-radius: 12px;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+              }
+
+              .capability-flip-front {
+                background: rgba(255, 255, 255, 0.94);
+                border: 1px solid rgba(255, 255, 255, 0.7);
+              }
+
+              .capability-flip-back {
+                background: linear-gradient(155deg, #800000 0%, #5c0000 100%);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                color: #ffffff;
+                transform: rotateY(180deg);
+              }
+
+              .capability-flip-icon {
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(145deg, #800000 0%, #9b1c1c 100%);
+                color: #ffffff;
+                font-size: 0.78rem;
+                box-shadow: 0 3px 8px rgba(128, 0, 0, 0.22);
+                flex-shrink: 0;
+              }
+
+              .capability-flip-icon-light {
+                background: rgba(255, 255, 255, 0.16);
+                box-shadow: none;
+              }
+
+              .capability-flip-face h4 {
+                margin: 0;
+                font-size: 0.8rem;
+                font-weight: 700;
+                letter-spacing: -0.01em;
+                line-height: 1.2;
+                color: #1e293b;
+              }
+
+              .capability-flip-back h4 {
+                color: #ffffff;
+              }
+
+              .capability-flip-face p {
+                margin: 0;
+                font-size: 0.7rem;
+                line-height: 1.35;
+                color: #64748b;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+              }
+
+              .capability-flip-back p {
+                color: rgba(255, 255, 255, 0.9);
+                -webkit-line-clamp: 4;
+              }
+
+              .capability-flip-hint {
+                margin-top: 0.15rem;
+                font-size: 0.6rem;
+                font-weight: 650;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #94a3b8;
+              }
+
+              .capability-flip-back .capability-flip-hint {
+                color: rgba(255, 255, 255, 0.72);
+              }
+
               @media (max-width: 900px) {
                 .capabilities-rail {
                   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -477,6 +576,15 @@ const HomePage = () => {
               @media (max-width: 520px) {
                 .capabilities-rail {
                   grid-template-columns: 1fr !important;
+                }
+              }
+
+              @media (hover: none) {
+                .capability-flip:hover .capability-flip-inner {
+                  transform: none;
+                }
+                .capability-flip.is-flipped .capability-flip-inner {
+                  transform: rotateY(180deg);
                 }
               }
             `}
