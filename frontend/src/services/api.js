@@ -189,6 +189,37 @@ export const api = {
 
   deleteStudentGrade: (gradeId) => request(`/grades/${gradeId}`, { method: "DELETE" }),
 
+  getAlertInterventions: (includeResolved = false) =>
+    request(
+      `/alerts/interventions${includeResolved ? "?includeResolved=true" : ""}`,
+    ),
+
+  escalateAlert: (payload) =>
+    request("/alerts/escalate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  acknowledgeAlertIntervention: (interventionId) =>
+    request(`/alerts/${interventionId}/acknowledge`, { method: "POST" }),
+
+  updateAlertInterventionProgress: (interventionId, payload) =>
+    request(`/alerts/${interventionId}/progress`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  getAdminAlertNotifications: (unreadOnly = false) =>
+    request(
+      `/alerts/notifications${unreadOnly ? "?unreadOnly=true" : ""}`,
+    ),
+
+  markAdminAlertNotificationsRead: (payload = { all: true }) =>
+    request("/alerts/notifications/mark-read", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   deleteAccount: async (userId, token) => {
     const authToken =
       token ||

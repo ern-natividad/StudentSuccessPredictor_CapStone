@@ -1,28 +1,104 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { useToast } from "../../../components/Common/Toast";
 import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
+import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
+const STATUS_LABELS = {
+  pending_admin: "Pending Admin",
+  acknowledged: "Acknowledged",
+  monitoring: "Monitoring",
+  improving: "Improving",
+  resolved: "Resolved",
+};
+
+const PROGRESS_OPTIONS = [
+  { value: "monitoring", label: "Monitoring" },
+  { value: "improving", label: "Improving" },
+  { value: "resolved", label: "Resolved" },
+];
+
+const formatEventTime = (value) => {
+  if (!value) return "";
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const AlertsList = () => {
-  const { directoryLoading: contextLoading, directoryError: contextError } =
-    useDashboard();
+  const {
+    directoryLoading: contextLoading,
+    directoryError: contextError,
+    refreshAdminNotifications,
+  } = useDashboard();
   const { isAdmin } = useRoleScopedStudents();
   const toast = useToast();
 
-  const { alerts, loading, error } = useEarlyAlerts();
-  const [acknowledgedIds, setAcknowledgedIds] = useState(new Set());
+  const { alerts, loading, error, refetch } = useEarlyAlerts();
+  const [interventions, setInterventions] = useState([]);
+  const [interventionsLoading, setInterventionsLoading] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const [progressDrafts, setProgressDrafts] = useState({});
+
+  const loadInterventions = useCallback(async () => {
+    if (!isBackendAuthEnabled()) {
+      setInterventions([]);
+      return;
+    }
+
+    try {
+      setInterventionsLoading(true);
+      const result = await api.getAlertInterventions(true);
+      setInterventions(result.interventions || []);
+    } catch (requestError) {
+      console.error(requestError);
+      toast.error(requestError.message || "Unable to load intervention cases.");
+    } finally {
+      setInterventionsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    loadInterventions();
+  }, [loadInterventions]);
 
   useEffect(() => {
     if (error) toast.error(error);
   }, [error, toast]);
 
-  const handleAcknowledge = (id) => {
-    setAcknowledgedIds((prev) => new Set(prev).add(id));
-    toast.success("Alert acknowledged.");
-  };
+  const interventionByUserId = useMemo(() => {
+    const map = new Map();
+    interventions.forEach((item) => {
+      if (item.student_user_id) {
+        map.set(String(item.student_user_id), item);
+      }
+    });
+    return map;
+  }, [interventions]);
+
+  const mergedAlerts = useMemo(() => {
+    return alerts.map((alert) => {
+      const intervention = interventionByUserId.get(String(alert.userId || ""));
+      return {
+        ...alert,
+        intervention: intervention || null,
+      };
+    });
+  }, [alerts, interventionByUserId]);
+
+  const activeAlerts = useMemo(
+    () =>
+      mergedAlerts.filter(
+        (alert) => alert.intervention?.status !== "resolved",
+      ),
+    [mergedAlerts],
+  );
 
   const getAlertIcon = (severity) => {
     const icons = {
@@ -34,8 +110,107 @@ const AlertsList = () => {
     return icons[severity] || "fas fa-info-circle";
   };
 
-  const activeAlerts = alerts.filter((a) => !acknowledgedIds.has(a.id));
-  const isLoading = loading || contextLoading;
+  const getDraft = (intervention) => {
+    if (!intervention?.id) {
+      return { status: "monitoring", note: "" };
+    }
+
+    if (progressDrafts[intervention.id]) {
+      return progressDrafts[intervention.id];
+    }
+
+    return {
+      status:
+        intervention.status === "acknowledged" ||
+        intervention.status === "pending_admin"
+          ? "monitoring"
+          : PROGRESS_OPTIONS.some((option) => option.value === intervention.status)
+            ? intervention.status
+            : "monitoring",
+      note: "",
+    };
+  };
+
+  const setDraft = (intervention, patch) => {
+    if (!intervention?.id) return;
+    setProgressDrafts((prev) => ({
+      ...prev,
+      [intervention.id]: {
+        ...getDraft(intervention),
+        ...(prev[intervention.id] || {}),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleEscalate = async (alert) => {
+    if (!alert.userId) {
+      toast.error("Missing student user id for this alert.");
+      return;
+    }
+
+    try {
+      setBusyId(alert.id);
+      await api.escalateAlert({
+        studentUserId: alert.userId,
+        studentInfoId: alert.id,
+        studentId: alert.studentId || "",
+        studentName: alert.name,
+        riskLevel: alert.riskLevel,
+        severity: alert.sev,
+      });
+      toast.success("Escalated to Admin. They will be notified.");
+      await loadInterventions();
+      if (typeof refreshAdminNotifications === "function") {
+        await refreshAdminNotifications();
+      }
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to escalate alert.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleAcknowledge = async (intervention) => {
+    try {
+      setBusyId(intervention.id);
+      await api.acknowledgeAlertIntervention(intervention.id);
+      toast.success("Student risk case acknowledged. You can track progress now.");
+      await loadInterventions();
+      if (typeof refreshAdminNotifications === "function") {
+        await refreshAdminNotifications();
+      }
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to acknowledge case.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleSaveProgress = async (intervention) => {
+    const draft = getDraft(intervention);
+    try {
+      setBusyId(intervention.id);
+      await api.updateAlertInterventionProgress(intervention.id, {
+        status: draft.status,
+        note: draft.note,
+      });
+      toast.success("Progress updated.");
+      setProgressDrafts((prev) => {
+        const next = { ...prev };
+        delete next[intervention.id];
+        return next;
+      });
+      await loadInterventions();
+      await refetch();
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to update progress.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const isLoading = loading || contextLoading || interventionsLoading;
   const displayError = error || contextError;
 
   return (
@@ -47,8 +222,8 @@ const AlertsList = () => {
           </h1>
           <p className={styles.pageSubtitle}>
             {isAdmin
-              ? "Monitor risk flags and account issues across the full student cohort."
-              : "Monitor risk flags and account issues for students assigned to your sections."}
+              ? "Review escalations from advisers, acknowledge at-risk students, and track intervention progress."
+              : "Escalate assigned student risk flags to Admin, then track progress after acknowledgement."}
           </p>
         </div>
       </div>
@@ -93,34 +268,208 @@ const AlertsList = () => {
 
       <div className={styles.card}>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {activeAlerts.map((alert) => (
-            <div key={alert.id} className={styles.alertItem}>
-              <div className={`${styles.alertIcon} ${styles[alert.sev]}`}>
-                <i className={getAlertIcon(alert.sev)}></i>
+          {activeAlerts.map((alert) => {
+            const intervention = alert.intervention;
+            const status = intervention?.status;
+            const draft = intervention ? getDraft(intervention) : null;
+            const showStaffEscalate = !isAdmin && (!status || status === "resolved");
+            const showAdminOpenCase = isAdmin && !status;
+            const showAdminAcknowledge = isAdmin && status === "pending_admin";
+            const showProgress =
+              Boolean(status) &&
+              status !== "pending_admin" &&
+              status !== "resolved";
+            const isBusy =
+              busyId === alert.id || busyId === intervention?.id;
+
+            return (
+              <div key={alert.id} className={styles.alertItem}>
+                <div className={`${styles.alertIcon} ${styles[alert.sev]}`}>
+                  <i className={getAlertIcon(alert.sev)}></i>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className={styles.alertName}>{alert.name}</div>
+                  <div className={styles.alertDesc}>{alert.desc}</div>
+                  <div className={styles.alertTime}>{alert.time}</div>
+
+                  {status ? (
+                    <div style={{ marginTop: "0.55rem" }}>
+                      <span
+                        className={commonStyles.riskBadge}
+                        style={{ marginRight: "0.5rem" }}
+                      >
+                        {STATUS_LABELS[status] || status}
+                      </span>
+                      {intervention?.latest_note ? (
+                        <span className={styles.alertDesc}>
+                          Latest note: {intervention.latest_note}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {showProgress ? (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        display: "grid",
+                        gap: "0.5rem",
+                        maxWidth: "520px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          color: "#334155",
+                        }}
+                      >
+                        Track progress
+                        <select
+                          value={draft.status}
+                          disabled={isBusy}
+                          onChange={(event) =>
+                            setDraft(intervention, {
+                              status: event.target.value,
+                            })
+                          }
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            marginTop: "0.3rem",
+                            padding: "0.45rem 0.6rem",
+                            borderRadius: "8px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        >
+                          {PROGRESS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          color: "#334155",
+                        }}
+                      >
+                        Progress note (optional)
+                        <textarea
+                          value={draft.note}
+                          disabled={isBusy}
+                          rows={2}
+                          placeholder="e.g. Met with student; tutoring scheduled"
+                          onChange={(event) =>
+                            setDraft(intervention, {
+                              note: event.target.value,
+                            })
+                          }
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            marginTop: "0.3rem",
+                            padding: "0.45rem 0.6rem",
+                            borderRadius: "8px",
+                            border: "1px solid #cbd5e1",
+                            resize: "vertical",
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className={styles.alertActionBtn}
+                        disabled={isBusy}
+                        onClick={() => handleSaveProgress(intervention)}
+                        style={{ justifySelf: "start" }}
+                      >
+                        {isBusy ? "Saving…" : "Save progress"}
+                      </button>
+
+                      {intervention.events?.length ? (
+                        <div style={{ marginTop: "0.35rem" }}>
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              color: "#64748b",
+                              marginBottom: "0.25rem",
+                            }}
+                          >
+                            Recent updates
+                          </div>
+                          {intervention.events.slice(0, 4).map((event) => (
+                            <div
+                              key={event.id}
+                              className={styles.alertDesc}
+                              style={{ marginBottom: "0.2rem" }}
+                            >
+                              {formatEventTime(event.created_at)} —{" "}
+                              {STATUS_LABELS[event.status] ||
+                                event.event_type}
+                              {event.note ? `: ${event.note}` : ""}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {status === "pending_admin" && !isAdmin ? (
+                    <div
+                      className={styles.alertDesc}
+                      style={{ marginTop: "0.5rem" }}
+                    >
+                      Waiting for Admin acknowledgement.
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className={styles.alertMeta}>
+                  <span
+                    className={`${commonStyles.riskBadge} ${
+                      commonStyles["riskBadge." + alert.sev]
+                    }`}
+                  >
+                    {alert.riskLevel || alert.sev}
+                  </span>
+                  <br />
+                  {showStaffEscalate ? (
+                    <button
+                      type="button"
+                      className={styles.alertActionBtn}
+                      disabled={isBusy}
+                      onClick={() => handleEscalate(alert)}
+                    >
+                      {isBusy ? "Sending…" : "Escalate to Admin"}
+                    </button>
+                  ) : null}
+                  {showAdminOpenCase ? (
+                    <button
+                      type="button"
+                      className={styles.alertActionBtnSecondary}
+                      disabled={isBusy}
+                      onClick={() => handleEscalate(alert)}
+                    >
+                      {isBusy ? "Saving…" : "Open case"}
+                    </button>
+                  ) : null}
+                  {showAdminAcknowledge ? (
+                    <button
+                      type="button"
+                      className={styles.alertActionBtn}
+                      disabled={isBusy}
+                      onClick={() => handleAcknowledge(intervention)}
+                    >
+                      {isBusy ? "Saving…" : "Acknowledge"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div className={styles.alertName}>{alert.name}</div>
-                <div className={styles.alertDesc}>{alert.desc}</div>
-                <div className={styles.alertTime}>{alert.time}</div>
-              </div>
-              <div className={styles.alertMeta}>
-                <span
-                  className={`${commonStyles.riskBadge} ${
-                    commonStyles["riskBadge." + alert.sev]
-                  }`}
-                >
-                  {alert.riskLevel || alert.sev}
-                </span>
-                <br />
-                <button
-                  className={commonStyles.btnSmallOutline}
-                  onClick={() => handleAcknowledge(alert.id)}
-                >
-                  Acknowledge
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {!isLoading && activeAlerts.length === 0 && (
             <div className={commonStyles.emptyState}>

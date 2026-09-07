@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
 import { filterStudentsForAdviser, parseAssignedSections } from "../utils/adviserAssignmentUtils";
 import { fetchEarlyAlerts, scopeEarlyAlerts } from "../utils/earlyAlertsUtils";
+import { api, isBackendAuthEnabled } from "../services/api";
 import { supabase } from "../lib/supabaseClient";
 
 export const DashboardContext = createContext();
@@ -46,6 +47,7 @@ export const DashboardProvider = ({ children }) => {
   const [sections, setSections] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
   const [earlyAlerts, setEarlyAlerts] = useState([]);
+  const [adminNotifications, setAdminNotifications] = useState([]);
   const [viewedAlertIds, setViewedAlertIds] = useState(() => new Set());
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [directoryLoading, setDirectoryLoading] = useState(false);
@@ -245,9 +247,29 @@ export const DashboardProvider = ({ children }) => {
     [students, staffMembers],
   );
 
+  const refreshAdminNotifications = useCallback(async () => {
+    if (
+      !isBackendAuthEnabled() ||
+      !user?.isAuthenticated ||
+      user?.role !== "admin"
+    ) {
+      setAdminNotifications([]);
+      return;
+    }
+
+    try {
+      const result = await api.getAdminAlertNotifications(false);
+      setAdminNotifications(result.notifications || []);
+    } catch (error) {
+      console.error("Failed to load admin notifications:", error);
+      setAdminNotifications([]);
+    }
+  }, [user?.isAuthenticated, user?.role]);
+
   useEffect(() => {
     if (!user?.isAuthenticated) {
       setEarlyAlerts([]);
+      setAdminNotifications([]);
       return undefined;
     }
 
@@ -270,6 +292,18 @@ export const DashboardProvider = ({ children }) => {
             getStudentsForStaff,
           }),
         );
+
+        if (user.role === "admin" && isBackendAuthEnabled()) {
+          try {
+            const result = await api.getAdminAlertNotifications(false);
+            if (isMounted) setAdminNotifications(result.notifications || []);
+          } catch (notifyError) {
+            console.error("Failed to load admin notifications:", notifyError);
+            if (isMounted) setAdminNotifications([]);
+          }
+        } else if (isMounted) {
+          setAdminNotifications([]);
+        }
       } catch (error) {
         console.error("Failed to load early alerts:", error);
         if (isMounted) setEarlyAlerts([]);
@@ -299,6 +333,7 @@ export const DashboardProvider = ({ children }) => {
     getStudentsForStaff,
     staffMembers,
     students,
+    user?.email,
     user?.id,
     user?.isAuthenticated,
     user?.role,
@@ -306,25 +341,42 @@ export const DashboardProvider = ({ children }) => {
 
   const alerts = useMemo(() => earlyAlerts, [earlyAlerts]);
 
+  const unreadAdminNotificationCount = useMemo(
+    () => adminNotifications.filter((item) => !item.is_read).length,
+    [adminNotifications],
+  );
+
   const unreadAlerts = useMemo(
     () => earlyAlerts.filter((alert) => !viewedAlertIds.has(alert.id)),
     [earlyAlerts, viewedAlertIds],
   );
 
-  const unreadAlertCount = unreadAlerts.length;
+  const unreadAlertCount =
+    user?.role === "admin"
+      ? unreadAdminNotificationCount + unreadAlerts.length
+      : unreadAlerts.length;
 
   const markNotificationsAsViewed = useCallback(() => {
-    if (earlyAlerts.length === 0) return;
-
-    setViewedAlertIds((prev) => {
-      const next = new Set(prev);
-      earlyAlerts.forEach((alert) => {
-        if (alert.id) next.add(alert.id);
+    if (earlyAlerts.length > 0) {
+      setViewedAlertIds((prev) => {
+        const next = new Set(prev);
+        earlyAlerts.forEach((alert) => {
+          if (alert.id) next.add(alert.id);
+        });
+        saveViewedAlertIds(user?.id, next);
+        return next;
       });
-      saveViewedAlertIds(user?.id, next);
-      return next;
-    });
-  }, [earlyAlerts, user?.id]);
+    }
+
+    if (user?.role === "admin" && isBackendAuthEnabled()) {
+      void api
+        .markAdminAlertNotificationsRead({ all: true })
+        .then(() => refreshAdminNotifications())
+        .catch((error) => {
+          console.error("Failed to mark admin notifications read:", error);
+        });
+    }
+  }, [earlyAlerts, refreshAdminNotifications, user?.id, user?.role]);
 
   useEffect(() => {
     if (currentPage === "alerts") {
@@ -470,6 +522,7 @@ export const DashboardProvider = ({ children }) => {
     sections,
     staffMembers,
     alerts,
+    adminNotifications,
     unreadAlertCount,
     alertsLoading,
     directoryLoading,
@@ -478,6 +531,7 @@ export const DashboardProvider = ({ children }) => {
     toggleNotificationsPanel,
     closeNotificationsPanel,
     markNotificationsAsViewed,
+    refreshAdminNotifications,
     studentFilter,
     updateStudentFilter,
     riskFilter,
