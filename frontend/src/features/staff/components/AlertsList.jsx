@@ -165,7 +165,7 @@ const AlertsList = () => {
 
     try {
       setBusyId(alert.id);
-      await api.escalateAlert({
+      const result = await api.escalateAlert({
         studentUserId: alert.userId,
         studentInfoId: alert.id,
         studentId: alert.studentId || "",
@@ -173,7 +173,13 @@ const AlertsList = () => {
         riskLevel: alert.riskLevel,
         severity: alert.sev,
       });
-      toast.success("Escalated to Admin. They will be notified.");
+      if ((result?.notifiedAdminCount ?? 0) > 0) {
+        toast.success("Escalated to Admin. They will be notified.");
+      } else {
+        toast.error(
+          "Case escalated, but no admin accounts were found to notify.",
+        );
+      }
       await loadInterventions();
       if (typeof refreshAdminNotifications === "function") {
         await refreshAdminNotifications();

@@ -16,13 +16,34 @@ const NotificationPanel = () => {
     unreadAlertCount,
     alertsLoading,
     markNotificationsAsViewed,
+    refreshAdminNotifications,
   } = useDashboard();
 
   React.useEffect(() => {
-    if (notificationsPanelOpen) {
-      markNotificationsAsViewed();
-    }
-  }, [notificationsPanelOpen, markNotificationsAsViewed]);
+    if (!notificationsPanelOpen) return undefined;
+
+    let cancelled = false;
+
+    const syncAndMarkViewed = async () => {
+      if (user?.role === "admin" && typeof refreshAdminNotifications === "function") {
+        await refreshAdminNotifications();
+      }
+      if (!cancelled) {
+        markNotificationsAsViewed();
+      }
+    };
+
+    void syncAndMarkViewed();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    notificationsPanelOpen,
+    markNotificationsAsViewed,
+    refreshAdminNotifications,
+    user?.role,
+  ]);
 
   React.useEffect(() => {
     const handleClickOutside = (e) => {

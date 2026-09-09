@@ -57,12 +57,19 @@ const insertEvent = async ({
 const notifyAllAdmins = async ({ interventionId, title, body }) => {
   const { data: admins, error } = await supabase
     .from("users")
-    .select("id")
+    .select("id, role")
     .eq("role", "admin");
   if (error) throw error;
-  if (!admins?.length) return;
 
-  const rows = admins.map((admin) => ({
+  const adminRows = (admins || []).filter((row) => row?.id);
+  if (!adminRows.length) {
+    console.error(
+      "[alerts] escalate: no users with role=admin were found; skipping admin_notifications insert",
+    );
+    return 0;
+  }
+
+  const rows = adminRows.map((admin) => ({
     admin_user_id: admin.id,
     intervention_id: interventionId,
     title,
@@ -70,9 +77,49 @@ const notifyAllAdmins = async ({ interventionId, title, body }) => {
     is_read: false,
   }));
 
-  const { error: insertError } = await supabase
+  const { data: inserted, error: insertError } = await supabase
     .from("admin_notifications")
-    .insert(rows);
+    .insert(rows)
+    .select("id");
+  if (insertError) throw insertError;
+
+  return inserted?.length || 0;
+};
+
+/** Self-heal: ensure each admin has a bell row for every pending escalation. */
+const ensurePendingAdminNotifications = async (adminUserId) => {
+  if (!adminUserId) return;
+
+  const { data: pending, error: pendingError } = await supabase
+    .from("alert_interventions")
+    .select("id, student_name, risk_level")
+    .eq("status", "pending_admin");
+  if (pendingError) throw pendingError;
+  if (!pending?.length) return;
+
+  const pendingIds = pending.map((row) => row.id);
+  const { data: existing, error: existingError } = await supabase
+    .from("admin_notifications")
+    .select("intervention_id")
+    .eq("admin_user_id", adminUserId)
+    .in("intervention_id", pendingIds);
+  if (existingError) throw existingError;
+
+  const alreadyNotified = new Set(
+    (existing || []).map((row) => row.intervention_id).filter(Boolean),
+  );
+  const missing = pending.filter((row) => !alreadyNotified.has(row.id));
+  if (!missing.length) return;
+
+  const { error: insertError } = await supabase.from("admin_notifications").insert(
+    missing.map((row) => ({
+      admin_user_id: adminUserId,
+      intervention_id: row.id,
+      title: "Early alert escalated",
+      body: `${row.student_name || "Student"} was escalated by staff (${row.risk_level || "Medium"} risk). Please acknowledge.`,
+      is_read: false,
+    })),
+  );
   if (insertError) throw insertError;
 };
 
@@ -234,13 +281,13 @@ export const escalateAlert = async (req, res) => {
     note: note?.trim() || null,
   });
 
-  await notifyAllAdmins({
+  const notifiedAdminCount = await notifyAllAdmins({
     interventionId: intervention.id,
     title: "Early alert escalated",
     body: `${displayName} was escalated by staff (${normalizedRisk} risk). Please acknowledge.`,
   });
 
-  res.status(201).json({ intervention });
+  res.status(201).json({ intervention, notifiedAdminCount });
 };
 
 export const acknowledgeIntervention = async (req, res) => {
@@ -367,6 +414,12 @@ export const revertInterventionToAcknowledged = async (req, res) => {
     note,
   });
 
+  await notifyAllAdmins({
+    interventionId: intervention.id,
+    title: "Early alert returned to admin",
+    body: `${intervention.student_name || "Student"} was returned to pending admin acknowledgement.`,
+  });
+
   res.status(200).json({ intervention: data });
 };
 
@@ -428,7 +481,14 @@ export const reopenIntervention = async (req, res) => {
 
 export const listAdminNotifications = async (req, res) => {
   const actorId = getActorId(req);
+  if (!actorId) {
+    throw new HttpError(401, "Unable to resolve admin user for notifications.");
+  }
+
   const unreadOnly = String(req.query.unreadOnly || "") === "true";
+
+  // Backfill any pending escalations that never received a bell notification.
+  await ensurePendingAdminNotifications(actorId);
 
   let query = supabase
     .from("admin_notifications")

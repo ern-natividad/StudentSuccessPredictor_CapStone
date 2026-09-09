@@ -179,9 +179,34 @@ export const DashboardProvider = ({ children }) => {
     [setSearchParams],
   );
 
+  const refreshAdminNotifications = useCallback(async () => {
+    if (
+      !isBackendAuthEnabled() ||
+      !user?.isAuthenticated ||
+      user?.role !== "admin"
+    ) {
+      setAdminNotifications([]);
+      return;
+    }
+
+    try {
+      const result = await api.getAdminAlertNotifications(false);
+      setAdminNotifications(result.notifications || []);
+    } catch (error) {
+      console.error("Failed to load admin notifications:", error);
+      setAdminNotifications([]);
+    }
+  }, [user?.isAuthenticated, user?.role]);
+
   const toggleNotificationsPanel = useCallback(() => {
-    setNotificationsPanelOpen((prev) => !prev);
-  }, []);
+    setNotificationsPanelOpen((prev) => {
+      const opening = !prev;
+      if (opening && user?.role === "admin") {
+        void refreshAdminNotifications();
+      }
+      return opening;
+    });
+  }, [refreshAdminNotifications, user?.role]);
 
   const closeNotificationsPanel = useCallback(() => {
     setNotificationsPanelOpen(false);
@@ -246,25 +271,6 @@ export const DashboardProvider = ({ children }) => {
     },
     [students, staffMembers],
   );
-
-  const refreshAdminNotifications = useCallback(async () => {
-    if (
-      !isBackendAuthEnabled() ||
-      !user?.isAuthenticated ||
-      user?.role !== "admin"
-    ) {
-      setAdminNotifications([]);
-      return;
-    }
-
-    try {
-      const result = await api.getAdminAlertNotifications(false);
-      setAdminNotifications(result.notifications || []);
-    } catch (error) {
-      console.error("Failed to load admin notifications:", error);
-      setAdminNotifications([]);
-    }
-  }, [user?.isAuthenticated, user?.role]);
 
   useEffect(() => {
     if (!user?.isAuthenticated) {
@@ -346,6 +352,23 @@ export const DashboardProvider = ({ children }) => {
     user?.isAuthenticated,
     user?.role,
   ]);
+
+  // Keep admin bell in sync when staff escalate from another session.
+  useEffect(() => {
+    if (
+      !user?.isAuthenticated ||
+      user?.role !== "admin" ||
+      !isBackendAuthEnabled()
+    ) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      void refreshAdminNotifications();
+    }, 12000);
+
+    return () => clearInterval(intervalId);
+  }, [refreshAdminNotifications, user?.isAuthenticated, user?.role]);
 
   const alerts = useMemo(() => earlyAlerts, [earlyAlerts]);
 
