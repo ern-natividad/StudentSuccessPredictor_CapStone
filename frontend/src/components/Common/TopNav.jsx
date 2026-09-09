@@ -61,38 +61,40 @@ const TopNav = ({ onLogout }) => {
           </div>
         </div>
         <div className={styles.navRight}>
-          <button
-            type="button"
-            className={styles.navBell}
-            data-nav-bell="true"
-            onClick={handleBellClick}
-            aria-label="Open notifications"
-            title="Notifications"
-          >
-            <svg
-              className="ico"
-              viewBox="0 0 24 24"
-              style={{ width: "16px", height: "16px" }}
+          {(user?.role === "admin" || user?.role === "staff") && (
+            <button
+              type="button"
+              className={styles.navBell}
+              data-nav-bell="true"
+              onClick={handleBellClick}
+              aria-label="Open notifications"
+              title="Notifications"
             >
-              <path
-                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <path
-                d="M13.73 21a2 2 0 0 1-3.46 0"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              />
-            </svg>
-            {unreadAlertCount > 0 && (
-              <span className={styles.navBellBadge}>
-                {unreadAlertCount > 9 ? "9+" : unreadAlertCount}
-              </span>
-            )}
-          </button>
+              <svg
+                className="ico"
+                viewBox="0 0 24 24"
+                style={{ width: "16px", height: "16px" }}
+              >
+                <path
+                  d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M13.73 21a2 2 0 0 1-3.46 0"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                />
+              </svg>
+              {unreadAlertCount > 0 && (
+                <span className={styles.navBellBadge}>
+                  {unreadAlertCount > 9 ? "9+" : unreadAlertCount}
+                </span>
+              )}
+            </button>
+          )}
           <div>
             <div className={styles.navUserName}>{displayName}</div>
             <div className={styles.navUserRole}>{roleLabel}</div>

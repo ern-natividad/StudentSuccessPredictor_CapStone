@@ -273,6 +273,14 @@ export const DashboardProvider = ({ children }) => {
       return undefined;
     }
 
+    // Students do not use Early Alerts or the notification bell.
+    if (user.role === "student") {
+      setEarlyAlerts([]);
+      setAdminNotifications([]);
+      setAlertsLoading(false);
+      return undefined;
+    }
+
     let isMounted = true;
 
     const loadAlerts = async () => {

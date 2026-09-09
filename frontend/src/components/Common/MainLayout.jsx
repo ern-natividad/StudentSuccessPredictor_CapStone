@@ -48,7 +48,9 @@ const MainLayout = () => {
       className={`${styles.dashboardScreen} ${isModulePage ? styles.modulePageBg : ""}`}
     >
       <TopNav onLogout={handleLogout} />
-      <NotificationPanel />
+      {(user?.role === "admin" || user?.role === "staff") && (
+        <NotificationPanel />
+      )}
       <SessionExpiredModal
         open={sessionExpired}
         onDismiss={() => {
