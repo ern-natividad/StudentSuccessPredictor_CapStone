@@ -7,6 +7,17 @@ import styles from "../../../styles/Dashboard.module.css";
 const NO_PREDICTION_MESSAGE =
   "No prediction yet. Your forecast will appear once academic staff record your grades.";
 
+const SECTION_HEADING_STYLE = {
+  fontSize: "1.25rem",
+  fontWeight: 700,
+  lineHeight: 1.3,
+  letterSpacing: "-0.01em",
+  color: "#800000",
+  borderBottom: "1px solid #f1f5f9",
+  paddingBottom: "0.5rem",
+  marginBottom: "1rem",
+};
+
 const StudentPrediction = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -151,16 +162,7 @@ const StudentPrediction = () => {
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: "1.1rem",
-                  fontWeight: "700",
-                  color: "#800000",
-                  borderBottom: "1px solid #f1f5f9",
-                  paddingBottom: "0.5rem",
-                  marginBottom: "1rem",
-                }}
-              >
+              <div style={SECTION_HEADING_STYLE}>
                 Performance Summary
               </div>
 
@@ -309,16 +311,7 @@ const StudentPrediction = () => {
               flexDirection: "column",
             }}
           >
-            <div
-              style={{
-                fontSize: "1.1rem",
-                fontWeight: "700",
-                color: "#800000",
-                borderBottom: "1px solid #f1f5f9",
-                paddingBottom: "0.5rem",
-                marginBottom: "1rem",
-              }}
-            >
+            <div style={SECTION_HEADING_STYLE}>
               Prediction Breakdown
             </div>
 
