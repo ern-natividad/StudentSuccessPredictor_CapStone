@@ -28,13 +28,14 @@ const saveDismissToday = (announcementId) => {
 };
 
 /**
- * Fetches the latest active announcement and shows a Home-page popup
+ * Fetches the latest active announcement and shows a Home-page ad popup
  * unless the visitor chose "Don't show again today" for that post.
  */
 const HomeAnnouncementModal = () => {
   const [announcement, setAnnouncement] = useState(null);
   const [open, setOpen] = useState(false);
   const [dontShowToday, setDontShowToday] = useState(true);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,45 +67,74 @@ const HomeAnnouncementModal = () => {
   }, [announcement]);
 
   const handleClose = () => {
-    if (announcement?.id && dontShowToday) {
-      saveDismissToday(announcement.id);
-    }
-    setOpen(false);
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => {
+      if (announcement?.id && dontShowToday) {
+        saveDismissToday(announcement.id);
+      }
+      setOpen(false);
+      setLeaving(false);
+    }, 320);
   };
 
   if (!open || !announcement) return null;
 
+  const tickerText = `${announcement.title}  •  ${announcement.content.replace(/\s+/g, " ").trim()}`;
+
   return (
     <div
-      className={styles.homeOverlay}
+      className={`${styles.homeOverlay} ${leaving ? styles.homeOverlayLeaving : ""}`}
       role="presentation"
       onClick={handleClose}
     >
       <div
-        className={styles.homeModal}
+        className={`${styles.homeAd} ${leaving ? styles.homeAdLeaving : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="home-news-title"
         onClick={(event) => event.stopPropagation()}
       >
-        {announcement.image_url ? (
-          <img
-            src={announcement.image_url}
-            alt=""
-            className={styles.homeImage}
-          />
-        ) : (
-          <div
-            className={styles.homeImage}
-            style={{ height: 88 }}
-            aria-hidden="true"
-          />
-        )}
+        <div className={styles.homeAdRibbon}>
+          <span className={styles.homeAdBadge}>Advertisement</span>
+          <button
+            type="button"
+            className={styles.homeAdClose}
+            onClick={handleClose}
+            aria-label="Close advertisement"
+            title="Close"
+          >
+            <i className="fas fa-xmark" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className={styles.homeTicker} aria-hidden="true">
+          <div className={styles.homeTickerTrack}>
+            <span>{tickerText}</span>
+            <span>{tickerText}</span>
+          </div>
+        </div>
+
+        <div className={styles.homeAdMedia}>
+          {announcement.image_url ? (
+            <img
+              src={announcement.image_url}
+              alt=""
+              className={styles.homeImage}
+            />
+          ) : (
+            <div className={styles.homeImageFallback}>
+              <i className="fas fa-bullhorn" aria-hidden="true" />
+              <span>Campus Promo</span>
+            </div>
+          )}
+          <div className={styles.homeAdShine} aria-hidden="true" />
+        </div>
 
         <div className={styles.homeBody}>
           <div className={styles.homeEyebrow}>
-            <i className="fas fa-bullhorn" aria-hidden="true" />
-            News & Announcements
+            <i className="fas fa-sparkles" aria-hidden="true" />
+            Featured announcement
           </div>
           <h2 id="home-news-title" className={styles.homeTitle}>
             {announcement.title}
@@ -123,7 +153,7 @@ const HomeAnnouncementModal = () => {
 
             {actionHref ? (
               <a
-                className={styles.primaryBtn}
+                className={styles.adCta}
                 href={actionHref}
                 target={actionHref.startsWith("http") ? "_blank" : undefined}
                 rel={
@@ -134,16 +164,17 @@ const HomeAnnouncementModal = () => {
                 onClick={handleClose}
               >
                 Learn more
+                <i className="fas fa-arrow-right" aria-hidden="true" />
               </a>
-            ) : null}
-
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={handleClose}
-            >
-              Close
-            </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.adCta}
+                onClick={handleClose}
+              >
+                Got it
+              </button>
+            )}
           </div>
         </div>
       </div>

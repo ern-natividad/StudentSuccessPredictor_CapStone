@@ -250,24 +250,34 @@ const AnnouncementsPage = () => {
                 <div className={styles.cardActions}>
                   <button
                     type="button"
-                    className={styles.ghostBtn}
+                    className={`${dashboardStyles.tableActionButton} ${styles.actionSlotLeft}`}
                     onClick={() => openEdit(item)}
+                    title="Edit announcement"
+                    aria-label={`Edit ${item.title}`}
                   >
-                    Edit
+                    <i className="fas fa-pen-to-square" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => handleToggleActive(item)}
-                  >
-                    {item.is_active ? "Unpublish" : "Publish"}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.dangerBtn}
+                    className={`${dashboardStyles.tableActionButton} ${styles.actionSlotCenter}`}
                     onClick={() => setDeleteTarget(item)}
+                    title="Delete announcement"
+                    aria-label={`Delete ${item.title}`}
+                    style={{ color: "#ef4444" }}
                   >
-                    Delete
+                    <i className="fas fa-trash-can" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.publishBtn} ${styles.actionSlotRight}`}
+                    onClick={() => handleToggleActive(item)}
+                    title={item.is_active ? "Unpublish" : "Publish"}
+                  >
+                    <i
+                      className={`fas ${item.is_active ? "fa-eye-slash" : "fa-eye"}`}
+                      aria-hidden="true"
+                    />
+                    {item.is_active ? "Unpublish" : "Publish"}
                   </button>
                 </div>
               </div>
