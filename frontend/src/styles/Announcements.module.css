@@ -364,6 +364,7 @@
 .homeAdMedia {
   position: relative;
   overflow: hidden;
+  animation: adSlideIn 0.35s ease;
 }
 
 .homeImage {
@@ -407,8 +408,38 @@
   pointer-events: none;
 }
 
+.homeNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.homeNavBtn:hover {
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.homeNavPrev {
+  left: 10px;
+}
+
+.homeNavNext {
+  right: 10px;
+}
+
 .homeBody {
   padding: 1.2rem 1.25rem 1.2rem;
+  animation: adSlideIn 0.35s ease;
 }
 
 .homeEyebrow {
@@ -431,10 +462,32 @@
 }
 
 .homeContent {
-  margin: 0 0 1.05rem;
+  margin: 0 0 0.85rem;
   color: #475569;
   line-height: 1.55;
   white-space: pre-wrap;
+}
+
+.homeDots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+
+.homeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: #cbd5e1;
+  cursor: pointer;
+}
+
+.homeDotActive {
+  width: 18px;
+  background: #800000;
 }
 
 .homeActions {
@@ -515,6 +568,17 @@
   to {
     opacity: 0;
     transform: translateX(110%);
+  }
+}
+
+@keyframes adSlideIn {
+  from {
+    opacity: 0.35;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

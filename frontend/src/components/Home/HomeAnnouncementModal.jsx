@@ -3,6 +3,7 @@ import { api } from "../../services/api";
 import styles from "../../styles/Announcements.module.css";
 
 const DISMISS_STORAGE_KEY = "hawkpredict-news-dismiss";
+const AUTO_ROTATE_MS = 6500;
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
@@ -14,41 +15,52 @@ const readDismissState = () => {
   }
 };
 
-const wasDismissedToday = (announcementId) => {
+const getDismissedIdsToday = () => {
   const saved = readDismissState();
-  if (!saved?.id || !saved?.date) return false;
-  return saved.id === announcementId && saved.date === todayKey();
+  if (!saved || saved.date !== todayKey()) return new Set();
+
+  // Support older single-id format: { id, date }
+  if (saved.id) return new Set([saved.id]);
+  if (Array.isArray(saved.ids)) return new Set(saved.ids);
+  return new Set();
 };
 
-const saveDismissToday = (announcementId) => {
+const saveDismissToday = (announcementIds) => {
+  const existing = getDismissedIdsToday();
+  announcementIds.forEach((id) => existing.add(id));
   localStorage.setItem(
     DISMISS_STORAGE_KEY,
-    JSON.stringify({ id: announcementId, date: todayKey() }),
+    JSON.stringify({ date: todayKey(), ids: [...existing] }),
   );
 };
 
 /**
- * Fetches the latest active announcement and shows a Home-page ad popup
- * unless the visitor chose "Don't show again today" for that post.
+ * Shows all active Home-page ads in one popup carousel.
+ * Visitors can rotate through each announcement; "Don't show again today"
+ * dismisses the currently loaded set for the rest of the day.
  */
 const HomeAnnouncementModal = () => {
-  const [announcement, setAnnouncement] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+  const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [dontShowToday, setDontShowToday] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const [slideKey, setSlideKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
-        const result = await api.getActiveAnnouncements(1);
-        const latest = result?.announcements?.[0] || null;
-        if (cancelled || !latest?.id) return;
+        const result = await api.getActiveAnnouncements(20);
+        const dismissed = getDismissedIdsToday();
+        const active = (result?.announcements || []).filter(
+          (item) => item?.id && !dismissed.has(item.id),
+        );
+        if (cancelled || active.length === 0) return;
 
-        if (wasDismissedToday(latest.id)) return;
-
-        setAnnouncement(latest);
+        setAnnouncements(active);
+        setIndex(0);
         setOpen(true);
       } catch {
         // Home stays usable if announcements API is offline.
@@ -61,17 +73,37 @@ const HomeAnnouncementModal = () => {
     };
   }, []);
 
+  const announcement = announcements[index] || null;
+  const total = announcements.length;
+
+  useEffect(() => {
+    if (!open || total <= 1 || leaving) return undefined;
+
+    const timer = window.setInterval(() => {
+      setIndex((prev) => (prev + 1) % total);
+      setSlideKey((prev) => prev + 1);
+    }, AUTO_ROTATE_MS);
+
+    return () => window.clearInterval(timer);
+  }, [open, total, leaving, index]);
+
   const actionHref = useMemo(() => {
     const link = String(announcement?.action_link || "").trim();
     return link || null;
   }, [announcement]);
 
+  const goTo = (nextIndex) => {
+    if (total <= 1) return;
+    setIndex(((nextIndex % total) + total) % total);
+    setSlideKey((prev) => prev + 1);
+  };
+
   const handleClose = () => {
     if (leaving) return;
     setLeaving(true);
     window.setTimeout(() => {
-      if (announcement?.id && dontShowToday) {
-        saveDismissToday(announcement.id);
+      if (dontShowToday && announcements.length > 0) {
+        saveDismissToday(announcements.map((item) => item.id));
       }
       setOpen(false);
       setLeaving(false);
@@ -80,7 +112,9 @@ const HomeAnnouncementModal = () => {
 
   if (!open || !announcement) return null;
 
-  const tickerText = `${announcement.title}  •  ${announcement.content.replace(/\s+/g, " ").trim()}`;
+  const tickerText = `${announcement.title}  •  ${String(announcement.content || "")
+    .replace(/\s+/g, " ")
+    .trim()}`;
 
   return (
     <div
@@ -96,7 +130,9 @@ const HomeAnnouncementModal = () => {
         onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.homeAdRibbon}>
-          <span className={styles.homeAdBadge}>Announcement</span>
+          <span className={styles.homeAdBadge}>
+            Announcement{total > 1 ? ` ${index + 1} / ${total}` : ""}
+          </span>
           <button
             type="button"
             className={styles.homeAdClose}
@@ -109,13 +145,13 @@ const HomeAnnouncementModal = () => {
         </div>
 
         <div className={styles.homeTicker} aria-hidden="true">
-          <div className={styles.homeTickerTrack}>
+          <div className={styles.homeTickerTrack} key={`ticker-${announcement.id}`}>
             <span>{tickerText}</span>
             <span>{tickerText}</span>
           </div>
         </div>
 
-        <div className={styles.homeAdMedia}>
+        <div className={styles.homeAdMedia} key={`media-${slideKey}`}>
           {announcement.image_url ? (
             <img
               src={announcement.image_url}
@@ -129,9 +165,32 @@ const HomeAnnouncementModal = () => {
             </div>
           )}
           <div className={styles.homeAdShine} aria-hidden="true" />
+
+          {total > 1 ? (
+            <>
+              <button
+                type="button"
+                className={`${styles.homeNavBtn} ${styles.homeNavPrev}`}
+                onClick={() => goTo(index - 1)}
+                aria-label="Previous announcement"
+                title="Previous"
+              >
+                <i className="fas fa-chevron-left" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={`${styles.homeNavBtn} ${styles.homeNavNext}`}
+                onClick={() => goTo(index + 1)}
+                aria-label="Next announcement"
+                title="Next"
+              >
+                <i className="fas fa-chevron-right" aria-hidden="true" />
+              </button>
+            </>
+          ) : null}
         </div>
 
-        <div className={styles.homeBody}>
+        <div className={styles.homeBody} key={`body-${slideKey}`}>
           <div className={styles.homeEyebrow}>
             <i className="fas fa-sparkles" aria-hidden="true" />
             Featured announcement
@@ -140,6 +199,24 @@ const HomeAnnouncementModal = () => {
             {announcement.title}
           </h2>
           <p className={styles.homeContent}>{announcement.content}</p>
+
+          {total > 1 ? (
+            <div className={styles.homeDots} role="tablist" aria-label="Announcements">
+              {announcements.map((item, dotIndex) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={dotIndex === index}
+                  className={`${styles.homeDot} ${
+                    dotIndex === index ? styles.homeDotActive : ""
+                  }`}
+                  onClick={() => goTo(dotIndex)}
+                  aria-label={`Show announcement ${dotIndex + 1}`}
+                />
+              ))}
+            </div>
+          ) : null}
 
           <div className={styles.homeActions}>
             <label className={styles.homeDismissCheck}>
