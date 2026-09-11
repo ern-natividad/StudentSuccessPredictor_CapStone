@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AUTH_ROLES } from "../utils/constants";
 import campusBackground from "../assets/landingbg.jpg";
 import engineeringLogo from "../assets/EngineeringLogo.jpg";
+import HomeAnnouncementModal from "../components/Home/HomeAnnouncementModal";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -80,6 +81,7 @@ const HomePage = () => {
         backgroundRepeat: "no-repeat",
       }}
     >
+      <HomeAnnouncementModal />
       {/* Header Navigation Bar */}
       <header
         style={{

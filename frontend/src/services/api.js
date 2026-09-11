@@ -235,6 +235,26 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  getActiveAnnouncements: (limit = 5) =>
+    request(`/announcements/active?limit=${encodeURIComponent(limit)}`),
+
+  getAnnouncements: () => request("/announcements"),
+
+  createAnnouncement: (payload) =>
+    request("/announcements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateAnnouncement: (id, payload) =>
+    request(`/announcements/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteAnnouncement: (id) =>
+    request(`/announcements/${id}`, { method: "DELETE" }),
+
   deleteAccount: async (userId, token) => {
     const authToken =
       token ||

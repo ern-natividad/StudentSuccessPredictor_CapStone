@@ -135,6 +135,11 @@ const Sidebar = () => {
           label: "Alerts",
           badge: unreadAlertCount,
         },
+        {
+          id: "announcements",
+          icon: "fas fa-bullhorn",
+          label: "News & Ads",
+        },
         
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
         { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },

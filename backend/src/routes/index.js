@@ -8,6 +8,7 @@ import recommendationRoutes from "./recommendationRoutes.js";
 import academicPerformanceRoutes from "./academicPerformanceRoutes.js";
 import programRoutes from "./programRoutes.js";
 import alertRoutes from "./alertRoutes.js";
+import announcementRoutes from "./announcementRoutes.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/v1/recommendations', recommendationRoutes);
 router.use('/academic-performance', academicPerformanceRoutes);
 router.use('/programs', programRoutes);
 router.use('/alerts', alertRoutes);
+router.use('/announcements', announcementRoutes);
 
 export default router;

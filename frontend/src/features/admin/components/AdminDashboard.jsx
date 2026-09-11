@@ -7,6 +7,7 @@ import ModelManagementPage from "../pages/ModelManagementPage";
 import AuditLogsPage from "../pages/AuditLogsPage";
 import AccountSettingsPage from "../../common/pages/AccountSettingsPage";
 import AdviserManager from "../pages/AdviserManager";
+import AnnouncementsPage from "../pages/AnnouncementsPage";
 
 const AdminDashboard = () => {
   const { currentPage } = useDashboard();
@@ -22,6 +23,8 @@ const AdminDashboard = () => {
       return <AdviserManager />;
     case "alerts":
       return <AlertsList />;
+    case "announcements":
+      return <AnnouncementsPage />;
     case "models":
       return <ModelManagementPage />;
     case "audit":

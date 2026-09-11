@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DashboardProvider } from "./contexts/DashboardContext";
 import { ToastProvider } from "./components/Common/Toast";
@@ -67,6 +67,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/announcements"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Navigate to="/admin?tab=announcements" replace />
                   </ProtectedRoute>
                 }
               />
