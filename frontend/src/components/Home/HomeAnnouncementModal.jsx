@@ -43,7 +43,7 @@ const HomeAnnouncementModal = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
-  const [dontShowToday, setDontShowToday] = useState(true);
+  const [dontShowToday, setDontShowToday] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [slideKey, setSlideKey] = useState(0);
 
