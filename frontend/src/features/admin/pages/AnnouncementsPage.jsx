@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const readImageFile = (file) =>
   new Promise((resolve, reject) => {
@@ -127,7 +127,7 @@ const AnnouncementsPage = () => {
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      toast.error("Image must be 1.5MB or smaller.");
+      toast.error("Image must be 5MB or smaller.");
       return;
     }
 

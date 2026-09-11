@@ -19,7 +19,9 @@ const app = express();
 const genAI = new GoogleGenerativeAI(env.geminiApiKey || process.env.GEMINI_API_KEY);
 
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
-app.use(express.json());
+// 8mb covers ~5MB image files sent as base64 in JSON (base64 expands ~33%).
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 
 // Health Check Route
 app.get("/health", (req, res) => res.json({ status: "ok" }));

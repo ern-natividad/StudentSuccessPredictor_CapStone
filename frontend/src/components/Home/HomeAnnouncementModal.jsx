@@ -96,7 +96,7 @@ const HomeAnnouncementModal = () => {
         onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.homeAdRibbon}>
-          <span className={styles.homeAdBadge}>Advertisement</span>
+          <span className={styles.homeAdBadge}>Announcement</span>
           <button
             type="button"
             className={styles.homeAdClose}
@@ -125,7 +125,7 @@ const HomeAnnouncementModal = () => {
           ) : (
             <div className={styles.homeImageFallback}>
               <i className="fas fa-bullhorn" aria-hidden="true" />
-              <span>Campus Promo</span>
+              <span>Campus News</span>
             </div>
           )}
           <div className={styles.homeAdShine} aria-hidden="true" />
