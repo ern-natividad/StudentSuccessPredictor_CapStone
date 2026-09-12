@@ -176,6 +176,14 @@ const AccountSettingsPage = () => {
       return;
     }
 
+    if (
+      (user?.role === "student" || user?.role === "staff") &&
+      !String(profileProgram || "").trim()
+    ) {
+      notifyError("Please select an engineering program.");
+      return;
+    }
+
     try {
       setProgramSaving(true);
       const updated = await api.updateProfile({
@@ -347,7 +355,8 @@ const AccountSettingsPage = () => {
         
       </div>
 
-      {/* Profile Program — students view only; staff/admin can edit their own */}
+      {/* Profile Program — required for student/staff; hidden for admin */}
+      {(user?.role === "student" || user?.role === "staff") && (
       <div className={styles.contentCard}>
         <div className={styles.contentCardHeader}>
           <div>
@@ -356,7 +365,7 @@ const AccountSettingsPage = () => {
             <p className={styles.contentCardMeta}>
               {user?.role === "student"
                 ? "Your program is assigned by staff or an administrator. You can view it here, but only they can change it."
-                : "Select the engineering program associated with your account. Admins manage the available list in Curriculum Manager → Manage Program."}
+                : "Select the engineering program associated with your account. This field is required for staff."}
             </p>
           </div>
         </div>
@@ -372,7 +381,7 @@ const AccountSettingsPage = () => {
                 marginBottom: "0.35rem",
               }}
             >
-              Program
+              Program <span style={{ color: "#b91c1c" }}>*</span>
             </label>
             <div
               style={{
@@ -401,12 +410,13 @@ const AccountSettingsPage = () => {
                 marginBottom: "0.35rem",
               }}
             >
-              Program
+              Program <span style={{ color: "#b91c1c" }}>*</span>
             </label>
             <select
               value={profileProgram}
               onChange={(e) => setProfileProgram(e.target.value)}
               disabled={programsLoading || programSaving}
+              required
               style={{
                 width: "100%",
                 padding: "0.65rem 0.75rem",
@@ -439,6 +449,7 @@ const AccountSettingsPage = () => {
           </form>
         )}
       </div>
+      )}
 
       {/* Change Password — available to all roles */}
       <div className={styles.contentCard}>
