@@ -121,21 +121,18 @@ const ScreeningPage = () => {
   );
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>Student Appraisal</h1>
-      <p
-        style={{
-          marginTop: "-8px",
-          marginBottom: "20px",
-          fontSize: "14px",
-          color: "#64748b",
-        }}
-      >
-        Use this appraisal form to evaluate a new engineering enrollee during
-        screening.
-      </p>
+    <div className={styles.pageShell}>
+      <div className={styles.pageHeaderCard}>
+        <div>
+          <h1 className={styles.pageTitle}>Student Appraisal</h1>
+          <p className={styles.pageSubtitle}>
+            Use this appraisal form to evaluate a new engineering enrollee during
+            screening.
+          </p>
+        </div>
+      </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Appraisal Summary</div>
         <div
           style={{
@@ -202,7 +199,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Student Information</div>
         <div
           style={{
@@ -283,7 +280,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Academic Background</div>
         <div
           style={{
@@ -373,7 +370,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Engineering Readiness Assessment</div>
         <div style={{ display: "grid", gap: "16px" }}>
           {renderRatingField(
@@ -404,7 +401,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>
           Behavioral and Personal Assessment
         </div>
@@ -437,7 +434,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Screening / Interview Assessment</div>
         <div style={{ display: "grid", gap: "16px" }}>
           {renderRatingField(
@@ -463,7 +460,7 @@ const ScreeningPage = () => {
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginBottom: "20px" }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>Recommendation and Remarks</div>
         <div style={{ display: "grid", gap: "14px" }}>
           <div style={{ display: "grid", gap: "6px" }}>
