@@ -322,15 +322,28 @@ export const logout = async (authUser, meta = {}) => {
 
 const resolveUserProgram = async (user) => {
   if (!user) return null;
-  if (user.role !== "student") return user.program || null;
 
-  const { data: studentInfo } = await supabase
-    .from("student_info")
-    .select("program")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  if (user.role === "student") {
+    const { data: studentInfo } = await supabase
+      .from("student_info")
+      .select("program")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-  return studentInfo?.program || user.program || null;
+    return studentInfo?.program || user.program || null;
+  }
+
+  if (user.role === "staff") {
+    const { data: adviserInfo } = await supabase
+      .from("adviser_info")
+      .select("program")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return adviserInfo?.program || user.program || null;
+  }
+
+  return user.program || null;
 };
 
 export const getCurrentUser = async (authUser) => {
@@ -368,11 +381,17 @@ export const updateUserProfile = async (authUser, payload) => {
     throw new HttpError(400, "Full name is required.");
   }
 
-  // Students cannot change their own program — staff/admin assign it.
-  if (authUser.role === "student" && program !== undefined) {
+  // Students and staff cannot change their own program.
+  // Students are assigned by staff/admin; staff/advisers by admin via Manage Adviser.
+  if (
+    (authUser.role === "student" || authUser.role === "staff") &&
+    program !== undefined
+  ) {
     throw new HttpError(
       403,
-      "Students cannot change their program. Ask staff or an administrator to update it.",
+      authUser.role === "staff"
+        ? "Staff cannot change their program. Ask an administrator to update it in Manage Adviser."
+        : "Students cannot change their program. Ask staff or an administrator to update it.",
     );
   }
 

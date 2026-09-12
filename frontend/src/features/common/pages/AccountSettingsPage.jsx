@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useToast } from "../../../components/Common/Toast";
-import { usePrograms } from "../../../hooks/usePrograms";
 import { api } from "../../../services/api";
 import { getUserDirectory } from "../../../services/userDirectory";
 import styles from "../../../styles/Dashboard.module.css";
@@ -12,7 +11,6 @@ const AccountSettingsPage = () => {
   const toast = useToast();
   const user = authContext.user;
   const updateUserFields = authContext.updateUserFields;
-  const { programNames, loading: programsLoading } = usePrograms();
 
   // Extract token from context or fallback session sources
   const token =
@@ -41,9 +39,9 @@ const AccountSettingsPage = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
-  // Profile program (all roles)
+  // Profile program (student/staff view-only; admin assigns staff via Manage Adviser)
   const [profileProgram, setProfileProgram] = useState(user?.program || "");
-  const [programSaving, setProgramSaving] = useState(false);
+
 
   // Account Removal States (Admin Only)
   const [manageableUsers, setManageableUsers] = useState([]);
@@ -92,9 +90,14 @@ const AccountSettingsPage = () => {
     setProfileProgram(user?.program || "");
   }, [user?.program]);
 
-  // Students: refresh assigned program from server (student_info) on page load.
+  // Students/staff: refresh assigned program from server on page load.
   useEffect(() => {
-    if (user?.role !== "student" || !user?.isAuthenticated) return;
+    if (
+      (user?.role !== "student" && user?.role !== "staff") ||
+      !user?.isAuthenticated
+    ) {
+      return undefined;
+    }
 
     let cancelled = false;
     (async () => {
@@ -166,42 +169,6 @@ const AccountSettingsPage = () => {
     setConfirmPassword("");
     setShowCurrentPassword(false);
     setShowNewPassword(false);
-  };
-
-  const handleSaveProgram = async (e) => {
-    e.preventDefault();
-    const fullName = user?.fullName || user?.full_name || user?.name || "";
-    if (!fullName) {
-      notifyError("Your profile name is missing. Please refresh and try again.");
-      return;
-    }
-
-    if (
-      (user?.role === "student" || user?.role === "staff") &&
-      !String(profileProgram || "").trim()
-    ) {
-      notifyError("Please select an engineering program.");
-      return;
-    }
-
-    try {
-      setProgramSaving(true);
-      const updated = await api.updateProfile({
-        fullName,
-        program: profileProgram || null,
-      });
-      if (typeof updateUserFields === "function") {
-        updateUserFields({
-          program: updated.program || "",
-          fullName: updated.fullName,
-        });
-      }
-      toast.success("Program updated.");
-    } catch (err) {
-      notifyError(err.message || "Unable to update program.");
-    } finally {
-      setProgramSaving(false);
-    }
   };
 
   const handleChangePassword = async (e) => {
@@ -355,7 +322,7 @@ const AccountSettingsPage = () => {
         
       </div>
 
-      {/* Profile Program — required for student/staff; hidden for admin */}
+      {/* Profile Program — view-only for student/staff; admin assigns staff via Manage Adviser */}
       {(user?.role === "student" || user?.role === "staff") && (
       <div className={styles.contentCard}>
         <div className={styles.contentCardHeader}>
@@ -365,89 +332,39 @@ const AccountSettingsPage = () => {
             <p className={styles.contentCardMeta}>
               {user?.role === "student"
                 ? "Your program is assigned by staff or an administrator. You can view it here, but only they can change it."
-                : "Select the engineering program associated with your account. This field is required for staff."}
+                : "Your program is assigned by an administrator in Manage Adviser. You can view it here, but you cannot change it."}
             </p>
           </div>
         </div>
 
-        {user?.role === "student" ? (
-          <div style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: "700",
-                color: "#475569",
-                marginBottom: "0.35rem",
-              }}
-            >
-              Program <span style={{ color: "#b91c1c" }}>*</span>
-            </label>
-            <div
-              style={{
-                width: "100%",
-                padding: "0.65rem 0.75rem",
-                borderRadius: "8px",
-                border: "1px solid #e2e8f0",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f8fafc",
-                color: profileProgram ? "#0f172a" : "#64748b",
-                fontWeight: 600,
-              }}
-            >
-              {profileProgram || "No program assigned yet"}
-            </div>
+        <div style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: "700",
+              color: "#475569",
+              marginBottom: "0.35rem",
+            }}
+          >
+            Program
+          </label>
+          <div
+            style={{
+              width: "100%",
+              padding: "0.65rem 0.75rem",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+              fontSize: "14px",
+              boxSizing: "border-box",
+              backgroundColor: "#f8fafc",
+              color: profileProgram ? "#0f172a" : "#64748b",
+              fontWeight: 600,
+            }}
+          >
+            {profileProgram || "No program assigned yet"}
           </div>
-        ) : (
-          <form onSubmit={handleSaveProgram} style={{ marginTop: "1.25rem", maxWidth: "420px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: "700",
-                color: "#475569",
-                marginBottom: "0.35rem",
-              }}
-            >
-              Program <span style={{ color: "#b91c1c" }}>*</span>
-            </label>
-            <select
-              value={profileProgram}
-              onChange={(e) => setProfileProgram(e.target.value)}
-              disabled={programsLoading || programSaving}
-              required
-              style={{
-                width: "100%",
-                padding: "0.65rem 0.75rem",
-                borderRadius: "8px",
-                border: "1px solid #d8e0ea",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <option value="">Select a program</option>
-              {programNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-              {profileProgram && !programNames.includes(profileProgram) ? (
-                <option value={profileProgram}>{profileProgram}</option>
-              ) : null}
-            </select>
-
-            <button
-              type="submit"
-              disabled={programSaving || programsLoading}
-              className={moduleStyles.primaryButton}
-              style={{ marginTop: "1rem" }}
-            >
-              {programSaving ? "Saving..." : "Save Program"}
-            </button>
-          </form>
-        )}
+        </div>
       </div>
       )}
 
