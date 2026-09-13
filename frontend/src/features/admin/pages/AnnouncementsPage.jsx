@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ConfirmModal from "../../../components/Common/ConfirmModal";
 import { useToast } from "../../../components/Common/Toast";
 import { api, isBackendAuthEnabled } from "../../../services/api";
@@ -14,6 +14,13 @@ const EMPTY_FORM = {
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+const TYPE_FILTERS = [
+  { value: "all", label: "All types" },
+  { value: "published", label: "Published" },
+  { value: "draft", label: "Draft" },
+  { value: "unpublished", label: "Unpublished" },
+];
 
 const readImageFile = (file) =>
   new Promise((resolve, reject) => {
@@ -34,6 +41,46 @@ const formatDate = (value) => {
   });
 };
 
+const getStatusLabel = (item) => (item?.is_active ? "Published" : "Draft");
+
+const matchesTypeFilter = (item, typeFilter) => {
+  if (typeFilter === "all") return true;
+  if (typeFilter === "published") return Boolean(item.is_active);
+  // Draft and Unpublished both map to inactive posts in the current schema.
+  if (typeFilter === "draft" || typeFilter === "unpublished") {
+    return !item.is_active;
+  }
+  return true;
+};
+
+const matchesDateFilter = (item, startDate, endDate) => {
+  if (!startDate && !endDate) return true;
+
+  const raw = item.updated_at || item.created_at;
+  if (!raw) return true;
+
+  const itemDate = new Date(raw);
+  if (Number.isNaN(itemDate.getTime())) return true;
+
+  if (startDate) {
+    const start = new Date(startDate);
+    if (!Number.isNaN(start.getTime())) {
+      start.setHours(0, 0, 0, 0);
+      if (itemDate < start) return false;
+    }
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+    if (!Number.isNaN(end.getTime())) {
+      end.setHours(23, 59, 59, 999);
+      if (itemDate > end) return false;
+    }
+  }
+
+  return true;
+};
+
 const AnnouncementsPage = () => {
   const toast = useToast();
   const [announcements, setAnnouncements] = useState([]);
@@ -44,6 +91,9 @@ const AnnouncementsPage = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
 
   const loadAnnouncements = useCallback(async () => {
     if (!isBackendAuthEnabled()) {
@@ -67,6 +117,24 @@ const AnnouncementsPage = () => {
   useEffect(() => {
     loadAnnouncements();
   }, [loadAnnouncements]);
+
+  const filteredAnnouncements = useMemo(
+    () =>
+      announcements.filter(
+        (item) =>
+          matchesTypeFilter(item, typeFilter) &&
+          matchesDateFilter(item, startDate, endDate),
+      ),
+    [announcements, typeFilter, startDate, endDate],
+  );
+
+  const hasActiveFilters = Boolean(startDate || endDate || typeFilter !== "all");
+
+  const handleClearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setTypeFilter("all");
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -212,6 +280,57 @@ const AnnouncementsPage = () => {
         </div>
       </div>
 
+      <div className={styles.filterBar}>
+        <div className={styles.filterGroup}>
+          <span className={styles.filterLabel}>
+            <i className="fas fa-filter" aria-hidden="true" />
+            Filters
+          </span>
+
+          <label className={styles.filterField}>
+            <span>From</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+          </label>
+
+          <label className={styles.filterField}>
+            <span>To</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+            />
+          </label>
+
+          <label className={styles.filterField}>
+            <span>Type</span>
+            <select
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+            >
+              {TYPE_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            className={styles.clearFiltersBtn}
+            onClick={handleClearFilters}
+          >
+            Clear filters
+          </button>
+        ) : null}
+      </div>
+
       {loading ? (
         <div className={styles.loadingBanner}>Loading announcements…</div>
       ) : announcements.length === 0 ? (
@@ -221,9 +340,20 @@ const AnnouncementsPage = () => {
             Create announcement
           </button>
         </div>
+      ) : filteredAnnouncements.length === 0 ? (
+        <div className={styles.emptyState}>
+          <p>No announcements match the selected filters.</p>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={handleClearFilters}
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className={styles.grid}>
-          {announcements.map((item) => (
+          {filteredAnnouncements.map((item) => (
             <article key={item.id} className={styles.announcementCard}>
               {item.image_url ? (
                 <img
@@ -239,7 +369,7 @@ const AnnouncementsPage = () => {
                       item.is_active ? styles.badgeActive : styles.badgeInactive
                     }`}
                   >
-                    {item.is_active ? "Published" : "Draft"}
+                    {getStatusLabel(item)}
                   </span>
                   <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
                     {formatDate(item.updated_at || item.created_at)}
