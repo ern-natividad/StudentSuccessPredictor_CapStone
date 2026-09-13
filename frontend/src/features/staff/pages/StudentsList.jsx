@@ -263,29 +263,11 @@ const StudentsList = () => {
       <div className={styles.card}>
         <div className={styles.listToolbar}>
           <div className={styles.listToolbarFilters}>
-            <input
-              type="text"
-              placeholder="Search by name or ID..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: "6px",
-                fontSize: "13px",
-              }}
-            />
             <select
+              className={styles.listToolbarSelect}
               value={riskLevel}
               onChange={(e) => handleRiskFilter(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: "6px",
-                fontSize: "13px",
-                minWidth: "140px",
-              }}
+              aria-label="Filter by risk level"
             >
               <option value="">All Risk Levels</option>
               <option value="Low">Low</option>
@@ -293,18 +275,25 @@ const StudentsList = () => {
               <option value="High">High</option>
               <option value="Critical">Critical</option>
             </select>
+            <input
+              type="text"
+              className={styles.listToolbarSearch}
+              placeholder="Search by name or ID..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              aria-label="Search students by name or ID"
+            />
+            <button
+              type="button"
+              className={styles.toolbarIconButton}
+              onClick={handleExport}
+              title="Export to Excel"
+              aria-label="Export to Excel"
+              disabled={filteredStudents.length === 0}
+            >
+              <i className="fas fa-file-export" aria-hidden="true" />
+            </button>
           </div>
-
-          <button
-            type="button"
-            className={styles.toolbarIconButton}
-            onClick={handleExport}
-            title="Export to Excel"
-            aria-label="Export to Excel"
-            disabled={filteredStudents.length === 0}
-          >
-            <i className="fas fa-file-export" aria-hidden="true" />
-          </button>
         </div>
 
         {/* Scrollable container for smaller screens */}

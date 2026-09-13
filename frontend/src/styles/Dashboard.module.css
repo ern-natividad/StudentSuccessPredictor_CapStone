@@ -186,15 +186,43 @@
 .listToolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 10px;
   margin-bottom: 16px;
 }
 
 .listToolbarFilters {
   display: flex;
-  flex: 1;
-  gap: 12px;
-  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.listToolbarSelect {
+  flex: 0 0 auto;
+  height: 40px;
+  min-width: 150px;
+  padding: 0 12px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.listToolbarSearch {
+  flex: 0 0 220px;
+  width: 220px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  font-size: 13px;
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .toolbarIconButton {
