@@ -27,7 +27,7 @@ const moduleLinks = [
 ];
 
 const ACADEMIC_YEARS = ["2026-2027", "2025-2026", "2024-2025", "2023-2024"];
-const RISK_OPTIONS = ["All", "Low", "Medium", "High", "Critical"];
+const RISK_OPTIONS = ["All Risk Level", "Low", "Medium", "High", "Critical"];
 
 const buildSummary = (rows = []) => {
   const mae =
@@ -278,7 +278,7 @@ const AcademicPerformanceModule = () => {
             >
               {programOptions.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {option === "All" ? "All Programs" : option}
                 </option>
               ))}
             </select>
