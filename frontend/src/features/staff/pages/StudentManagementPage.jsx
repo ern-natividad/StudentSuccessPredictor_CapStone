@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
 import { api } from "../../../services/api";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
@@ -221,6 +223,18 @@ const StudentManagementPage = () => {
       })),
     [displayStudentList, getSectionById],
   );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageItems: paginatedStudentRows,
+    totalItems: studentTotalItems,
+    totalPages: studentTotalPages,
+    pageSize: studentPageSize,
+  } = useListPagination(studentTableRows, {
+    pageSize: 10,
+    resetKey: displayStudentList.length,
+  });
 
   const handleGradeChange = (field, value) => {
     setGradeForm((prev) => {
@@ -613,7 +627,7 @@ const StudentManagementPage = () => {
               </tr>
             </thead>
             <tbody>
-              {studentTableRows.map((row) => (
+              {paginatedStudentRows.map((row) => (
                 <tr
                   key={row.student_id}
                   className={commonStyles.tableRow}
@@ -677,6 +691,14 @@ const StudentManagementPage = () => {
             </tbody>
           </table>
         </div>
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={studentTotalPages}
+          totalItems={studentTotalItems}
+          pageSize={studentPageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="students"
+        />
       </div>
 
       {isGradeHistoryModalOpen && selectedStudent ? (

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { api, isBackendAuthEnabled } from "../../../services/api";
 import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
@@ -134,6 +136,18 @@ const AcademicPerformanceModule = () => {
 
     return forecasts.filter((student) => student.year_level === filters.yearLevel);
   }, [filters.yearLevel, forecasts]);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageItems: paginatedStudents,
+    totalItems,
+    totalPages,
+    pageSize,
+  } = useListPagination(filteredStudents, {
+    pageSize: 10,
+    resetKey: `${filters.yearLevel}|${filters.risk}|${filters.program}|${filters.academicYear}|${search}`,
+  });
 
   const displaySummary = useMemo(
     () => buildSummary(filteredStudents),
@@ -361,7 +375,7 @@ const AcademicPerformanceModule = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => (
+                {paginatedStudents.map((student) => (
                   <tr key={`${student.student_id}-${student.prediction_id || student.academic_year}`}>
                     <td>{student.student_id}</td>
                     <td className={styles.studentNameCell}>{student.full_name}</td>
@@ -396,6 +410,14 @@ const AcademicPerformanceModule = () => {
               </tbody>
             </table>
           )}
+          <ListPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            itemLabel="students"
+          />
         </div>
       </div>
     </ModuleShell>

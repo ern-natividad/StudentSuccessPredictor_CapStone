@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
 import { upsertAdviserInfo } from "../../../services/adviserInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
@@ -183,6 +185,18 @@ const AdviserManager = () => {
     removedRowIds,
     sectionOptions,
   ]);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageItems: paginatedOverviewRows,
+    totalItems: adviserTotalItems,
+    totalPages: adviserTotalPages,
+    pageSize: adviserPageSize,
+  } = useListPagination(sectionOverviewRows, {
+    pageSize: 10,
+    resetKey: `${removedRowIds.length}|${staffMembers.length}`,
+  });
 
   const viewSectionStudents = useMemo(() => {
     if (!viewSectionId) return [];
@@ -419,7 +433,7 @@ const AdviserManager = () => {
                   </td>
                 </tr>
               )}
-              {sectionOverviewRows.map((row) => (
+              {paginatedOverviewRows.map((row) => (
                 <tr
                   key={row.id}
                   className={commonStyles.tableRow}
@@ -490,6 +504,14 @@ const AdviserManager = () => {
             </tbody>
           </table>
         </div>
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={adviserTotalPages}
+          totalItems={adviserTotalItems}
+          pageSize={adviserPageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="advisers"
+        />
       </div>
 
       {/* Delete/Remove Confirmation Modal */}

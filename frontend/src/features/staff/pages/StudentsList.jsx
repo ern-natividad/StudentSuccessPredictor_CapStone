@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
 import { api, isBackendAuthEnabled } from "../../../services/api";
 import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import styles from "../../../styles/Dashboard.module.css";
@@ -137,6 +139,18 @@ const StudentsList = () => {
 
     return filtered;
   }, [enrichedStudents, riskLevel, searchTerm]);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageItems: paginatedStudents,
+    totalItems,
+    totalPages,
+    pageSize,
+  } = useListPagination(filteredStudents, {
+    pageSize: 10,
+    resetKey: `${riskLevel}|${searchTerm}`,
+  });
 
   const handleExport = async () => {
     if (filteredStudents.length === 0) {
@@ -315,7 +329,7 @@ const StudentsList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student) => {
+              {paginatedStudents.map((student) => {
                 const riskKey = (student.risk_level || "low").toLowerCase();
                 return (
                   <tr
@@ -359,6 +373,15 @@ const StudentsList = () => {
             </tbody>
           </table>
         </div>
+
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="students"
+        />
 
         {directoryLoading && <div className={commonStyles.emptyState}>Loading students…</div>}
         {!directoryLoading && predictionsLoading && (

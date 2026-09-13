@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
 import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
 import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
@@ -113,6 +115,30 @@ const AlertsList = () => {
       );
     });
   }, [interventions, isAdmin, visibleStudentIds, visibleUserIds]);
+
+  const {
+    currentPage: alertsPage,
+    setCurrentPage: setAlertsPage,
+    pageItems: paginatedActiveAlerts,
+    totalItems: activeAlertTotal,
+    totalPages: activeAlertPages,
+    pageSize: activeAlertPageSize,
+  } = useListPagination(activeAlerts, {
+    pageSize: 8,
+    resetKey: activeAlerts.length,
+  });
+
+  const {
+    currentPage: resolvedPage,
+    setCurrentPage: setResolvedPage,
+    pageItems: paginatedResolvedCases,
+    totalItems: resolvedTotal,
+    totalPages: resolvedPages,
+    pageSize: resolvedPageSize,
+  } = useListPagination(resolvedCases, {
+    pageSize: 8,
+    resetKey: resolvedCases.length,
+  });
 
   const getAlertIcon = (severity) => {
     const icons = {
@@ -343,7 +369,7 @@ const AlertsList = () => {
 
       <div className={styles.card}>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {activeAlerts.map((alert) => {
+          {paginatedActiveAlerts.map((alert) => {
             const intervention = alert.intervention;
             const status = intervention?.status;
             const draft = intervention ? getDraft(intervention) : null;
@@ -581,6 +607,15 @@ const AlertsList = () => {
             );
           })}
 
+          <ListPagination
+            currentPage={alertsPage}
+            totalPages={activeAlertPages}
+            totalItems={activeAlertTotal}
+            pageSize={activeAlertPageSize}
+            onPageChange={setAlertsPage}
+            itemLabel="alerts"
+          />
+
           {!isLoading && activeAlerts.length === 0 && (
             <div className={commonStyles.emptyState}>
               {isAdmin
@@ -614,7 +649,7 @@ const AlertsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {resolvedCases.map((item) => {
+                {paginatedResolvedCases.map((item) => {
                   const isBusy = busyId === item.id;
                   return (
                     <tr key={item.id}>
@@ -644,6 +679,14 @@ const AlertsList = () => {
                 })}
               </tbody>
             </table>
+            <ListPagination
+              currentPage={resolvedPage}
+              totalPages={resolvedPages}
+              totalItems={resolvedTotal}
+              pageSize={resolvedPageSize}
+              onPageChange={setResolvedPage}
+              itemLabel="cases"
+            />
           </div>
         ) : (
           <div className={commonStyles.emptyState}>

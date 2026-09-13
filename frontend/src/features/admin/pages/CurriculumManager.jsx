@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
+import ListPagination from "../../../components/Common/ListPagination";
 import { useAuth } from "../../../hooks/useAuth";
+import { useListPagination } from "../../../hooks/useListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
 import {
   getAllCurricula,
@@ -171,6 +173,18 @@ const CurriculumManager = () => {
       );
     });
   }, [curricula, publishSearch, publishProgramFilter]);
+
+  const {
+    currentPage: publishPage,
+    setCurrentPage: setPublishPage,
+    pageItems: paginatedPublishedCurricula,
+    totalItems: publishTotalItems,
+    totalPages: publishTotalPages,
+    pageSize: publishPageSize,
+  } = useListPagination(filteredPublishedCurricula, {
+    pageSize: 10,
+    resetKey: `${publishSearch}|${publishProgramFilter}`,
+  });
 
   // Dropdown Selection Handlers
   const handleAcademicYearChange = (e) => {
@@ -1152,7 +1166,7 @@ const CurriculumManager = () => {
                 </tr>
               </thead>
               <tbody className={styles.tableStriped}>
-                {filteredPublishedCurricula.map((c) => (
+                {paginatedPublishedCurricula.map((c) => (
                   <tr key={c.id}>
                     <td>{c.title}</td>
                     <td>{c.academicYear}</td>
@@ -1287,6 +1301,14 @@ const CurriculumManager = () => {
                 ))}
               </tbody>
             </table>
+            <ListPagination
+              currentPage={publishPage}
+              totalPages={publishTotalPages}
+              totalItems={publishTotalItems}
+              pageSize={publishPageSize}
+              onPageChange={setPublishPage}
+              itemLabel="curricula"
+            />
           </div>
         )}
       </div>
