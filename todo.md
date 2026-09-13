@@ -14,7 +14,7 @@
 
 **ALL ROLES**
 - Not yet done in Early Alerts (Problem: If the student's risk is Medium/Moderate Risk level then the staff and admin helped the student solved their case, they will be count as Low Risk Level again, do it the same with the other modules such as Students List Page, Dashboard Overview, Performance Forecasting Page, Online Advising Page)
-- Fix the Search Bar in the Student's List Page
+- Fixed the Search Bar in the Student's List Page
 
 🟡 *In Progress*
 - 
@@ -40,6 +40,7 @@
 - Fixing the Section in the Manage Adviser (the unassigned)
 - Early Alets, Performance Forecastig Page and Dashboard (only the students assigned to the staff should be visible to them but all students should be visible to admin)
 - Add Pagination to all the Modules with list (Student List, Student Management, Manage Adviser, Early Alerts, Published Curricula, Academic Performance Forecasting and Early Warning Module)
+- Fixed the Search Bar in the Student's List Page
 
 
 **SYSTEM IMPORTANT FEATURES**
