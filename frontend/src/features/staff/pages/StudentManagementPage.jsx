@@ -13,7 +13,6 @@ import {
   SEMESTER_FORM_OPTIONS,
   SEMESTER_INFO_TEXT,
   SCHOOL_YEAR_INFO_TEXT,
-  buildSchoolYearOptions,
   formatSemesterCode,
   formatSchoolYear,
   getCurrentAcademicYear,
@@ -66,8 +65,6 @@ const createEmptyGradeBatch = () => ({
   schoolYear: getCurrentAcademicYear(),
   rows: [createEmptyGradeRow()],
 });
-
-const SCHOOL_YEAR_OPTIONS = buildSchoolYearOptions(6);
 
 const modalFieldLabelStyle = {
   fontSize: "0.825rem",
@@ -213,8 +210,9 @@ const StudentManagementPage = () => {
   }, [studentGrades]);
 
   const schoolYearFormOptions = useMemo(() => {
+    const currentYear = getCurrentAcademicYear();
     const yearsFromRecords = getUniqueAcademicYears(studentGrades);
-    return [...new Set([...SCHOOL_YEAR_OPTIONS, ...yearsFromRecords])].sort((left, right) =>
+    return [...new Set([currentYear, ...yearsFromRecords])].sort((left, right) =>
       right.localeCompare(left),
     );
   }, [studentGrades]);
