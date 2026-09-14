@@ -71,6 +71,9 @@ const HomePage = () => {
     <div
       style={{
         minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
         color: "var(--color-text-primary)",
         fontFamily:
           '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -143,6 +146,8 @@ const HomePage = () => {
       {/* Main Content Wrap */}
       <main
         style={{
+          flex: "1 0 auto",
+          width: "100%",
           maxWidth: "1200px",
           margin: "0 auto",
           padding: "0 var(--space-2xl)",
@@ -605,8 +610,11 @@ const HomePage = () => {
           gap: "var(--space-md)",
           fontSize: "var(--font-size-sm)",
           color: "var(--color-text-secondary)",
-          backgroundColor: "var(--color-bg-surface)",
+          backgroundColor: "#ffffff",
           position: "relative",
+          marginTop: "auto",
+          flexShrink: 0,
+          width: "100%",
         }}
       >
         <div>&copy; 2026 Western Mindanao State University</div>
