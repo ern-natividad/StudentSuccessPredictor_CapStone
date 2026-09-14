@@ -42,6 +42,51 @@ export const normalizeSemesterCode = (value) => {
 
 export const formatSemesterCode = (value) => normalizeSemesterCode(value) || "—";
 
+export const getSemesterDisplayLabel = (value) => {
+  const code = normalizeSemesterCode(value);
+  if (code === "1") return "1st Semester";
+  if (code === "2") return "2nd Semester";
+  if (code === "S") return "Summer";
+  return code ? `Semester ${code}` : "Unknown semester";
+};
+
+const SEMESTER_SORT_ORDER = { 1: 1, 2: 2, S: 3 };
+
+/**
+ * Groups grade rows by school year + semester for readable history tables.
+ * Newest school years first; within a year: 1st → 2nd → Summer.
+ */
+export const groupGradesBySchoolYearAndSemester = (gradeRecords = []) => {
+  const groups = new Map();
+
+  gradeRecords.forEach((record) => {
+    const schoolYear = getSchoolYearFromRecord(record) || "Unknown";
+    const semester = normalizeSemesterCode(record.semester) || "—";
+    const key = `${schoolYear}::${semester}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        schoolYear,
+        semester,
+        label: `${formatSchoolYear(schoolYear)} · ${getSemesterDisplayLabel(semester)}`,
+        records: [],
+      });
+    }
+
+    groups.get(key).records.push(record);
+  });
+
+  return [...groups.values()].sort((left, right) => {
+    const yearCompare = String(right.schoolYear).localeCompare(String(left.schoolYear));
+    if (yearCompare !== 0) return yearCompare;
+    return (
+      (SEMESTER_SORT_ORDER[left.semester] || 99) -
+      (SEMESTER_SORT_ORDER[right.semester] || 99)
+    );
+  });
+};
+
 export const matchesSemesterFilter = (recordSemester, filterValue) => {
   if (!filterValue) return true;
   return normalizeSemesterCode(recordSemester) === normalizeSemesterCode(filterValue);

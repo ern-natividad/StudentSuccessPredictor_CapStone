@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useListPagination } from "../../../hooks/useListPagination";
@@ -19,6 +19,7 @@ import {
   getCurrentAcademicYear,
   getSchoolYearFromRecord,
   getUniqueAcademicYears,
+  groupGradesBySchoolYearAndSemester,
   matchesSchoolYearFilter,
   matchesSemesterFilter,
 } from "../../../utils/gradeSemesterUtils";
@@ -29,6 +30,8 @@ import {
 } from "../../../utils/adviserAssignmentUtils";
 import {
   GRADE_INPUT_HELP_TEXT,
+  isAlertGrade,
+  isAlertRemark,
   isValidGradeValue,
   normalizeGradeValue,
   remarksFromGrade,
@@ -168,12 +171,30 @@ const StudentManagementPage = () => {
     [schoolYearFilter, semesterFilter, studentGrades],
   );
 
+  const gradeHistorySections = useMemo(() => {
+    // When viewing all semesters, separate rows into school-year + semester blocks.
+    if (!semesterFilter) {
+      return groupGradesBySchoolYearAndSemester(filteredStudentGrades);
+    }
+
+    return [
+      {
+        key: "filtered-semester",
+        label: null,
+        records: filteredStudentGrades,
+      },
+    ];
+  }, [filteredStudentGrades, semesterFilter]);
+
   const schoolYearFilterOptions = useMemo(() => {
     const yearsFromRecords = getUniqueAcademicYears(studentGrades);
-    const merged = [...new Set([...SCHOOL_YEAR_OPTIONS, ...yearsFromRecords])].sort(
-      (left, right) => right.localeCompare(left),
-    );
-    return [{ value: "", label: "All school years" }, ...merged.map((year) => ({ value: year, label: `SY ${year}` }))];
+    return [
+      { value: "", label: "All school years" },
+      ...yearsFromRecords.map((year) => ({
+        value: year,
+        label: `SY ${year}`,
+      })),
+    ];
   }, [studentGrades]);
 
   const schoolYearFormOptions = useMemo(() => {
@@ -856,57 +877,116 @@ const StudentManagementPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStudentGrades.map((record) => (
-                      <tr
-                        key={record.id}
-                        className={commonStyles.tableRow}
-                        style={{ borderBottom: "1px solid #f1f5f9" }}
-                      >
-                        <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "700" }}>
-                          {record.subject_code || "—"}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
-                          {record.subject_name}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          {formatSchoolYear(getSchoolYearFromRecord(record))}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          {formatSemesterCode(record.semester)}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                          {record.grade}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "left" }}>
-                          {record.remarks || "-"}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          {new Date(record.created_at).toLocaleDateString()}
-                        </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          <div className={styles.tableActionGroup}>
-                            <button
-                              type="button"
-                              className={styles.tableActionButton}
-                              onClick={() => openEditGradeModal(record)}
-                              title="Edit grade"
-                              aria-label={`Edit grade for ${record.subject_name}`}
+                    {gradeHistorySections.map((section) => (
+                      <Fragment key={section.key}>
+                        {section.label ? (
+                          <tr>
+                            <td
+                              colSpan={8}
+                              style={{
+                                padding: "10px 16px",
+                                background: "#f8fafc",
+                                borderTop: "1px solid #e2e8f0",
+                                borderBottom: "1px solid #e2e8f0",
+                                color: "#800000",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                              }}
                             >
-                              <i className="fas fa-pen-to-square" aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.tableActionButton}
-                              onClick={() => openDeleteGradeModal(record)}
-                              title="Delete grade"
-                              aria-label={`Delete grade for ${record.subject_name}`}
-                              style={{ color: "#ef4444" }}
+                              {section.label}
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  color: "#64748b",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  letterSpacing: 0,
+                                }}
+                              >
+                                ({section.records.length}{" "}
+                                {section.records.length === 1 ? "subject" : "subjects"})
+                              </span>
+                            </td>
+                          </tr>
+                        ) : null}
+                        {section.records.map((record) => (
+                          <tr
+                            key={record.id}
+                            className={commonStyles.tableRow}
+                            style={{ borderBottom: "1px solid #f1f5f9" }}
+                          >
+                            <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "700" }}>
+                              {record.subject_code || "—"}
+                            </td>
+                            <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                              {record.subject_name}
+                            </td>
+                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                              {formatSchoolYear(getSchoolYearFromRecord(record))}
+                            </td>
+                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                              {formatSemesterCode(record.semester)}
+                            </td>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "center",
+                                fontVariantNumeric: "tabular-nums",
+                                color: isAlertGrade(record.grade)
+                                  ? "#dc2626"
+                                  : undefined,
+                                fontWeight: isAlertGrade(record.grade)
+                                  ? 700
+                                  : undefined,
+                              }}
                             >
-                              <i className="fas fa-trash-can" aria-hidden="true" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              {record.grade}
+                            </td>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "left",
+                                color: isAlertRemark(record.remarks)
+                                  ? "#dc2626"
+                                  : undefined,
+                                fontWeight: isAlertRemark(record.remarks)
+                                  ? 700
+                                  : undefined,
+                              }}
+                            >
+                              {record.remarks || "-"}
+                            </td>
+                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                              {new Date(record.created_at).toLocaleDateString()}
+                            </td>
+                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                              <div className={styles.tableActionGroup}>
+                                <button
+                                  type="button"
+                                  className={styles.tableActionButton}
+                                  onClick={() => openEditGradeModal(record)}
+                                  title="Edit grade"
+                                  aria-label={`Edit grade for ${record.subject_name}`}
+                                >
+                                  <i className="fas fa-pen-to-square" aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.tableActionButton}
+                                  onClick={() => openDeleteGradeModal(record)}
+                                  title="Delete grade"
+                                  aria-label={`Delete grade for ${record.subject_name}`}
+                                  style={{ color: "#ef4444" }}
+                                >
+                                  <i className="fas fa-trash-can" aria-hidden="true" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

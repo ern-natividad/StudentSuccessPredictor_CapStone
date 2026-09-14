@@ -39,3 +39,26 @@ export const remarksFromGrade = (value) => {
   if (numeric <= 3) return "Pass";
   return "";
 };
+
+/** True when remarks should be highlighted as incomplete/failing. */
+export const isAlertRemark = (remarks) => {
+  const normalized = String(remarks || "")
+    .trim()
+    .toLowerCase();
+  return (
+    normalized === "inc" ||
+    normalized === "fail" ||
+    normalized === "failed"
+  );
+};
+
+/** True when the grade itself is incomplete or failing (INC or 5). */
+export const isAlertGrade = (value) => {
+  const normalized = normalizeGradeValue(value);
+  if (!normalized) {
+    const raw = String(value ?? "").trim().toUpperCase();
+    return raw === "INC" || raw === "5";
+  }
+  if (normalized === "INC") return true;
+  return Number(normalized) === 5;
+};
