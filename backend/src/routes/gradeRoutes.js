@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   createStudentGrade,
+  createStudentGradesBulk,
   deleteStudentGrade,
   getStudentGrades,
   getMyGrades,
@@ -12,6 +13,12 @@ import {
 const router = Router();
 
 router.get("/me", requireAuth, asyncHandler(getMyGrades));
+router.post(
+  "/bulk",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(createStudentGradesBulk),
+);
 router.get("/:userId", requireAuth, asyncHandler(getStudentGrades));
 router.post("/", requireAuth, requireRole("admin", "staff"), asyncHandler(createStudentGrade));
 router.put("/:id", requireAuth, requireRole("admin", "staff"), asyncHandler(updateStudentGrade));

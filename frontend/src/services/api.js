@@ -184,6 +184,12 @@ export const api = {
       body: JSON.stringify(grade),
     }),
 
+  createStudentGradesBulk: (payload) =>
+    request("/grades/bulk", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   updateStudentGrade: (gradeId, grade) =>
     request(`/grades/${gradeId}`, { method: "PUT", body: JSON.stringify(grade) }),
 

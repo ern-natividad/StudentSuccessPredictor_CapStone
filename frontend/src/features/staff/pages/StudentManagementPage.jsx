@@ -42,6 +42,7 @@ import commonStyles from "../../../styles/Common.module.css";
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
 const REMARKS_OPTIONS = ["Pass", "Fail", "INC"];
+const MAX_GRADE_ROWS = 15;
 
 const createEmptyGradeForm = () => ({
   subjectCode: "",
@@ -50,6 +51,20 @@ const createEmptyGradeForm = () => ({
   schoolYear: getCurrentAcademicYear(),
   grade: "",
   remarks: "",
+});
+
+const createEmptyGradeRow = () => ({
+  id: `grade-row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  subjectCode: "",
+  subject: "",
+  grade: "",
+  remarks: "",
+});
+
+const createEmptyGradeBatch = () => ({
+  semester: "1",
+  schoolYear: getCurrentAcademicYear(),
+  rows: [createEmptyGradeRow()],
 });
 
 const SCHOOL_YEAR_OPTIONS = buildSchoolYearOptions(6);
@@ -142,7 +157,7 @@ const StudentManagementPage = () => {
   const [isSavingStudentInfo, setIsSavingStudentInfo] = useState(false);
   const [isSavingEditGrade, setIsSavingEditGrade] = useState(false);
   const [isDeletingGrade, setIsDeletingGrade] = useState(false);
-  const [gradeForm, setGradeForm] = useState(createEmptyGradeForm);
+  const [gradeBatch, setGradeBatch] = useState(createEmptyGradeBatch);
   const [editGradeForm, setEditGradeForm] = useState(createEmptyGradeForm);
   const [editingGradeRecord, setEditingGradeRecord] = useState(null);
   const [deletingGradeRecord, setDeletingGradeRecord] = useState(null);
@@ -212,7 +227,7 @@ const StudentManagementPage = () => {
 
   useEffect(() => {
     if (selectedStudent) {
-      setGradeForm(createEmptyGradeForm());
+      setGradeBatch(createEmptyGradeBatch());
     }
   }, [selectedStudent]);
 
@@ -257,17 +272,41 @@ const StudentManagementPage = () => {
     resetKey: displayStudentList.length,
   });
 
-  const handleGradeChange = (field, value) => {
-    setGradeForm((prev) => {
-      if (field !== "grade") {
-        return { ...prev, [field]: value };
-      }
+  const handleGradeBatchMetaChange = (field, value) => {
+    setGradeBatch((prev) => ({ ...prev, [field]: value }));
+  };
 
-      const nextRemarks = remarksFromGrade(value);
+  const handleGradeRowChange = (rowId, field, value) => {
+    setGradeBatch((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row) => {
+        if (row.id !== rowId) return row;
+        if (field !== "grade") {
+          return { ...row, [field]: value };
+        }
+        const nextRemarks = remarksFromGrade(value);
+        return {
+          ...row,
+          grade: value,
+          remarks: nextRemarks || (String(value).trim() ? row.remarks : ""),
+        };
+      }),
+    }));
+  };
+
+  const handleAddGradeRow = () => {
+    setGradeBatch((prev) => {
+      if (prev.rows.length >= MAX_GRADE_ROWS) return prev;
+      return { ...prev, rows: [...prev.rows, createEmptyGradeRow()] };
+    });
+  };
+
+  const handleRemoveGradeRow = (rowId) => {
+    setGradeBatch((prev) => {
+      if (prev.rows.length <= 1) return prev;
       return {
         ...prev,
-        grade: value,
-        remarks: nextRemarks || (String(value).trim() ? prev.remarks : ""),
+        rows: prev.rows.filter((row) => row.id !== rowId),
       };
     });
   };
@@ -289,7 +328,7 @@ const StudentManagementPage = () => {
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeForm(createEmptyGradeForm());
+    setGradeBatch(createEmptyGradeBatch());
     setIsGradeModalOpen(true);
   };
 
@@ -403,50 +442,72 @@ const StudentManagementPage = () => {
   };
 
   const handleAddGrade = async () => {
-    const selectedGrade = normalizeGradeValue(gradeForm.grade);
-    const remarks = remarksFromGrade(selectedGrade) || gradeForm.remarks.trim();
+    if (!selectedStudent) return;
 
-    if (
-      !selectedStudent ||
-      !gradeForm.subjectCode.trim() ||
-      !gradeForm.subject.trim() ||
-      !gradeForm.schoolYear.trim() ||
-      !isValidGradeValue(selectedGrade)
-    ) {
-      toast.error(
-        `Enter a subject code, description, school year, and a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
-      );
+    if (!gradeBatch.schoolYear.trim()) {
+      toast.error(`School year is required. ${SCHOOL_YEAR_INFO_TEXT}`);
+      return;
+    }
+
+    const preparedRows = [];
+    for (let index = 0; index < gradeBatch.rows.length; index += 1) {
+      const row = gradeBatch.rows[index];
+      const selectedGrade = normalizeGradeValue(row.grade);
+      const remarks = remarksFromGrade(selectedGrade) || row.remarks.trim();
+      const subjectCode = row.subjectCode.trim();
+      const subject = row.subject.trim();
+      const isBlankRow =
+        !subjectCode && !subject && !String(row.grade || "").trim();
+
+      if (isBlankRow) continue;
+
+      if (!subjectCode || !subject || !isValidGradeValue(selectedGrade)) {
+        toast.error(
+          `Row ${index + 1}: enter subject code, description, and a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
+        );
+        return;
+      }
+
+      preparedRows.push({
+        subject_code: subjectCode,
+        subject_name: subject,
+        semester: gradeBatch.semester,
+        school_year: gradeBatch.schoolYear.trim(),
+        grade: selectedGrade,
+        remarks,
+      });
+    }
+
+    if (preparedRows.length === 0) {
+      toast.error("Add at least one subject grade before saving.");
       return;
     }
 
     try {
       setIsSavingGrade(true);
-      const payload = {
+      const result = await api.createStudentGradesBulk({
         user_id: selectedStudent.user_id,
-        subject_code: gradeForm.subjectCode.trim(),
-        subject_name: gradeForm.subject.trim(),
-        semester: gradeForm.semester,
-        school_year: gradeForm.schoolYear.trim(),
-        grade: selectedGrade,
-        remarks,
-      };
-
-      const result = await api.createStudentGrade(payload);
-      if (!result?.grade?.subject_code) {
-        throw new Error(
-          "Grade saved, but subject code was not stored. Restart the backend and try again.",
-        );
+        grades: preparedRows,
+      });
+      const savedGrades = result?.grades || [];
+      if (savedGrades.length === 0) {
+        throw new Error("No grades were saved. Please try again.");
       }
-      setStudentGrades((prevGrades) => [result.grade, ...prevGrades]);
-      setGradeForm(createEmptyGradeForm());
+
+      setStudentGrades((prevGrades) => [...savedGrades, ...prevGrades]);
+      setGradeBatch(createEmptyGradeBatch());
       setIsGradeModalOpen(false);
       updateStudentGradeRecord(selectedStudent.student_id, [
-        result.grade,
+        ...savedGrades,
         ...studentGrades,
       ]);
-      toast.success("Grade record saved successfully.");
+      toast.success(
+        savedGrades.length === 1
+          ? "Grade record saved successfully."
+          : `${savedGrades.length} grade records saved successfully.`,
+      );
     } catch (error) {
-      toast.error(error.message || "Unable to save the grade record.");
+      toast.error(error.message || "Unable to save the grade records.");
     } finally {
       setIsSavingGrade(false);
     }
@@ -1018,7 +1079,7 @@ const StudentManagementPage = () => {
             style={{
               background: "#ffffff",
               borderRadius: "16px",
-              width: "min(560px, 100%)",
+              width: "min(820px, 100%)",
               padding: "28px",
               boxShadow:
                 "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
@@ -1064,7 +1125,7 @@ const StudentManagementPage = () => {
                       color: "#0f172a",
                     }}
                   >
-                    Add Grade
+                    Add Grades
                   </h2>
                   <p
                     style={{
@@ -1073,7 +1134,8 @@ const StudentManagementPage = () => {
                       fontSize: "0.85rem",
                     }}
                   >
-                    Add a new grade record for {selectedStudent.full_name}.
+                    Add one or more subject grades for {selectedStudent.full_name} in
+                    the same school year and semester.
                   </p>
                 </div>
               </div>
@@ -1099,104 +1161,199 @@ const StudentManagementPage = () => {
             </div>
 
             <div style={{ display: "grid", gap: "18px" }}>
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>Subject Code</label>
-                <input
-                  type="text"
-                  placeholder="e.g., CE 101"
-                  value={gradeForm.subjectCode}
-                  onChange={(e) =>
-                    handleGradeChange("subjectCode", e.target.value)
-                  }
-                  style={modalFieldInputStyle}
-                />
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Short course code that appears in the student grade report.
-                </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <label style={modalFieldLabelStyle}>School Year</label>
+                  <select
+                    value={gradeBatch.schoolYear}
+                    onChange={(e) =>
+                      handleGradeBatchMetaChange("schoolYear", e.target.value)
+                    }
+                    style={modalFieldInputStyle}
+                  >
+                    {schoolYearFormOptions.map((year) => (
+                      <option key={year} value={year}>
+                        SY {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <label style={modalFieldLabelStyle}>Semester</label>
+                  <select
+                    value={gradeBatch.semester}
+                    onChange={(e) =>
+                      handleGradeBatchMetaChange("semester", e.target.value)
+                    }
+                    style={modalFieldInputStyle}
+                  >
+                    {SEMESTER_FORM_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>Subject Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Introduction to Civil Engineering"
-                  value={gradeForm.subject}
-                  onChange={(e) => handleGradeChange("subject", e.target.value)}
-                  style={modalFieldInputStyle}
-                />
-              </div>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                {SCHOOL_YEAR_INFO_TEXT} {SEMESTER_INFO_TEXT} {GRADE_INPUT_HELP_TEXT}
+              </p>
 
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>School Year</label>
-                <select
-                  value={gradeForm.schoolYear}
-                  onChange={(e) =>
-                    handleGradeChange("schoolYear", e.target.value)
-                  }
-                  style={modalFieldInputStyle}
-                >
-                  {schoolYearFormOptions.map((year) => (
-                    <option key={year} value={year}>
-                      SY {year}
-                    </option>
-                  ))}
-                </select>
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  {SCHOOL_YEAR_INFO_TEXT}
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>Semester</label>
-                <select
-                  value={gradeForm.semester}
-                  onChange={(e) =>
-                    handleGradeChange("semester", e.target.value)
-                  }
-                  style={modalFieldInputStyle}
-                >
-                  {SEMESTER_FORM_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  {SEMESTER_INFO_TEXT}
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>Grade</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="e.g., 1.25 or INC"
-                  value={gradeForm.grade}
-                  onChange={(e) => handleGradeChange("grade", e.target.value)}
-                  style={modalFieldInputStyle}
-                />
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  {GRADE_INPUT_HELP_TEXT}
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gap: "6px" }}>
-                <label style={modalFieldLabelStyle}>Remarks</label>
-                <input
-                  type="text"
-                  value={gradeForm.remarks}
-                  readOnly
+              <div style={{ display: "grid", gap: "10px" }}>
+                <div
                   style={{
-                    ...modalFieldInputStyle,
-                    backgroundColor: "#f8fafc",
-                    color: "#334155",
-                    cursor: "default",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
                   }}
-                />
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Auto-set from grade: 3 and below = Pass, INC = INC, 5 = Fail.
-                </p>
+                >
+                  <label style={{ ...modalFieldLabelStyle, margin: 0 }}>
+                    Subjects ({gradeBatch.rows.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddGradeRow}
+                    disabled={gradeBatch.rows.length >= MAX_GRADE_ROWS || isSavingGrade}
+                    style={{
+                      border: "1px solid #fecdd3",
+                      background: "#fff1f2",
+                      color: "#9f1239",
+                      borderRadius: "8px",
+                      padding: "0.4rem 0.75rem",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      cursor:
+                        gradeBatch.rows.length >= MAX_GRADE_ROWS
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity: gradeBatch.rows.length >= MAX_GRADE_ROWS ? 0.6 : 1,
+                    }}
+                  >
+                    <i className="fas fa-plus" aria-hidden="true" /> Add subject
+                  </button>
+                </div>
+
+                {gradeBatch.rows.map((row, index) => (
+                  <div
+                    key={row.id}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "12px",
+                      background: "#f8fafc",
+                      display: "grid",
+                      gap: "10px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
+                        Subject {index + 1}
+                      </strong>
+                      {gradeBatch.rows.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGradeRow(row.id)}
+                          aria-label={`Remove subject row ${index + 1}`}
+                          title="Remove row"
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            fontSize: "0.85rem",
+                          }}
+                        >
+                          <i className="fas fa-trash-can" aria-hidden="true" />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(120px, 1fr))",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={{ display: "grid", gap: "4px" }}>
+                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                          Code
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="CE 101"
+                          value={row.subjectCode}
+                          onChange={(e) =>
+                            handleGradeRowChange(row.id, "subjectCode", e.target.value)
+                          }
+                          style={modalFieldInputStyle}
+                        />
+                      </div>
+                      <div style={{ display: "grid", gap: "4px" }}>
+                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                          Description
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Subject name"
+                          value={row.subject}
+                          onChange={(e) =>
+                            handleGradeRowChange(row.id, "subject", e.target.value)
+                          }
+                          style={modalFieldInputStyle}
+                        />
+                      </div>
+                      <div style={{ display: "grid", gap: "4px" }}>
+                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                          Grade
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="1.25 / INC"
+                          value={row.grade}
+                          onChange={(e) =>
+                            handleGradeRowChange(row.id, "grade", e.target.value)
+                          }
+                          style={modalFieldInputStyle}
+                        />
+                      </div>
+                      <div style={{ display: "grid", gap: "4px" }}>
+                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                          Remarks
+                        </label>
+                        <input
+                          type="text"
+                          value={row.remarks || "—"}
+                          readOnly
+                          style={{
+                            ...modalFieldInputStyle,
+                            backgroundColor: "#ffffff",
+                            color: isAlertRemark(row.remarks) ? "#dc2626" : "#334155",
+                            fontWeight: isAlertRemark(row.remarks) ? 700 : 500,
+                            cursor: "default",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div
@@ -1258,7 +1415,11 @@ const StudentManagementPage = () => {
                     e.currentTarget.style.backgroundColor = "#8b0000";
                   }}
                 >
-                  {isSavingGrade ? "Saving..." : "Save Grade Record"}
+                  {isSavingGrade
+                    ? "Saving..."
+                    : gradeBatch.rows.length > 1
+                      ? "Save All Grades"
+                      : "Save Grade Record"}
                 </button>
               </div>
             </div>

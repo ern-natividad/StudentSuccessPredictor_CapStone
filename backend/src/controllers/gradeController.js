@@ -138,6 +138,59 @@ export const createStudentGrade = async (req, res) => {
   res.status(201).json({ grade: data });
 };
 
+/** Create multiple grade rows for one student in a single request. */
+export const createStudentGradesBulk = async (req, res) => {
+  const { user_id: userId, grades } = req.body || {};
+  if (!userId) throw new HttpError(400, "Student user_id is required.");
+  if (!Array.isArray(grades) || grades.length === 0) {
+    throw new HttpError(400, "Provide at least one grade entry.");
+  }
+  if (grades.length > 20) {
+    throw new HttpError(400, "You can add at most 20 grades at once.");
+  }
+
+  const { data: student, error: studentError } = await supabase
+    .from("users")
+    .select("id, role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (studentError) throw studentError;
+  if (!student || student.role !== "student") {
+    throw new HttpError(404, "Student account not found.");
+  }
+
+  const insertRows = grades.map((entry, index) => {
+    try {
+      const grade = validateGradePayload(entry);
+      return {
+        user_id: userId,
+        subject_code: grade.subject_code,
+        subject_name: grade.subject_name,
+        semester: grade.semester,
+        school_year: grade.school_year,
+        grade: grade.grade,
+        remarks: grade.remarks,
+      };
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw new HttpError(
+          error.status,
+          `Row ${index + 1}: ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  });
+
+  const { data, error } = await supabase
+    .from("student_grades")
+    .insert(insertRows)
+    .select(GRADE_SELECT_COLUMNS);
+  if (error) throw error;
+
+  res.status(201).json({ grades: data || [], count: data?.length || 0 });
+};
+
 export const updateStudentGrade = async (req, res) => {
   const grade = validateGradePayload(req.body);
   const updateRow = {
