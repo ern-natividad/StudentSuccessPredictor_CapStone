@@ -333,13 +333,7 @@ const AlertsList = () => {
 
       <div className={styles.card}>
         <div className={styles.cardTitle}>Alert Summary</div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "12px",
-          }}
-        >
+        <div className={styles.responsiveStatsGrid}>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
               {activeAlerts.filter((a) => a.sev === "low").length}

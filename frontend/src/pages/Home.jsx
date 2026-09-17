@@ -87,17 +87,20 @@ const HomePage = () => {
       <HomeAnnouncementModal />
       {/* Header Navigation Bar */}
       <header
+        className="home-header"
         style={{
           borderBottom: "1px solid rgba(255,255,255,0.15)",
-          padding: "var(--space-lg) var(--space-2xl)",
+          padding: "var(--space-lg) clamp(1rem, 4vw, var(--space-2xl))",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: "var(--space-md)",
           backgroundColor: "#800000",
           position: "sticky",
           top: 0,
           zIndex: 50,
           boxShadow: "var(--shadow-xs)",
+          flexWrap: "wrap",
         }}
       >
         <div
@@ -150,14 +153,15 @@ const HomePage = () => {
           width: "100%",
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "0 var(--space-2xl)",
+          padding: "0 clamp(1rem, 4vw, var(--space-2xl))",
         }}
       >
         {/* Hero Section */}
         <section
+          className="home-hero"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
             gap: "var(--space-3xl)",
             alignItems: "center",
             padding: "var(--space-3xl) 0",
@@ -580,6 +584,29 @@ const HomePage = () => {
                   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 }
               }
+              @media (max-width: 640px) {
+                .home-header,
+                .home-footer {
+                  flex-direction: column;
+                  align-items: stretch !important;
+                }
+                .home-footer-access {
+                  align-self: flex-end;
+                  max-width: 100%;
+                }
+                .home-access-menu {
+                  left: auto !important;
+                  right: 0 !important;
+                  width: min(220px, calc(100vw - 2rem)) !important;
+                  min-width: 0 !important;
+                  max-width: calc(100vw - 2rem) !important;
+                }
+                .home-hero {
+                  padding-top: 1.5rem !important;
+                  padding-bottom: 1.5rem !important;
+                  gap: 1.5rem !important;
+                }
+              }
               @media (max-width: 520px) {
                 .capabilities-rail {
                   grid-template-columns: 1fr !important;
@@ -601,9 +628,10 @@ const HomePage = () => {
 
       {/* Footer — institutional logins tucked behind a discreet control */}
       <footer
+        className="home-footer"
         style={{
           borderTop: "1px solid var(--color-border-neutral)",
-          padding: "var(--space-lg) var(--space-2xl)",
+          padding: "var(--space-lg) clamp(1rem, 4vw, var(--space-2xl))",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -615,13 +643,21 @@ const HomePage = () => {
           marginTop: "auto",
           flexShrink: 0,
           width: "100%",
+          flexWrap: "wrap",
         }}
       >
         <div>&copy; 2026 Western Mindanao State University</div>
 
         <div
           ref={institutionalMenuRef}
-          style={{ position: "relative", display: "flex", alignItems: "center" }}
+          className="home-footer-access"
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            maxWidth: "100%",
+          }}
         >
           <button
             type="button"
@@ -660,11 +696,16 @@ const HomePage = () => {
           {showInstitutionalAccess ? (
             <div
               role="menu"
+              className="home-access-menu"
               style={{
                 position: "absolute",
                 bottom: "calc(100% + 8px)",
                 right: 0,
-                minWidth: "220px",
+                left: "auto",
+                width: "min(220px, calc(100vw - 2rem))",
+                minWidth: 0,
+                maxWidth: "calc(100vw - 2rem)",
+                boxSizing: "border-box",
                 background: "#ffffff",
                 border: "1px solid var(--color-border-neutral)",
                 borderRadius: "12px",

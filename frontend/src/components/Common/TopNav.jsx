@@ -7,7 +7,7 @@ import ConfirmModal from "./ConfirmModal";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 import styles from "../../styles/Dashboard.module.css";
 
-const TopNav = ({ onLogout }) => {
+const TopNav = ({ onLogout, mobileNavOpen = false, onToggleMobileNav }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toggleNotificationsPanel, unreadAlertCount } = useDashboard();
@@ -41,6 +41,19 @@ const TopNav = ({ onLogout }) => {
   return (
     <>
       <nav className={styles.topNav}>
+        <button
+          type="button"
+          className={styles.navMenuButton}
+          onClick={onToggleMobileNav}
+          aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileNavOpen}
+          aria-controls="app-mobile-nav"
+        >
+          <i
+            className={mobileNavOpen ? "fas fa-times" : "fas fa-bars"}
+            aria-hidden="true"
+          />
+        </button>
         <div className={styles.navLogo}>
           <img
             src={engineeringLogo}
@@ -55,7 +68,7 @@ const TopNav = ({ onLogout }) => {
               padding: "2px",
             }}
           />
-          <div>
+          <div className={styles.navLogoCopy}>
             <div className={styles.navLogoText}>HawksPredict</div>
             <div className={styles.navLogoSub}>WMSU — College of Engineering</div>
           </div>
@@ -95,7 +108,7 @@ const TopNav = ({ onLogout }) => {
               )}
             </button>
           )}
-          <div>
+          <div className={styles.navUserMeta}>
             <div className={styles.navUserName}>{displayName}</div>
             <div className={styles.navUserRole}>{roleLabel}</div>
           </div>
@@ -114,8 +127,15 @@ const TopNav = ({ onLogout }) => {
               )}
             </div>
           </button>
-          <button className={styles.navLogout} onClick={handleLogoutClick}>
-            Logout
+          <button
+            type="button"
+            className={styles.navLogout}
+            onClick={handleLogoutClick}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <span className={styles.navLogoutText}>Logout</span>
+            <i className={`fas fa-sign-out-alt ${styles.navLogoutIcon}`} aria-hidden="true" />
           </button>
         </div>
       </nav>

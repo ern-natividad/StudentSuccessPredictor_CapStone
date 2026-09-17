@@ -197,8 +197,8 @@ const AuditLogsPage = () => {
               : "No audit logs found matching the selected date range."}
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table className={commonStyles.table} style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className={commonStyles.tableWrapper}>
+            <table className={commonStyles.table} style={{ width: "100%", minWidth: "880px", borderCollapse: "collapse" }}>
               <thead className={commonStyles.tableHead}>
                 <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
                   <th style={{ padding: "0.75rem 0.8rem", textAlign: "left", width: "175px" }}>Timestamp</th>

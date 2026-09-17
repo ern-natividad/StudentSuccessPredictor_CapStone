@@ -4,6 +4,7 @@ import { useToast } from "../../../components/Common/Toast";
 import { api } from "../../../services/api";
 import { getUserDirectory } from "../../../services/userDirectory";
 import styles from "../../../styles/Dashboard.module.css";
+import commonStyles from "../../../styles/Common.module.css";
 import moduleStyles from "../../../styles/Modules.module.css";
 
 const AccountSettingsPage = () => {
@@ -682,8 +683,8 @@ const AccountSettingsPage = () => {
           </div>
 
           {/* User Table */}
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: "6px", overflow: "hidden", border: "1px solid #e0e0e0" }}>
+          <div className={commonStyles.tableWrapper}>
+            <table style={{ width: "100%", minWidth: "860px", borderCollapse: "collapse", background: "#fff", borderRadius: "6px", overflow: "hidden", border: "1px solid #e0e0e0" }}>
               <thead>
                 <tr style={{ backgroundColor: "#800000", color: "#fff", textAlign: "left", fontSize: "14px" }}>
                   <th style={{ padding: "0.75rem 1rem" }}>User</th>

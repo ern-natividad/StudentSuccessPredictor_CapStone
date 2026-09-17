@@ -1,14 +1,10 @@
-// REPLACES: src/components/Common/MainLayout.jsx
-//
-// Adds inactivity-based session timeout (15 min) that logs the user out and
-// shows the existing-styled SessionExpiredModal. Layout markup/classes are
-// otherwise unchanged.
 import { useEffect, useState, useCallback } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useIdleTimeout } from "../../hooks/useIdleTimeout";
 import TopNav from "./TopNav";
 import Sidebar from "./Sidebar";
+import MobileNavDrawer from "./MobileNavDrawer";
 import NotificationPanel from "./NotificationPanel";
 import SessionExpiredModal from "./SessionExpiredModal";
 import styles from "../../styles/Dashboard.module.css";
@@ -20,6 +16,15 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const closeMobileNav = useCallback(() => {
+    setMobileNavOpen(false);
+  }, []);
+
+  const toggleMobileNav = useCallback(() => {
+    setMobileNavOpen((open) => !open);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -33,21 +38,23 @@ const MainLayout = () => {
 
   useIdleTimeout(handleIdle, SESSION_TIMEOUT_MS, user.isAuthenticated);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!user.isAuthenticated) {
       navigate("/");
     }
   }, [user.isAuthenticated, navigate]);
 
-  // Determine if it is a module page to toggle styles
   const isModulePage = location.pathname.startsWith("/modules");
 
   return (
     <div
       className={`${styles.dashboardScreen} ${isModulePage ? styles.modulePageBg : ""}`}
     >
-      <TopNav onLogout={handleLogout} />
+      <TopNav
+        onLogout={handleLogout}
+        mobileNavOpen={mobileNavOpen}
+        onToggleMobileNav={toggleMobileNav}
+      />
       {(user?.role === "admin" || user?.role === "staff") && (
         <NotificationPanel />
       )}
@@ -58,6 +65,9 @@ const MainLayout = () => {
           navigate("/");
         }}
       />
+
+      <MobileNavDrawer open={mobileNavOpen} onClose={closeMobileNav} />
+
       <div className={styles.dashboardBody}>
         <Sidebar />
         <div className={styles.mainContent}>

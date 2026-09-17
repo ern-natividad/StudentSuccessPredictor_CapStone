@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useDashboard } from "../../hooks/useDashboard";
 import { getDashboardPath } from "../../utils/authUtils";
@@ -7,9 +7,9 @@ import styles from "../../styles/Dashboard.module.css";
 
 const Sidebar = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-  const { currentPage, showPage, unreadAlertCount } = useDashboard();
+  const { unreadAlertCount } = useDashboard();
+  const basePath = getDashboardPath(user?.role);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
@@ -25,29 +25,14 @@ const Sidebar = () => {
     });
   };
 
-  const isModulePage = location.pathname.startsWith("/modules");
-
-  // Resolve items based on role
   const getSidebarConfig = () => {
     if (user.role === "student") {
       return {
         sectionLabel: "Student Panel",
         items: [
-          {
-            id: "prediction",
-            icon: "fas fa-chart-line",
-            label: "Prediction Result",
-          },
-          {
-            id: "grades",
-            icon: "fas fa-book",
-            label: "My Grades",
-          },
-          {
-            id: "settings",
-            icon: "fas fa-user-cog",
-            label: "Account Settings",
-          },
+          { id: "prediction", icon: "fas fa-chart-line", label: "Prediction Result" },
+          { id: "grades", icon: "fas fa-book", label: "My Grades" },
+          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },
         ],
         modules: [
           {
@@ -78,11 +63,7 @@ const Sidebar = () => {
             badge: unreadAlertCount,
           },
           { id: "screening", icon: "fas fa-check-square", label: "Screening" },
-          {
-            id: "settings",
-            icon: "fas fa-user-cog",
-            label: "Account Settings",
-          },
+          { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },
         ],
         modules: [
           {
@@ -113,7 +94,6 @@ const Sidebar = () => {
       };
     }
 
-    // admin
     return {
       sectionLabel: "Admin Panel",
       items: [
@@ -135,12 +115,7 @@ const Sidebar = () => {
           label: "Alerts",
           badge: unreadAlertCount,
         },
-        {
-          id: "announcements",
-          icon: "fas fa-bullhorn",
-          label: "News & Ads",
-        },
-        
+        { id: "announcements", icon: "fas fa-bullhorn", label: "News & Ads" },
         { id: "audit", icon: "fas fa-history", label: "Audit Logs" },
         { id: "settings", icon: "fas fa-user-cog", label: "Account Settings" },
       ],
@@ -174,85 +149,76 @@ const Sidebar = () => {
   };
 
   const config = getSidebarConfig();
-
-  const handleTabClick = (pageId) => {
-    const basePath = getDashboardPath(user.role);
-    if (location.pathname !== basePath) {
-      navigate(`${basePath}?tab=${pageId}`);
-    } else {
-      showPage(pageId);
-    }
-  };
-
-  const handleModuleClick = (path) => {
-    navigate(path);
-  };
-
-  const renderItemButton = (item) => {
-    const isActive = !isModulePage && currentPage === item.id;
-    return (
-      <button
-        key={item.id}
-        className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
-        onClick={() => handleTabClick(item.id)}
-        title={isCollapsed ? item.label : ""}
-      >
-        <span className={styles.siIcon}>
-          {item.icon.includes("fas") ? (
-            <i className={item.icon}></i>
-          ) : (
-            item.icon
-          )}
-        </span>
-        <span className={styles.sidebarText}>{item.label}</span>
-        {item.badge ? (
-          <span className={styles.siBadge}>{item.badge}</span>
-        ) : null}
-      </button>
-    );
-  };
-
-  const renderModuleButton = (item) => {
-    const isActive = location.pathname === item.path;
-    return (
-      <button
-        key={item.id}
-        className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
-        onClick={() => handleModuleClick(item.path)}
-        title={isCollapsed ? item.label : ""}
-      >
-        <span className={styles.siIcon}>
-          {item.icon.includes("fas") ? (
-            <i className={item.icon}></i>
-          ) : (
-            item.icon
-          )}
-        </span>
-        <span className={styles.sidebarText}>{item.label}</span>
-      </button>
-    );
-  };
+  const isModulePage = location.pathname.startsWith("/modules");
+  const defaultTab =
+    user.role === "student" ? "prediction" : "dashboard";
+  const currentTab =
+    new URLSearchParams(location.search).get("tab") || defaultTab;
 
   return (
     <aside
-      className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}
-      style={{
-        whiteSpace: "nowrap",
-        overflowX: "hidden",
-      }}
+      id="app-sidebar"
+      className={`${styles.sidebar} ${styles.desktopSidebar} ${
+        isCollapsed ? styles.collapsed : ""
+      }`}
     >
+      <div className={styles.sidebarToolbar}>
+        <button
+          type="button"
+          className={styles.sidebarCollapseButton}
+          onClick={toggleCollapse}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <i
+            className={`fas ${isCollapsed ? "fa-angles-right" : "fa-angles-left"}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
       <div className={styles.sidebarSectionLabel}>{config.sectionLabel}</div>
-      {config.items.map(renderItemButton)}
+      {config.items.map((item) => {
+        const isActive = !isModulePage && currentTab === item.id;
+        return (
+          <NavLink
+            key={item.id}
+            to={`${basePath}?tab=${item.id}`}
+            className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
+            title={isCollapsed ? item.label : ""}
+          >
+            <span className={styles.siIcon}>
+              <i className={item.icon} aria-hidden="true" />
+            </span>
+            <span className={styles.sidebarText}>{item.label}</span>
+            {item.badge ? (
+              <span className={styles.siBadge}>{item.badge}</span>
+            ) : null}
+          </NavLink>
+        );
+      })}
 
-      {config.modules.length > 0 && (
+      {config.modules.length > 0 ? (
         <>
-          <div className={styles.sidebarDivider}></div>
+          <div className={styles.sidebarDivider} />
           <div className={styles.sidebarSectionLabel}>Modules</div>
-          {config.modules.map(renderModuleButton)}
+          {config.modules.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                className={`${styles.sidebarItem} ${isActive ? styles.active : ""}`}
+                title={isCollapsed ? item.label : ""}
+              >
+                <span className={styles.siIcon}>
+                  <i className={item.icon} aria-hidden="true" />
+                </span>
+                <span className={styles.sidebarText}>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </>
-      )}
-
-      
+      ) : null}
     </aside>
   );
 };

@@ -752,7 +752,7 @@ const CurriculumManager = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                   gap: 12,
                   marginBottom: 12,
                 }}
@@ -838,7 +838,7 @@ const CurriculumManager = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                   gap: 12,
                   marginBottom: 12,
                 }}

@@ -227,11 +227,7 @@ const StudentsList = () => {
       <div className={styles.card}>
         <div className={styles.cardTitle}>Statistics</div>
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "12px",
-          }}
+          className={styles.responsiveStatsGrid}
         >
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
@@ -297,11 +293,12 @@ const StudentsList = () => {
         </div>
 
         {/* Scrollable container for smaller screens */}
-        <div style={{ overflowX: "auto" }}>
+        <div className={commonStyles.tableWrapper}>
           <table
             className={commonStyles.table}
             style={{
               width: "100%",
+              minWidth: "900px",
               borderCollapse: "collapse",
               textAlign: "left",
             }}

@@ -399,11 +399,7 @@ const DashboardOverview = () => {
 
       {/* Top Overview Cards Grid */}
       <div
-        className={commonStyles.grid}
-        style={{
-          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: "12px",
-        }}
+        className={`${commonStyles.grid} ${styles.responsiveChartGrid}`}
       >
         {/* Key Metrics Card */}
         <div
@@ -432,13 +428,8 @@ const DashboardOverview = () => {
           </div>
 
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "0.75rem",
-              flex: 1,
-              alignItems: "stretch",
-            }}
+            className={styles.responsiveMetricsRow}
+            style={{ flex: 1, alignItems: "stretch" }}
           >
             {/* Total Students Card */}
             <div
@@ -693,12 +684,8 @@ const DashboardOverview = () => {
 
       {/* Main Content Charts & Early Alerts Grid */}
       <div
-        className={commonStyles.grid}
-        style={{
-          gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))",
-          gap: "12px",
-          marginTop: "12px",
-        }}
+        className={`${commonStyles.grid} ${styles.responsiveChartGrid}`}
+        style={{ marginTop: "12px" }}
       >
         {/* GPA Trend Analysis Card */}
         <div
