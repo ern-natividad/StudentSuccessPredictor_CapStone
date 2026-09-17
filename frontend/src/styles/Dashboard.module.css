@@ -9,6 +9,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 }
 
 /* PAGE SHELL */
@@ -28,6 +29,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .pageTitle {
@@ -88,6 +90,7 @@
   align-items: center;
   gap: 16px;
   box-shadow: 0 8px 24px rgba(185, 28, 28, 0.06);
+  flex-wrap: wrap;
 }
 
 .contentCard {
@@ -189,15 +192,18 @@
   justify-content: flex-end;
   gap: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .listToolbarFilters {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 10px;
   margin-left: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .listToolbarSelect {
@@ -322,12 +328,35 @@
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
-  padding: 0 2rem;
-  gap: 20px;
+  padding: 0 clamp(0.75rem, 2vw, 2rem);
+  gap: 12px;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  min-width: 0;
+}
+
+.navMenuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.navMenuButton:hover,
+.navMenuButton:focus-visible {
+  background: rgba(255, 255, 255, 0.22);
+  outline: none;
 }
 
 .navLogo {
@@ -335,7 +364,12 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.navLogoCopy {
+  min-width: 0;
 }
 
 .navLogoIcon {
@@ -443,10 +477,14 @@
   flex-shrink: 0;
 }
 
+.navUserMeta {
+  min-width: 0;
+}
+
 .navBell {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   border: none;
@@ -527,6 +565,7 @@
 
 .navLogout {
   padding: 7px 14px;
+  min-height: 40px;
   background: transparent;
   border: 0.5px solid rgba(255, 255, 255, 0.3);
   color: #ffcdd2;
@@ -534,6 +573,10 @@
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .navLogout:hover {
@@ -542,12 +585,17 @@
   color: #fff;
 }
 
+.navLogoutIcon {
+  display: none;
+  font-size: 0.95rem;
+}
+
 /* NOTIFICATION PANEL */
 .notifPanel {
   position: fixed;
   top: 56px;
   right: 24px;
-  width: 320px;
+  width: min(320px, calc(100vw - 1.5rem));
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -835,11 +883,44 @@
   border-right: 0.5px solid rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 0;
+  padding: 1rem 0 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
   gap: 2px;
-  transition: width 0.2s ease-in-out;
+  transition: width 0.2s ease-in-out, transform 0.25s ease;
+  white-space: nowrap;
+}
+
+.sidebarToolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0.75rem 0.5rem;
+}
+
+.sidebarCollapseButton {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffcdd2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebarCollapseButton:hover,
+.sidebarCollapseButton:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  outline: none;
+}
+
+.sidebarBackdrop {
+  display: none;
 }
 
 .sidebarSectionLabel {
@@ -855,6 +936,7 @@
 
 .sidebarItem {
   padding: 10px 1.5rem;
+  min-height: 44px;
   font-size: 14px;
   font-weight: 400;
   color: var(--color-nav-text-muted);
@@ -914,12 +996,15 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .pageContainer {
   flex: 1;
   overflow-y: auto;
-  padding: 1.25rem 1.5rem;
+  overflow-x: hidden;
+  padding: clamp(0.85rem, 2vw, 1.25rem) clamp(0.85rem, 2.5vw, 1.5rem);
+  min-width: 0;
 }
 
 .pageView {
@@ -1375,10 +1460,16 @@
   color: #ff4444;
 }
 
-/* Retractable Sidebar states */
-.sidebar.collapsed {
-  width: 64px;
+.sidebar.collapsed .sidebarToolbar {
+  justify-content: center;
+  padding: 0 0.35rem 0.5rem;
 }
+
+.sidebar.collapsed .sidebarCollapseButton {
+  width: 40px;
+  height: 40px;
+}
+
 
 .sidebar.collapsed .sidebarSectionLabel {
   display: none;
@@ -1854,7 +1945,8 @@
 .syTermTableWrap {
   border: 2px solid #94a3b8;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
@@ -1937,6 +2029,287 @@
   .syTermTable thead th:first-child,
   .syTermTable thead th:last-child {
     width: auto;
+  }
+}
+
+/* ==========================================================================
+   Responsive shell — mobile-first refinements (320px → 1440px+)
+   Primary layout breakpoint: 980px (matches Modules.layoutShift)
+   ========================================================================== */
+
+.responsiveStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.responsiveChartGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+
+.responsiveMetricsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+
+/* ===== Mobile portal navigation (always defined; shown when open) ===== */
+.mobileNavRoot {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.mobileNavBackdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileNavDrawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(280px, 86vw);
+  background: var(--color-brand-primary);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 2px;
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+  animation: mobileNavSlideIn 0.2s ease-out;
+  z-index: 1;
+}
+
+.mobileNavDrawer .sidebarItem {
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+  min-height: 48px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.mobileNavDrawer a.sidebarItem:visited,
+.mobileNavDrawer a.sidebarItem:link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mobileNavDrawer .sidebarText,
+.mobileNavDrawer .sidebarSectionLabel,
+.mobileNavDrawer .sidebarDivider,
+.mobileNavDrawer .siBadge {
+  display: revert;
+}
+
+.desktopSidebar {
+  /* marker class — hidden below 980px */
+}
+
+@keyframes mobileNavSlideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .navMenuButton {
+    display: inline-flex;
+  }
+
+  .topNav {
+    z-index: 2100;
+  }
+
+  .desktopSidebar {
+    display: none !important;
+  }
+
+  .dashboardBody {
+    overflow: hidden;
+  }
+
+  .mainContent {
+    width: 100%;
+  }
+
+  .pageContainer {
+    padding: 1rem;
+  }
+
+  .pageTitle {
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
+  }
+
+  .pageSubtitle {
+    font-size: 0.875rem;
+  }
+
+  .contentCard {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .listToolbarFilters {
+    justify-content: stretch;
+  }
+
+  .listToolbarSelect,
+  .listToolbarSearch {
+    flex: 1 1 160px;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .notifPanel {
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+
+  .alertItem {
+    flex-wrap: wrap;
+  }
+
+  .alertMeta {
+    width: 100%;
+    align-items: stretch;
+    margin-top: 4px;
+  }
+
+  .sidebarBackdrop {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .navUserMeta {
+    display: none;
+  }
+
+  .navLogoSub {
+    display: none;
+  }
+
+  .navLogout {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .navLogoutText {
+    display: none;
+  }
+
+  .navLogoutIcon {
+    display: inline-block;
+  }
+
+  .navRight {
+    gap: 8px;
+  }
+
+  .selectedStudentCard {
+    align-items: flex-start;
+  }
+
+  .selectedStudentTag {
+    white-space: normal;
+  }
+
+  .tableActionButton,
+  .toolbarIconButton {
+    width: var(--touch-target, 44px);
+    height: var(--touch-target, 44px);
+  }
+}
+
+@media (max-width: 760px) {
+  .summaryGrid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .contentCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .listToolbar {
+    justify-content: stretch;
+  }
+
+  .listToolbarFilters {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageHeaderCard,
+  .contentCard,
+  .summaryCard,
+  .selectedStudentCard {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .statValue,
+  .summaryValue {
+    font-size: 1.35rem;
+  }
+}
+
+/* Disable hover-expand sidebar on touch devices */
+@media (hover: none) {
+  .sidebar.collapsed:hover {
+    width: 64px !important;
+    box-shadow: none;
+  }
+
+  .sidebar.collapsed:hover .sidebarSectionLabel,
+  .sidebar.collapsed:hover .sidebarDivider,
+  .sidebar.collapsed:hover .sidebarText,
+  .sidebar.collapsed:hover .siBadge {
+    display: none !important;
+  }
+
+  .sidebar.collapsed:hover .sidebarItem {
+    padding: 10px 0 !important;
+    justify-content: center !important;
+    border-left-width: 0 !important;
+  }
+}
+
+@media (max-width: 980px) and (hover: none) {
+  .sidebar.collapsed:hover {
+    width: min(280px, 86vw) !important;
   }
 }
 

@@ -970,7 +970,8 @@
 
 .historySearchInput {
   width: min(360px, 100%);
-  min-width: 220px;
+  min-width: 0;
+  flex: 1 1 180px;
 }
 
 .exportMenuWrapper {

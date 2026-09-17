@@ -17,6 +17,7 @@ body {
   color: var(--color-text-primary);      
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -28,6 +29,16 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -120,6 +131,21 @@ body {
   --transition-fast: 150ms ease-in-out;
   --transition-base: 250ms ease-in-out;
   --transition-slow: 350ms ease-in-out;
+
+  /* ── RESPONSIVE BREAKPOINTS (reference; use in @media) ── */
+  --bp-sm: 480px;
+  --bp-md: 760px;
+  --bp-lg: 980px;
+  --bp-xl: 1200px;
+
+  /* ── FLUID TYPE ── */
+  --font-size-fluid-sm: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --font-size-fluid-base: clamp(0.875rem, 0.82rem + 0.3vw, 1rem);
+  --font-size-fluid-lg: clamp(1rem, 0.92rem + 0.45vw, 1.25rem);
+  --font-size-fluid-xl: clamp(1.25rem, 1.05rem + 0.9vw, 2rem);
+
+  /* ── TOUCH TARGET ── */
+  --touch-target: 44px;
 
   /* ── LEGACY ALIASES (For backward compatibility) ── */
   --primary: #A30021;

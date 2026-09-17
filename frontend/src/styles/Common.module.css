@@ -349,3 +349,70 @@
   font-size: 13px;
   color: #64748b;
 }
+
+/* TABLE SCROLL WRAPPER */
+.tableWrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+
+.tableWrapper table {
+  min-width: 720px;
+}
+
+/* RESPONSIVE SHARED */
+@media (max-width: 760px) {
+  .modalOverlay {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    width: 100%;
+    padding: 20px 16px;
+    border-radius: 16px 16px 12px 12px;
+    max-height: min(92vh, 100%);
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .gridCols2,
+  .gridCols3,
+  .gridCols4 {
+    grid-template-columns: 1fr;
+  }
+
+  .statBlock {
+    min-height: 96px;
+    padding: 14px;
+  }
+
+  .statValue {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tableWrapper table {
+    min-width: 640px;
+  }
+
+  .modalTitle {
+    font-size: 1.15rem;
+  }
+}
+
