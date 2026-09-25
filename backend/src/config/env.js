@@ -35,4 +35,6 @@ export const env = {
   brevoApiKey: required("BREVO_API_KEY"),
   brevoSenderEmail: required("BREVO_SENDER_EMAIL"),
   brevoSenderName: process.env.BREVO_SENDER_NAME || "WMSU Engineering Support",
+  predictionServiceUrl: process.env.PREDICTION_SERVICE_URL || "",
+  predictionServiceSecret: process.env.PREDICTION_SERVICE_SECRET || "",
 };

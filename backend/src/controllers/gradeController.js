@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabaseClient.js";
+import { env } from "../config/env.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 const GRADE_SELECT_COLUMNS =
@@ -87,6 +88,126 @@ const validateGradePayload = (payload) => {
     grade: parseGrade(payload.grade),
     remarks: payload.remarks?.trim() || null,
   };
+};
+
+const validateImportRow = (row, index) => {
+  const userId = String(row.user_id ?? row.userId ?? "").trim();
+  if (!userId) throw new HttpError(400, `Row ${index + 1}: user_id is required.`);
+
+  try {
+    return {
+      user_id: userId,
+      ...validateGradePayload(row),
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw new HttpError(error.status, `Row ${index + 1}: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
+const requestPredictions = async (userIds) => {
+  if (!env.predictionServiceUrl) return { requested: false };
+
+  const response = await fetch(`${env.predictionServiceUrl.replace(/\/$/, "")}/predict`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(env.predictionServiceSecret
+        ? { "X-Prediction-Service-Key": env.predictionServiceSecret }
+        : {}),
+    },
+    body: JSON.stringify({ user_ids: userIds }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new HttpError(502, payload.detail || "Prediction service could not process the uploaded grades.");
+  }
+  return { requested: true, ...payload };
+};
+
+const saveGradeRows = async (rows) => {
+  const result = await supabase
+    .from("student_grades")
+    .upsert(rows, { onConflict: "user_id,subject_code,school_year,semester" })
+    .select(GRADE_SELECT_COLUMNS);
+
+  if (!result.error || result.error.code !== "42P10") {
+    if (result.error) throw result.error;
+    return result.data || [];
+  }
+
+  // Older deployments may not have applied 012_grade_predictions.sql yet.
+  // Reconcile rows individually until the composite unique index is installed.
+  const savedRows = [];
+  for (const row of rows) {
+    const keyQuery = supabase
+      .from("student_grades")
+      .select("id")
+      .eq("user_id", row.user_id)
+      .eq("subject_code", row.subject_code)
+      .eq("school_year", row.school_year)
+      .eq("semester", row.semester)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const { data: existingRows, error: lookupError } = await keyQuery;
+    if (lookupError) throw lookupError;
+    const existing = existingRows?.[0];
+
+    const response = existing?.id
+      ? await supabase
+          .from("student_grades")
+          .update(row)
+          .eq("id", existing.id)
+          .select(GRADE_SELECT_COLUMNS)
+          .single()
+      : await supabase
+          .from("student_grades")
+          .insert(row)
+          .select(GRADE_SELECT_COLUMNS)
+          .single();
+    if (response.error) throw response.error;
+    savedRows.push(response.data);
+  }
+  return savedRows;
+};
+
+export const importStudentGrades = async (req, res) => {
+  const { grades } = req.body || {};
+  if (!Array.isArray(grades) || grades.length === 0) {
+    throw new HttpError(400, "Provide at least one grade row.");
+  }
+  if (grades.length > 5000) {
+    throw new HttpError(400, "You can import at most 5,000 grade rows at once.");
+  }
+
+  const rows = grades.map(validateImportRow);
+  const userIds = [...new Set(rows.map((row) => row.user_id))];
+  const { data: students, error: studentError } = await supabase
+    .from("users")
+    .select("id, role")
+    .in("id", userIds);
+  if (studentError) throw studentError;
+
+  const studentIds = new Set(
+    (students || []).filter((student) => student.role === "student").map((student) => student.id),
+  );
+  const missingUserIds = userIds.filter((userId) => !studentIds.has(userId));
+  if (missingUserIds.length > 0) {
+    throw new HttpError(404, `Student account not found for user_id ${missingUserIds[0]}.`);
+  }
+
+  const savedGrades = await saveGradeRows(rows);
+
+  const predictions = await requestPredictions(userIds);
+  res.status(200).json({
+    grades: savedGrades || [],
+    count: savedGrades.length,
+    user_ids: userIds,
+    predictions,
+  });
 };
 
 export const getStudentGrades = async (req, res) => {

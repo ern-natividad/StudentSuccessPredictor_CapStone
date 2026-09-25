@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   createStudentGrade,
   createStudentGradesBulk,
+  importStudentGrades,
   deleteStudentGrade,
   getStudentGrades,
   getMyGrades,
@@ -18,6 +19,12 @@ router.post(
   requireAuth,
   requireRole("admin", "staff"),
   asyncHandler(createStudentGradesBulk),
+);
+router.post(
+  "/import",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(importStudentGrades),
 );
 router.get("/:userId", requireAuth, asyncHandler(getStudentGrades));
 router.post("/", requireAuth, requireRole("admin", "staff"), asyncHandler(createStudentGrade));
