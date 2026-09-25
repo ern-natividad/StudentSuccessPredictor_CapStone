@@ -37,6 +37,7 @@ import {
 } from "../../../utils/gradeValueUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
+import ExcelGradeUploader from "../components/ExcelGradeUploader";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
@@ -647,6 +648,8 @@ const StudentManagementPage = () => {
           </div>
         ))}
       </div>
+
+      <ExcelGradeUploader />
 
       {selectedStudent && (
         <div className={styles.selectedStudentCard}>

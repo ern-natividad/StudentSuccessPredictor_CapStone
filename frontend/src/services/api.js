@@ -190,6 +190,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  importStudentGrades: (grades) =>
+    request("/grades/import", {
+      method: "POST",
+      body: JSON.stringify({ grades }),
+    }),
+
   updateStudentGrade: (gradeId, grade) =>
     request(`/grades/${gradeId}`, { method: "PUT", body: JSON.stringify(grade) }),
 
