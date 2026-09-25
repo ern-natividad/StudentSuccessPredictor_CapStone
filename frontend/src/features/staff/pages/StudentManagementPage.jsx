@@ -159,6 +159,7 @@ const StudentManagementPage = () => {
   const [editGradeForm, setEditGradeForm] = useState(createEmptyGradeForm);
   const [editingGradeRecord, setEditingGradeRecord] = useState(null);
   const [deletingGradeRecord, setDeletingGradeRecord] = useState(null);
+  const [selectedGradeIds, setSelectedGradeIds] = useState(new Set());
   const [studentInfoForm, setStudentInfoForm] = useState(createEmptyStudentInfoForm);
   const [studentGrades, setStudentGrades] = useState([]);
   const [gradesLoading, setGradesLoading] = useState(false);
@@ -433,11 +434,38 @@ const StudentManagementPage = () => {
     setSelectedStudentId(studentId);
     setSemesterFilter("");
     setSchoolYearFilter("");
+    setSelectedGradeIds(new Set());
     setIsGradeHistoryModalOpen(true);
   };
 
   const closeGradeHistoryModal = () => {
     setIsGradeHistoryModalOpen(false);
+    setSelectedGradeIds(new Set());
+  };
+
+  const toggleGradeSelection = (gradeId) => {
+    setSelectedGradeIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextIds.has(gradeId)) nextIds.delete(gradeId);
+      else nextIds.add(gradeId);
+      return nextIds;
+    });
+  };
+
+  const toggleAllVisibleGrades = () => {
+    setSelectedGradeIds((currentIds) => {
+      const visibleIds = filteredStudentGrades.map((record) => record.id);
+      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => currentIds.has(id));
+      if (allSelected) {
+        return new Set([...currentIds].filter((id) => !visibleIds.includes(id)));
+      }
+      return new Set([...currentIds, ...visibleIds]);
+    });
+  };
+
+  const openBulkDeleteModal = () => {
+    if (selectedGradeIds.size === 0) return;
+    setDeletingGradeRecord({ bulk: true, count: selectedGradeIds.size });
   };
 
   const handleAddGrade = async () => {
@@ -566,12 +594,41 @@ const StudentManagementPage = () => {
 
     try {
       setIsDeletingGrade(true);
+      if (deletingGradeRecord.bulk) {
+        const selectedIds = [...selectedGradeIds];
+        const results = await Promise.allSettled(
+          selectedIds.map((gradeId) => api.deleteStudentGrade(gradeId)),
+        );
+        const deletedIds = selectedIds.filter(
+          (_gradeId, index) => results[index].status === "fulfilled",
+        );
+        const failedCount = results.length - deletedIds.length;
+        const nextGrades = studentGrades.filter(
+          (record) => !deletedIds.includes(record.id),
+        );
+        setStudentGrades(nextGrades);
+        updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
+        setSelectedGradeIds((currentIds) =>
+          new Set([...currentIds].filter((id) => !deletedIds.includes(id))),
+        );
+        closeDeleteGradeModal();
+        if (failedCount > 0) {
+          toast.error(`${deletedIds.length} deleted. ${failedCount} record${failedCount === 1 ? "" : "s"} could not be deleted.`);
+        } else {
+          toast.success(`${deletedIds.length} grade records deleted successfully.`);
+        }
+        return;
+      }
+
       await api.deleteStudentGrade(deletingGradeRecord.id);
-      const nextGrades = studentGrades.filter(
-        (record) => record.id !== deletingGradeRecord.id,
-      );
+      const nextGrades = studentGrades.filter((record) => record.id !== deletingGradeRecord.id);
       setStudentGrades(nextGrades);
       updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
+      setSelectedGradeIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(deletingGradeRecord.id);
+        return nextIds;
+      });
       closeDeleteGradeModal();
       toast.success("Grade record deleted successfully.");
     } catch (error) {
@@ -623,6 +680,10 @@ const StudentManagementPage = () => {
       },
     ];
   }, [assignedSectionCount, displayStudentList, isAdmin, selectedStudent]);
+
+  const allVisibleGradesSelected =
+    filteredStudentGrades.length > 0 &&
+    filteredStudentGrades.every((record) => selectedGradeIds.has(record.id));
 
   return (
     <div className={styles.pageShell}>
@@ -901,6 +962,56 @@ const StudentManagementPage = () => {
               </label>
             </div>
 
+            {filteredStudentGrades.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  marginTop: 16,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: selectedGradeIds.size > 0 ? "#fff7f7" : "#f8fafc",
+                  border: `1px solid ${selectedGradeIds.size > 0 ? "#fecaca" : "#e2e8f0"}`,
+                }}
+              >
+                <label
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155", cursor: "pointer" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allVisibleGradesSelected}
+                    onChange={toggleAllVisibleGrades}
+                    aria-label="Select all visible grade records"
+                  />
+                  <span>
+                    {selectedGradeIds.size > 0
+                      ? `${selectedGradeIds.size} record${selectedGradeIds.size === 1 ? "" : "s"} selected`
+                      : "Select records to manage"}
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={openBulkDeleteModal}
+                  disabled={selectedGradeIds.size === 0}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 7,
+                    border: "1px solid #fecaca",
+                    background: selectedGradeIds.size > 0 ? "#fff1f2" : "#f1f5f9",
+                    color: selectedGradeIds.size > 0 ? "#b91c1c" : "#94a3b8",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: selectedGradeIds.size > 0 ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Delete selected
+                </button>
+              </div>
+            )}
+
             {gradesLoading ? (
               <p style={{ marginTop: 16 }}>Loading grade history…</p>
             ) : gradesError ? (
@@ -917,6 +1028,7 @@ const StudentManagementPage = () => {
                   style={{ width: "100%", borderCollapse: "collapse" }}
                 >
                   <colgroup>
+                    <col style={{ width: "5%" }} />
                     <col style={{ width: "12%" }} />
                     <col style={{ width: "18%" }} />
                     <col style={{ width: "14%" }} />
@@ -928,6 +1040,14 @@ const StudentManagementPage = () => {
                   </colgroup>
                   <thead className={commonStyles.tableHead}>
                     <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                      <th style={{ padding: "12px 8px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={allVisibleGradesSelected}
+                          onChange={toggleAllVisibleGrades}
+                          aria-label="Select all visible grade records"
+                        />
+                      </th>
                       <th style={{ padding: "12px 16px", textAlign: "left" }}>Code</th>
                       <th style={{ padding: "12px 16px", textAlign: "left" }}>Subject</th>
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>School Year</th>
@@ -944,7 +1064,7 @@ const StudentManagementPage = () => {
                         {section.label ? (
                           <tr>
                             <td
-                              colSpan={8}
+                              colSpan={9}
                               style={{
                                 padding: "10px 16px",
                                 background: "#f8fafc",
@@ -979,6 +1099,14 @@ const StudentManagementPage = () => {
                             className={commonStyles.tableRow}
                             style={{ borderBottom: "1px solid #f1f5f9" }}
                           >
+                            <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedGradeIds.has(record.id)}
+                                onChange={() => toggleGradeSelection(record.id)}
+                                aria-label={`Select ${record.subject_name}`}
+                              />
+                            </td>
                             <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "700" }}>
                               {record.subject_code || "—"}
                             </td>
@@ -1730,7 +1858,7 @@ const StudentManagementPage = () => {
               id="delete-grade-title"
               style={{ margin: "0 0 12px", color: "#800000", fontSize: "1.25rem", fontWeight: 700 }}
             >
-              Delete Grade Record
+              {deletingGradeRecord.bulk ? "Delete Grade Records" : "Delete Grade Record"}
             </h2>
             <p
               style={{
@@ -1740,16 +1868,26 @@ const StudentManagementPage = () => {
                 lineHeight: 1.5,
               }}
             >
-              Are you sure you want to permanently delete the grade for{" "}
-              <strong>
-                {deletingGradeRecord.subject_code
-                  ? `${deletingGradeRecord.subject_code} — ${deletingGradeRecord.subject_name}`
-                  : deletingGradeRecord.subject_name}
-              </strong>
-              {deletingGradeRecord.grade != null
-                ? ` (${deletingGradeRecord.grade})`
-                : ""}
-              ? This action cannot be undone.
+              {deletingGradeRecord.bulk ? (
+                <>
+                  Are you sure you want to permanently delete{" "}
+                  <strong>{deletingGradeRecord.count} selected grade records</strong>?
+                  This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to permanently delete the grade for{" "}
+                  <strong>
+                    {deletingGradeRecord.subject_code
+                      ? `${deletingGradeRecord.subject_code} — ${deletingGradeRecord.subject_name}`
+                      : deletingGradeRecord.subject_name}
+                  </strong>
+                  {deletingGradeRecord.grade != null
+                    ? ` (${deletingGradeRecord.grade})`
+                    : ""}
+                  ? This action cannot be undone.
+                </>
+              )}
             </p>
             <div
               style={{
@@ -1784,7 +1922,11 @@ const StudentManagementPage = () => {
                   e.currentTarget.style.backgroundColor = "#800000";
                 }}
               >
-                {isDeletingGrade ? "Deleting..." : "Yes, Delete"}
+                {isDeletingGrade
+                  ? "Deleting..."
+                  : deletingGradeRecord.bulk
+                    ? "Yes, Delete Records"
+                    : "Yes, Delete"}
               </button>
               <button
                 type="button"
