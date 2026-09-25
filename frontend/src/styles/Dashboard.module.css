@@ -139,6 +139,313 @@
   padding: 7px 10px;
 }
 
+.gradeImportCard {
+  padding: 22px 24px 24px;
+  background: linear-gradient(145deg, #ffffff 0%, #fffafa 100%);
+}
+
+.gradeImportHeader,
+.gradeImportToolbar,
+.gradeImportFile,
+.gradeImportProgressMeta {
+  display: flex;
+  align-items: center;
+}
+
+.gradeImportHeader {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.gradeImportTitleGroup {
+  min-width: 0;
+}
+
+.gradeImportDescription {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gradeImportStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gradeImportStatusProcessing {
+  color: #9a3412;
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.gradeImportStatusSuccess {
+  color: #166534;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.gradeImportStatusError {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.gradeImportToolbar {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 1px solid #f1d9d9;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.gradeImportRequirements {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.gradeImportTemplateButton {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #991b1b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.gradeImportTemplateButton:hover {
+  color: #7f1d1d;
+}
+
+.gradeImportTemplateButton:focus-visible,
+.gradeImportClearButton:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+
+.gradeImportDropzone {
+  width: 100%;
+  min-height: 172px;
+  margin-top: 14px;
+  padding: 22px 18px;
+  border: 1.5px dashed #d8a5a5;
+  border-radius: 14px;
+  background: #fffdfd;
+  color: #334155;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gradeImportDropzone:hover:not(:disabled),
+.gradeImportDropzone:focus-visible,
+.gradeImportDropzoneActive {
+  border-color: #b91c1c;
+  background: #fff7f7;
+  box-shadow: 0 8px 20px rgba(185, 28, 28, 0.08);
+  outline: none;
+}
+
+.gradeImportDropzoneBusy {
+  cursor: wait;
+  opacity: 0.78;
+}
+
+.gradeImportIcon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.gradeImportDropTitle {
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.gradeImportDropHint,
+.gradeImportFormatHint {
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.gradeImportFormatHint {
+  max-width: 620px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.gradeImportFile {
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.gradeImportFileError {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.gradeImportFileIcon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.gradeImportFileDetails {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.gradeImportFileDetails strong,
+.gradeImportFileDetails span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gradeImportFileDetails strong {
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.gradeImportFileDetails span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.gradeImportClearButton {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid #dbe4ee;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.gradeImportClearButton:hover {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.gradeImportProgress {
+  margin-top: 14px;
+}
+
+.gradeImportProgressMeta {
+  justify-content: space-between;
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.gradeImportProgressMeta strong {
+  color: #991b1b;
+}
+
+.gradeImportProgress progress {
+  width: 100%;
+  height: 7px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.gradeImportProgress progress::-webkit-progress-bar {
+  background: #f1f5f9;
+}
+
+.gradeImportProgress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: #b91c1c;
+}
+
+.gradeImportProgress progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: #b91c1c;
+}
+
+.gradeImportErrors,
+.gradeImportSuccess {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.gradeImportErrors {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.gradeImportErrorList {
+  display: grid;
+  gap: 3px;
+  color: #b91c1c;
+}
+
+.gradeImportErrors > span {
+  color: #7f1d1d;
+  font-size: 11px;
+}
+
+.gradeImportSuccess {
+  display: flex;
+  align-items: center;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+}
+
 .selectedStudentTag {
   background: #fff1f2;
   color: #b91c1c;
@@ -2012,6 +2319,25 @@
 }
 
 @media (max-width: 720px) {
+  .gradeImportCard {
+    padding: 18px 16px 20px;
+  }
+
+  .gradeImportHeader,
+  .gradeImportToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gradeImportStatus,
+  .gradeImportTemplateButton {
+    align-self: flex-start;
+  }
+
+  .gradeImportToolbar {
+    gap: 8px;
+  }
+
   .syCardGrid {
     grid-template-columns: 1fr;
   }

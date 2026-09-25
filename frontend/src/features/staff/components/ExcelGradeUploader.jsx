@@ -1,6 +1,13 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { FiUploadCloud } from "react-icons/fi";
+import {
+  FiAlertCircle,
+  FiCheckCircle,
+  FiFileText,
+  FiRefreshCw,
+  FiUploadCloud,
+  FiX,
+} from "react-icons/fi";
 import { api } from "../../../services/api";
 import { useToast } from "../../../components/Common/Toast";
 import {
@@ -94,6 +101,35 @@ const ExcelGradeUploader = () => {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ stage: "", value: 0 });
   const [errors, setErrors] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [rowCount, setRowCount] = useState(0);
+  const [status, setStatus] = useState("idle");
+
+  const resetUpload = () => {
+    setSelectedFile(null);
+    setRowCount(0);
+    setErrors([]);
+    setProgress({ stage: "", value: 0 });
+    setStatus("idle");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const downloadTemplate = () => {
+    const worksheet = XLSX.utils.json_to_sheet([
+      {
+        user_id: "student-uuid",
+        subject_code: "ENG101",
+        subject_name: "Sample Subject",
+        semester: "1",
+        school_year: getCurrentAcademicYear(),
+        grade: "1.75",
+        remarks: "Pass",
+      },
+    ]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Grades");
+    XLSX.writeFile(workbook, "grade-import-template.xlsx");
+  };
 
   const processFile = async (file) => {
     if (!file) return;
@@ -104,10 +140,13 @@ const ExcelGradeUploader = () => {
 
     setBusy(true);
     setErrors([]);
+    setSelectedFile(file);
+    setStatus("processing");
     try {
       setProgress({ stage: "Reading workbook", value: 20 });
       const rawRows = await readWorkbook(file);
       if (rawRows.length === 0) throw new Error("The selected file has no data rows.");
+      setRowCount(rawRows.length);
 
       setProgress({ stage: "Validating rows", value: 40 });
       const parsedRows = [];
@@ -129,9 +168,11 @@ const ExcelGradeUploader = () => {
       setProgress({ stage: "Updating predictions", value: 90 });
       const userCount = result.user_ids?.length || new Set(parsedRows.map((row) => row.user_id)).size;
       setProgress({ stage: "Complete", value: 100 });
+      setStatus("success");
       toast.success(`${result.count || parsedRows.length} grade rows saved for ${userCount} student${userCount === 1 ? "" : "s"}.`);
     } catch (error) {
       toast.error(error.message || "Unable to import grade records.");
+      setStatus("error");
       setProgress({ stage: "Import failed", value: 0 });
     } finally {
       setBusy(false);
@@ -144,42 +185,63 @@ const ExcelGradeUploader = () => {
     processFile(event.dataTransfer.files[0]);
   };
 
+  const statusLabel = {
+    idle: "Ready for a file",
+    processing: progress.stage || "Preparing import",
+    success: "Import complete",
+    error: "Needs attention",
+  }[status];
+
+  const StatusIcon = status === "success"
+    ? FiCheckCircle
+    : status === "error"
+      ? FiAlertCircle
+      : status === "processing"
+        ? FiRefreshCw
+        : FiUploadCloud;
+
   return (
-    <div className={styles.contentCard}>
-      <div className={styles.contentCardHeader}>
-        <div>
+    <div className={`${styles.contentCard} ${styles.gradeImportCard}`}>
+      <div className={styles.gradeImportHeader}>
+        <div className={styles.gradeImportTitleGroup}>
           <div className={styles.contentCardEyebrow}>Batch grade intake</div>
           <div className={styles.contentCardTitle}>Import Excel or CSV grades</div>
-          <div className={styles.contentCardHint}>
-            Required columns: user_id, subject_code, subject_name, semester, school_year, grade. Current year: {getCurrentAcademicYear()}.
-          </div>
+          <p className={styles.gradeImportDescription}>
+            Upload one file to save grades for multiple students and refresh their predictions automatically.
+          </p>
         </div>
-        <FiUploadCloud size={24} aria-hidden="true" />
+        <div className={`${styles.gradeImportStatus} ${styles[`gradeImportStatus${status[0].toUpperCase()}${status.slice(1)}`]}`}>
+          <StatusIcon size={15} aria-hidden="true" />
+          <span>{statusLabel}</span>
+        </div>
       </div>
+
+      <div className={styles.gradeImportToolbar}>
+        <div className={styles.gradeImportRequirements}>
+          <FiFileText size={16} aria-hidden="true" />
+          <span>Supports XLSX and CSV, up to 5,000 rows</span>
+        </div>
+        <button type="button" className={styles.gradeImportTemplateButton} onClick={downloadTemplate}>
+          Download template
+        </button>
+      </div>
+
       <button
         type="button"
+        className={`${styles.gradeImportDropzone} ${dragging ? styles.gradeImportDropzoneActive : ""} ${busy ? styles.gradeImportDropzoneBusy : ""}`}
         onClick={() => inputRef.current?.click()}
-        onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+        onDragOver={(event) => { event.preventDefault(); if (!busy) setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         disabled={busy}
-        style={{
-          width: "100%",
-          minHeight: 120,
-          marginTop: 16,
-          border: `2px dashed ${dragging ? "#8b0000" : "#cbd5e1"}`,
-          borderRadius: 10,
-          background: dragging ? "#fff7f7" : "#f8fafc",
-          color: "#334155",
-          cursor: busy ? "wait" : "pointer",
-          display: "grid",
-          placeItems: "center",
-          gap: 6,
-        }}
+        aria-label="Choose an Excel or CSV grade file"
       >
-        <strong>{busy ? progress.stage : "Drop a file here or choose one"}</strong>
-        <span style={{ fontSize: 12 }}>XLSX and CSV files up to 5,000 rows</span>
+        <span className={styles.gradeImportIcon}><FiUploadCloud size={25} aria-hidden="true" /></span>
+        <span className={styles.gradeImportDropTitle}>{busy ? progress.stage : "Drop your grade file here"}</span>
+        <span className={styles.gradeImportDropHint}>or click to browse from your device</span>
+        <span className={styles.gradeImportFormatHint}>Required: user_id, subject_code, subject_name, semester, school_year, grade</span>
       </button>
+
       <input
         ref={inputRef}
         type="file"
@@ -187,12 +249,43 @@ const ExcelGradeUploader = () => {
         hidden
         onChange={(event) => processFile(event.target.files?.[0])}
       />
-      {busy || progress.value > 0 ? (
-        <progress value={progress.value} max="100" style={{ width: "100%", marginTop: 12 }} />
-      ) : null}
+
+      {selectedFile && (
+        <div className={`${styles.gradeImportFile} ${status === "error" ? styles.gradeImportFileError : ""}`}>
+          <div className={styles.gradeImportFileIcon}><FiFileText size={18} aria-hidden="true" /></div>
+          <div className={styles.gradeImportFileDetails}>
+            <strong>{selectedFile.name}</strong>
+            <span>{(selectedFile.size / 1024).toFixed(1)} KB{rowCount ? ` · ${rowCount.toLocaleString()} rows detected` : ""}</span>
+          </div>
+          {!busy && (
+            <button type="button" className={styles.gradeImportClearButton} onClick={resetUpload} aria-label="Remove selected file" title="Remove selected file">
+              <FiX size={17} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {busy && (
+        <div className={styles.gradeImportProgress} aria-live="polite">
+          <div className={styles.gradeImportProgressMeta}>
+            <span>{progress.stage}</span>
+            <strong>{progress.value}%</strong>
+          </div>
+          <progress value={progress.value} max="100" />
+        </div>
+      )}
       {errors.length > 0 && (
-        <div style={{ marginTop: 12, color: "#b91c1c", fontSize: 13 }}>
-          {errors.map((error) => <div key={error}>{error}</div>)}
+        <div className={styles.gradeImportErrors} role="alert">
+          <strong>Correct these rows and try again</strong>
+          <div className={styles.gradeImportErrorList}>
+            {errors.map((error, index) => <div key={`${error}-${index}`}>{error}</div>)}
+          </div>
+          {errors.length === 10 && <span>Showing the first 10 errors.</span>}
+        </div>
+      )}
+      {status === "success" && !busy && (
+        <div className={styles.gradeImportSuccess} role="status">
+          <FiCheckCircle size={17} aria-hidden="true" /> Grades saved and prediction updates requested.
         </div>
       )}
     </div>
