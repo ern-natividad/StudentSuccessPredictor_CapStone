@@ -52,12 +52,16 @@ export const formatPrerequisite = (value) => {
 };
 
 const courseKey = (course) =>
-  String(course?.code || "").trim().toUpperCase();
+  String(course?.code || "")
+    .trim()
+    .toUpperCase();
 
 const courseFingerprint = (course) =>
   [
     courseKey(course),
-    String(course?.title || "").trim().toLowerCase(),
+    String(course?.title || "")
+      .trim()
+      .toLowerCase(),
     getCourseLec(course),
     getCourseLab(course),
     getCourseTotalUnits(course),
@@ -66,7 +70,10 @@ const courseFingerprint = (course) =>
     String(course?.semester || ""),
   ].join("|");
 
-export const compareCurriculumCourses = (currentCourses = [], versionCourses = []) => {
+export const compareCurriculumCourses = (
+  currentCourses = [],
+  versionCourses = [],
+) => {
   const currentMap = new Map(
     (currentCourses || []).map((course) => [courseKey(course), course]),
   );
@@ -113,9 +120,15 @@ export const formatVersionTimestamp = (value) => {
 
 export const getCurriculumFingerprint = (curriculumLike = {}) =>
   [
-    String(curriculumLike.title || "").trim().toLowerCase(),
-    String(curriculumLike.program || "").trim().toLowerCase(),
-    String(curriculumLike.academicYear || "").trim().toLowerCase(),
+    String(curriculumLike.title || "")
+      .trim()
+      .toLowerCase(),
+    String(curriculumLike.program || "")
+      .trim()
+      .toLowerCase(),
+    String(curriculumLike.academicYear || "")
+      .trim()
+      .toLowerCase(),
     (curriculumLike.courses || [])
       .map((course) => courseFingerprint(course))
       .sort()
@@ -297,7 +310,7 @@ export const downloadCurriculumAppraisal = (curriculum = {}) => {
 
 /**
  * Builds the appraisal-sheet sections from First Year through Fourth Year.
- * Summer blocks are placed after Second Year (matching the original sheet).
+ * Summer blocks follow the regular semesters for each year level.
  */
 export const buildCurriculumAppraisalSections = (
   courses = [],
@@ -328,8 +341,10 @@ export const buildCurriculumAppraisalSections = (
     { yearLevel: "2Y", semester: "Summer" },
     { yearLevel: "3Y", semester: "1S" },
     { yearLevel: "3Y", semester: "2S" },
+    { yearLevel: "3Y", semester: "Summer" },
     { yearLevel: "4Y", semester: "1S" },
     { yearLevel: "4Y", semester: "2S" },
+    { yearLevel: "4Y", semester: "Summer" },
   ];
 
   return schedule

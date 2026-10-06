@@ -9,18 +9,20 @@ import academicPerformanceRoutes from "./academicPerformanceRoutes.js";
 import programRoutes from "./programRoutes.js";
 import alertRoutes from "./alertRoutes.js";
 import announcementRoutes from "./announcementRoutes.js";
+import courseCatalogRoutes from "./courseCatalogRoutes.js";
 
 const router = Router();
 
-router.use('/auth', authRoutes);
-router.use('/mfa', mfaRoutes);
-router.use('/audit-logs', auditRoutes);
-router.use('/grades', gradeRoutes);
-router.use('/predictions', predictionRoutes);
-router.use('/v1/recommendations', recommendationRoutes);
-router.use('/academic-performance', academicPerformanceRoutes);
-router.use('/programs', programRoutes);
-router.use('/alerts', alertRoutes);
-router.use('/announcements', announcementRoutes);
+router.use("/auth", authRoutes);
+router.use("/mfa", mfaRoutes);
+router.use("/audit-logs", auditRoutes);
+router.use("/grades", gradeRoutes);
+router.use("/predictions", predictionRoutes);
+router.use("/v1/recommendations", recommendationRoutes);
+router.use("/academic-performance", academicPerformanceRoutes);
+router.use("/programs", programRoutes);
+router.use("/alerts", alertRoutes);
+router.use("/announcements", announcementRoutes);
+router.use("/course-catalog", courseCatalogRoutes);
 
 export default router;

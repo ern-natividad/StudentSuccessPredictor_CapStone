@@ -42,7 +42,9 @@ const request = async (path, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(data.error || "Something went wrong. Please try again.");
+    const error = new Error(
+      data.error || "Something went wrong. Please try again.",
+    );
     error.status = response.status;
     throw error;
   }
@@ -59,7 +61,10 @@ export const api = {
 
   signup: (userData) => {
     console.log("api.js -> signup -> year_level:", userData.year_level);
-    return request("/auth/signup", { method: "POST", body: JSON.stringify(userData) });
+    return request("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
   },
 
   verifyMfaLogin: (pendingToken, code) =>
@@ -142,7 +147,8 @@ export const api = {
     }
 
     if (!response.ok) {
-      const errorMsg = data?.error || `Failed to load users (${response.status})`;
+      const errorMsg =
+        data?.error || `Failed to load users (${response.status})`;
       throw new Error(errorMsg);
     }
 
@@ -169,7 +175,9 @@ export const api = {
     if (search) params.set("search", search);
     if (sync) params.set("sync", sync);
     const query = params.toString();
-    return request(`/academic-performance/forecasts${query ? `?${query}` : ""}`);
+    return request(
+      `/academic-performance/forecasts${query ? `?${query}` : ""}`,
+    );
   },
 
   syncAcademicPerformance: (academicYear) =>
@@ -197,9 +205,13 @@ export const api = {
     }),
 
   updateStudentGrade: (gradeId, grade) =>
-    request(`/grades/${gradeId}`, { method: "PUT", body: JSON.stringify(grade) }),
+    request(`/grades/${gradeId}`, {
+      method: "PUT",
+      body: JSON.stringify(grade),
+    }),
 
-  deleteStudentGrade: (gradeId) => request(`/grades/${gradeId}`, { method: "DELETE" }),
+  deleteStudentGrade: (gradeId) =>
+    request(`/grades/${gradeId}`, { method: "DELETE" }),
 
   getAlertInterventions: (includeResolved = false) =>
     request(
@@ -237,9 +249,7 @@ export const api = {
     }),
 
   getAdminAlertNotifications: (unreadOnly = false) =>
-    request(
-      `/alerts/notifications${unreadOnly ? "?unreadOnly=true" : ""}`,
-    ),
+    request(`/alerts/notifications${unreadOnly ? "?unreadOnly=true" : ""}`),
 
   markAdminAlertNotificationsRead: (payload = { all: true }) =>
     request("/alerts/notifications/mark-read", {
@@ -251,6 +261,25 @@ export const api = {
     request(`/announcements/active?limit=${encodeURIComponent(limit)}`),
 
   getAnnouncements: () => request("/announcements"),
+
+  listCourseCatalog: () => request("/course-catalog"),
+
+  createCourseCatalogEntry: (payload) =>
+    request("/course-catalog", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateCourseCatalogEntry: (id, payload) =>
+    request(`/course-catalog/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  archiveCourseCatalogEntry: (id) =>
+    request(`/course-catalog/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
 
   createAnnouncement: (payload) =>
     request("/announcements", {
@@ -274,13 +303,16 @@ export const api = {
       localStorage.getItem("token") ||
       localStorage.getItem("accessToken");
 
-    const response = await fetch(`${BASE_URL.replace(/\/$/, "")}/auth/users/${userId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authToken ? `Bearer ${authToken}` : "",
+    const response = await fetch(
+      `${BASE_URL.replace(/\/$/, "")}/auth/users/${userId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authToken ? `Bearer ${authToken}` : "",
+        },
       },
-    });
+    );
 
     const contentType = response.headers.get("content-type");
     let data = null;
@@ -289,7 +321,8 @@ export const api = {
     }
 
     if (!response.ok) {
-      const errorMsg = data?.error || `Failed to delete account (${response.status})`;
+      const errorMsg =
+        data?.error || `Failed to delete account (${response.status})`;
       throw new Error(errorMsg);
     }
 

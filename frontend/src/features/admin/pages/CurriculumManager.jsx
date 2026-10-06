@@ -5,6 +5,7 @@ import ListPagination from "../../../components/Common/ListPagination";
 import { useAuth } from "../../../hooks/useAuth";
 import { useListPagination } from "../../../hooks/useListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
+import { api } from "../../../services/api";
 import {
   getAllCurricula,
   createCurriculum,
@@ -65,7 +66,9 @@ const CurriculumManager = () => {
   } = usePrograms();
 
   // Dynamic state for dropdown options
-  const [academicYearOptions, setAcademicYearOptions] = useState(INITIAL_ACADEMIC_YEARS);
+  const [academicYearOptions, setAcademicYearOptions] = useState(
+    INITIAL_ACADEMIC_YEARS,
+  );
 
   // Form field states
   const [title, setTitle] = useState("");
@@ -81,6 +84,27 @@ const CurriculumManager = () => {
   const [courses, setCourses] = useState([]);
   const [publishSearch, setPublishSearch] = useState("");
   const [publishProgramFilter, setPublishProgramFilter] = useState("All");
+  const [catalogCourses, setCatalogCourses] = useState([]);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogScopeSelections, setCatalogScopeSelections] = useState([
+    "current-program",
+  ]);
+  const [saveCourseToCatalog, setSaveCourseToCatalog] = useState(false);
+  const [isAddingCourseToCatalog, setIsAddingCourseToCatalog] = useState(false);
+  const [catalogCourseToEdit, setCatalogCourseToEdit] = useState(null);
+  const [catalogCourseToArchive, setCatalogCourseToArchive] = useState(null);
+  const [catalogEditForm, setCatalogEditForm] = useState(null);
+  const [catalogEditScopes, setCatalogEditScopes] = useState({
+    shared: false,
+    departments: [],
+    programIds: [],
+  });
+  const [catalogNewDepartment, setCatalogNewDepartment] = useState("");
+  const [isSavingCatalogCourse, setIsSavingCatalogCourse] = useState(false);
+  const [isArchivingCatalogCourse, setIsArchivingCatalogCourse] =
+    useState(false);
 
   // Modal State for custom prompt (Add AY)
   const [modalConfig, setModalConfig] = useState({
@@ -116,6 +140,8 @@ const CurriculumManager = () => {
     description: "",
   });
   const [editingCourseIdx, setEditingCourseIdx] = useState(null);
+  const activeProgramId =
+    programs.find((row) => row.name === program)?.id || "";
 
   const loadCurricula = async () => {
     try {
@@ -126,7 +152,7 @@ const CurriculumManager = () => {
       if (Array.isArray(data)) {
         const fetchedAYs = data.map((c) => c.academicYear).filter(Boolean);
         setAcademicYearOptions((prev) =>
-          Array.from(new Set([...prev, ...fetchedAYs]))
+          Array.from(new Set([...prev, ...fetchedAYs])),
         );
       }
     } catch (err) {
@@ -142,9 +168,38 @@ const CurriculumManager = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadCourseCatalog = async () => {
+      setCatalogLoading(true);
+      setCatalogError("");
+      try {
+        const result = await api.listCourseCatalog();
+        if (!cancelled) setCatalogCourses(result.courses || []);
+      } catch (err) {
+        if (!cancelled) {
+          setCatalogCourses([]);
+          setCatalogError(err.message || "Unable to load the course catalog.");
+        }
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    };
+
+    loadCourseCatalog();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!program && programNames.length > 0) {
       setProgram(programNames[0]);
-    } else if (program && programNames.length > 0 && !programNames.includes(program)) {
+    } else if (
+      program &&
+      programNames.length > 0 &&
+      !programNames.includes(program)
+    ) {
       setProgram(programNames[0]);
     }
   }, [program, programNames]);
@@ -165,14 +220,57 @@ const CurriculumManager = () => {
       if (!query) return true;
 
       return (
-        String(c.title || "").toLowerCase().includes(query) ||
-        String(c.academicYear || "").toLowerCase().includes(query) ||
-        String(c.department || "").toLowerCase().includes(query) ||
-        String(c.program || "").toLowerCase().includes(query) ||
-        String(c.status || "").toLowerCase().includes(query)
+        String(c.title || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(c.academicYear || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(c.department || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(c.program || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(c.status || "")
+          .toLowerCase()
+          .includes(query)
       );
     });
   }, [curricula, publishSearch, publishProgramFilter]);
+
+  const filteredCatalogCourses = useMemo(() => {
+    const query = catalogSearch.trim().toLowerCase();
+    if (!query) return catalogCourses;
+
+    return catalogCourses.filter((course) =>
+      [
+        course.code,
+        course.title,
+        course.prerequisites,
+        course.description,
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(query),
+      ),
+    );
+  }, [catalogCourses, catalogSearch]);
+
+  const catalogDepartmentOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          catalogCourses.flatMap((course) =>
+            (course.course_catalog_scopes || [])
+              .filter((scope) => scope.scope_type === "department")
+              .map((scope) => scope.department)
+              .filter(Boolean),
+          ),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [catalogCourses],
+  );
 
   const {
     currentPage: publishPage,
@@ -279,7 +377,9 @@ const CurriculumManager = () => {
       return;
     }
 
-    const inUseCount = curricula.filter((c) => c.program === programRow.name).length;
+    const inUseCount = curricula.filter(
+      (c) => c.program === programRow.name,
+    ).length;
     if (inUseCount > 0) {
       toast.error(
         `Cannot delete "${programRow.name}" because ${inUseCount} curriculum record${
@@ -363,13 +463,82 @@ const CurriculumManager = () => {
       description: "",
     });
     setEditingCourseIdx(null);
+    setSaveCourseToCatalog(false);
   };
 
-  const handleAddOrUpdateCourse = () => {
-    if (!courseForm.code.trim() || !courseForm.title.trim()) {
-      toast.error("Course code and title are required");
+  const handleAddOrUpdateCourse = async () => {
+    if (!courseForm.title.trim()) {
+      toast.error("Course title is required");
       return;
     }
+
+    if (editingCourseIdx === null && saveCourseToCatalog) {
+      const scopes = catalogScopeSelections.includes("shared")
+        ? [{ type: "shared" }]
+        : catalogScopeSelections.flatMap((selection) => {
+            if (selection === "department") {
+              return [{ type: "department", department }];
+            }
+            if (selection === "current-program") {
+              return activeProgramId
+                ? [{ type: "program", programId: activeProgramId }]
+                : [];
+            }
+            if (selection.startsWith("program:")) {
+              return [
+                {
+                  type: "program",
+                  programId: selection.slice("program:".length),
+                },
+              ];
+            }
+            return [];
+          });
+
+      if (scopes.length === 0) {
+        toast.error(
+          "Select a program before saving this course to the catalog.",
+        );
+        return;
+      }
+
+      try {
+        setIsAddingCourseToCatalog(true);
+        const result = await api.createCourseCatalogEntry({
+          ...courseForm,
+          scopes,
+        });
+        const isApplicable = (result.course.course_catalog_scopes || []).some(
+          (scope) => {
+            if (scope.scope_type === "shared") return true;
+            if (scope.scope_type === "department") {
+              return (
+                String(scope.department || "")
+                  .trim()
+                  .toLowerCase() ===
+                String(department || "")
+                  .trim()
+                  .toLowerCase()
+              );
+            }
+            return scope.program_id === activeProgramId;
+          },
+        );
+        if (isApplicable) {
+          setCatalogCourses((current) =>
+            [...current, result.course].sort((a, b) =>
+              a.code.localeCompare(b.code),
+            ),
+          );
+        }
+      } catch (err) {
+        toast.error(err.message || "Unable to save the course to the catalog.");
+        return;
+      } finally {
+        setIsAddingCourseToCatalog(false);
+      }
+    }
+
     if (editingCourseIdx !== null) {
       const updated = [...courses];
       updated[editingCourseIdx] = courseForm;
@@ -384,6 +553,178 @@ const CurriculumManager = () => {
   const handleEditCourse = (idx) => {
     setCourseForm(courses[idx]);
     setEditingCourseIdx(idx);
+    setSaveCourseToCatalog(false);
+  };
+
+  const handleSelectCatalogCourse = (course) => {
+    setCourseForm((current) => ({
+      ...current,
+      code: course.code || "",
+      title: course.title || "",
+      units: course.units ?? 0,
+      lec: course.lec ?? 0,
+      lab: course.lab ?? 0,
+      type: course.type || "Professional",
+      prerequisites: course.prerequisites || "None",
+      description: course.description || "",
+    }));
+    setEditingCourseIdx(null);
+    setSaveCourseToCatalog(false);
+  };
+
+  const getCatalogScopeLabel = (course) =>
+    (course.course_catalog_scopes || [])
+      .map((scope) => {
+        if (scope.scope_type === "shared") return "Shared";
+        if (scope.scope_type === "department") return scope.department;
+        return (
+          programs.find((row) => row.id === scope.program_id)?.name ||
+          "Program-specific"
+        );
+      })
+      .join(", ");
+
+  const startEditCatalogCourse = (course) => {
+    const scopes = course.course_catalog_scopes || [];
+    setCatalogCourseToEdit(course);
+    setCatalogEditForm({
+      code: course.code || "",
+      title: course.title || "",
+      units: course.units ?? 0,
+      lec: course.lec ?? 0,
+      lab: course.lab ?? 0,
+      type: course.type || "Professional",
+      prerequisites: course.prerequisites || "None",
+      description: course.description || "",
+    });
+    setCatalogEditScopes({
+      shared: scopes.some((scope) => scope.scope_type === "shared"),
+      departments: scopes
+        .filter((scope) => scope.scope_type === "department")
+        .map((scope) => scope.department),
+      programIds: scopes
+        .filter((scope) => scope.scope_type === "program")
+        .map((scope) => scope.program_id),
+    });
+    setCatalogNewDepartment("");
+  };
+
+  const toggleCatalogEditScope = (kind, value, checked) => {
+    setCatalogEditScopes((current) => {
+      if (kind === "shared") {
+        return {
+          shared: checked,
+          departments: checked ? [] : current.departments,
+          programIds: checked ? [] : current.programIds,
+        };
+      }
+
+      const key = kind === "department" ? "departments" : "programIds";
+      const currentValues = current[key];
+      return {
+        shared: false,
+        departments:
+          key === "departments"
+            ? checked
+              ? [...new Set([...currentValues, value])]
+              : currentValues.filter((item) => item !== value)
+            : current.departments,
+        programIds:
+          key === "programIds"
+            ? checked
+              ? [...new Set([...currentValues, value])]
+              : currentValues.filter((item) => item !== value)
+            : current.programIds,
+      };
+    });
+  };
+
+  const addCatalogEditDepartment = () => {
+    const value = catalogNewDepartment.trim().replace(/\s+/g, " ");
+    if (!value) return;
+    const existing = catalogEditScopes.departments.find(
+      (item) => item.toLowerCase() === value.toLowerCase(),
+    );
+    if (!existing) {
+      setCatalogEditScopes((current) => ({
+        ...current,
+        shared: false,
+        departments: [...current.departments, value],
+      }));
+    }
+    setCatalogNewDepartment("");
+  };
+
+  const handleSaveCatalogCourse = async (event) => {
+    event.preventDefault();
+    if (!catalogCourseToEdit || !catalogEditForm) return;
+    if (!catalogEditForm.title.trim()) {
+      toast.error("Course title is required.");
+      return;
+    }
+
+    const scopes = catalogEditScopes.shared
+      ? [{ type: "shared" }]
+      : [
+          ...catalogEditScopes.departments.map((value) => ({
+            type: "department",
+            department: value,
+          })),
+          ...catalogEditScopes.programIds.map((programId) => ({
+            type: "program",
+            programId,
+          })),
+        ];
+    if (scopes.length === 0) {
+      toast.error("Select at least one catalog scope.");
+      return;
+    }
+
+    try {
+      setIsSavingCatalogCourse(true);
+      const result = await api.updateCourseCatalogEntry(
+        catalogCourseToEdit.id,
+        { ...catalogEditForm, scopes },
+      );
+      setCatalogCourses((current) =>
+        current.map((course) =>
+          course.id === catalogCourseToEdit.id ? result.course : course,
+        ),
+      );
+      setCatalogCourseToEdit(null);
+      toast.success("Catalog course updated.");
+    } catch (err) {
+      toast.error(err.message || "Unable to update catalog course.");
+    } finally {
+      setIsSavingCatalogCourse(false);
+    }
+  };
+
+  const handleArchiveCatalogCourse = async () => {
+    if (!catalogCourseToArchive) return;
+    try {
+      setIsArchivingCatalogCourse(true);
+      await api.archiveCourseCatalogEntry(catalogCourseToArchive.id);
+      setCatalogCourses((current) =>
+        current.filter((course) => course.id !== catalogCourseToArchive.id),
+      );
+      toast.success("Course removed from the catalog.");
+    } catch (err) {
+      toast.error(err.message || "Unable to remove course from the catalog.");
+    } finally {
+      setIsArchivingCatalogCourse(false);
+      setCatalogCourseToArchive(null);
+    }
+  };
+
+  const toggleCatalogScope = (scope, checked) => {
+    setCatalogScopeSelections((current) => {
+      if (scope === "shared") return checked ? ["shared"] : [];
+      const nonShared = current.filter((item) => item !== "shared");
+      return checked
+        ? [...new Set([...nonShared, scope])]
+        : nonShared.filter((item) => item !== scope);
+    });
   };
 
   const handleDeleteCourse = (idx) => {
@@ -590,7 +931,10 @@ const CurriculumManager = () => {
       menuItems={moduleLinks}
     >
       <div className={styles.moduleCard}>
-        <div className={styles.moduleTitleSmall} style={{ marginBottom: "16px" }}>
+        <div
+          className={styles.moduleTitleSmall}
+          style={{ marginBottom: "16px" }}
+        >
           {editingId ? "Edit Curriculum" : "Create Curriculum"}
         </div>
 
@@ -676,7 +1020,10 @@ const CurriculumManager = () => {
                     {ay}
                   </option>
                 ))}
-                <option value="ADD_NEW_AY" style={{ fontWeight: "bold", color: "#800000" }}>
+                <option
+                  value="ADD_NEW_AY"
+                  style={{ fontWeight: "bold", color: "#800000" }}
+                >
                   + Add New Academic Year...
                 </option>
               </select>
@@ -731,12 +1078,162 @@ const CurriculumManager = () => {
               }}
             >
               <div>
-                <label className={styles.formLabel} style={{ fontSize: "1rem", fontWeight: "700", color: "#1e293b" }}>
+                <label
+                  className={styles.formLabel}
+                  style={{
+                    fontSize: "1rem",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                  }}
+                >
                   Add Course to Curriculum
                 </label>
-                <p style={{ margin: "2px 0 0 0", fontSize: "0.825rem", color: "#64748b" }}>
-                  Define individual subjects and courses to include under this curriculum structure.
+                <p
+                  style={{
+                    margin: "2px 0 0 0",
+                    fontSize: "0.825rem",
+                    color: "#64748b",
+                  }}
+                >
+                  Define individual subjects and courses to include under this
+                  curriculum structure.
                 </p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label
+                className={styles.formLabel}
+                htmlFor="course-catalog-search"
+              >
+                Search Course Catalog
+              </label>
+              <input
+                id="course-catalog-search"
+                type="search"
+                className={styles.formInput}
+                placeholder="Search by course code, title, prerequisite, or description"
+                value={catalogSearch}
+                onChange={(event) => setCatalogSearch(event.target.value)}
+              />
+              <div
+                style={{
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 6,
+                  marginTop: 8,
+                  maxHeight: 190,
+                  overflowY: "auto",
+                  background: "#ffffff",
+                }}
+                aria-live="polite"
+              >
+                {catalogLoading ? (
+                  <div style={{ padding: 12, color: "#64748b" }}>
+                    Loading course catalog...
+                  </div>
+                ) : catalogError ? (
+                  <div style={{ padding: 12, color: "#b91c1c" }}>
+                    {catalogError}
+                  </div>
+                ) : filteredCatalogCourses.length > 0 ? (
+                  filteredCatalogCourses.map((course) => (
+                    <div
+                      key={course.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 12,
+                        width: "100%",
+                        padding: "6px 8px 6px 12px",
+                        borderBottom: "1px solid #eef2f7",
+                        background: "#ffffff",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCatalogCourse(course)}
+                        style={{
+                          display: "flex",
+                          flex: 1,
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 12,
+                          minWidth: 0,
+                          padding: "3px 0",
+                          border: 0,
+                          background: "transparent",
+                          textAlign: "left",
+                          cursor: "pointer",
+                        }}
+                        title="Use this course in the curriculum"
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          {course.code ? (
+                            <>
+                              <strong>{course.code}</strong> · {course.title}
+                            </>
+                          ) : (
+                            course.title
+                          )}
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#64748b",
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            {course.units} units
+                          </span>
+                        </span>
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            color: "#64748b",
+                            fontSize: "0.78rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          {getCatalogScopeLabel(course)}
+                        </span>
+                      </button>
+                      <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          style={{ ...iconButtonStyle, width: 32, height: 32 }}
+                          onClick={() => startEditCatalogCourse(course)}
+                          title={`Edit ${course.title}`}
+                          aria-label={`Edit catalog course ${course.title}`}
+                        >
+                          <i
+                            className="fas fa-pen-to-square"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          style={{
+                            ...iconButtonStyle,
+                            width: 32,
+                            height: 32,
+                            color: "#b91c1c",
+                          }}
+                          onClick={() => setCatalogCourseToArchive(course)}
+                          title={`Delete ${course.title} from catalog`}
+                          aria-label={`Delete catalog course ${course.title}`}
+                        >
+                          <i className="fas fa-trash-can" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: 12, color: "#64748b" }}>
+                    {catalogSearch.trim()
+                      ? "No matching courses. You can enter a new course below."
+                      : "No courses are available for this department or program yet."}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -762,12 +1259,12 @@ const CurriculumManager = () => {
                     className={styles.formLabel}
                     style={{ fontSize: "0.85em" }}
                   >
-                    Code
+                    Code (optional)
                   </label>
                   <input
                     type="text"
                     className={styles.formInput}
-                    placeholder="e.g., CE 101"
+                    placeholder="Leave blank if no course code"
                     value={courseForm.code}
                     onChange={(e) =>
                       setCourseForm({ ...courseForm, code: e.target.value })
@@ -967,13 +1464,126 @@ const CurriculumManager = () => {
                 />
               </div>
 
+              {editingCourseIdx === null ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    marginBottom: 12,
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 7,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={saveCourseToCatalog}
+                      onChange={(event) =>
+                        setSaveCourseToCatalog(event.target.checked)
+                      }
+                    />
+                    Also add new course to catalog
+                  </label>
+                  {saveCourseToCatalog ? (
+                    <fieldset
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "8px 16px",
+                        border: "1px solid #d8dee8",
+                        borderRadius: 6,
+                        padding: "8px 10px",
+                        margin: 0,
+                      }}
+                    >
+                      <legend style={{ padding: "0 4px", fontSize: "0.8rem" }}>
+                        Catalog scope
+                      </legend>
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={catalogScopeSelections.includes("shared")}
+                          onChange={(event) =>
+                            toggleCatalogScope("shared", event.target.checked)
+                          }
+                        />
+                        Shared across all programs
+                      </label>
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={catalogScopeSelections.includes(
+                            "department",
+                          )}
+                          onChange={(event) =>
+                            toggleCatalogScope(
+                              "department",
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        {department || "Current department"}
+                      </label>
+                      {programs.map((row) => {
+                        const scope =
+                          row.id === activeProgramId
+                            ? "current-program"
+                            : `program:${row.id}`;
+                        return (
+                          <label
+                            key={row.id}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={catalogScopeSelections.includes(scope)}
+                              onChange={(event) =>
+                                toggleCatalogScope(scope, event.target.checked)
+                              }
+                            />
+                            {row.name}
+                          </label>
+                        );
+                      })}
+                    </fieldset>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
                   className={styles.primaryButton}
                   onClick={handleAddOrUpdateCourse}
+                  disabled={isAddingCourseToCatalog}
                 >
-                  {editingCourseIdx !== null ? "Update Course" : "Add Course"}
+                  {isAddingCourseToCatalog
+                    ? "Saving course..."
+                    : editingCourseIdx !== null
+                      ? "Update Course"
+                      : "Add Course"}
                 </button>
                 {editingCourseIdx !== null && (
                   <button
@@ -1005,7 +1615,13 @@ const CurriculumManager = () => {
                   <span>
                     Curriculum Appraisal Format ({courses.length} courses)
                   </span>
-                  <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>
+                  <span
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "#64748b",
+                      fontWeight: 500,
+                    }}
+                  >
                     Grouped dynamically from First Year to Fourth Year
                   </span>
                 </div>
@@ -1174,7 +1790,9 @@ const CurriculumManager = () => {
                     <td>{c.program}</td>
                     <td>
                       {c.status}
-                      {c.approvedByName ? ` — Approved by ${c.approvedByName}` : ""}
+                      {c.approvedByName
+                        ? ` — Approved by ${c.approvedByName}`
+                        : ""}
                     </td>
                     <td>
                       <div
@@ -1247,7 +1865,10 @@ const CurriculumManager = () => {
                             e.currentTarget.style.borderColor = "#e2e8f0";
                           }}
                         >
-                          <i className="fas fa-pen-to-square" aria-hidden="true" />
+                          <i
+                            className="fas fa-pen-to-square"
+                            aria-hidden="true"
+                          />
                         </button>
 
                         {/* Approve Button Icon */}
@@ -1270,7 +1891,10 @@ const CurriculumManager = () => {
                               e.currentTarget.style.borderColor = "#e2e8f0";
                             }}
                           >
-                            <i className="fas fa-circle-check" aria-hidden="true" />
+                            <i
+                              className="fas fa-circle-check"
+                              aria-hidden="true"
+                            />
                           </button>
                         )}
 
@@ -1313,6 +1937,375 @@ const CurriculumManager = () => {
         )}
       </div>
 
+      {catalogCourseToEdit && catalogEditForm ? (
+        <div
+          role="presentation"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10001,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            background: "rgba(15, 23, 42, 0.5)",
+          }}
+          onClick={() => setCatalogCourseToEdit(null)}
+        >
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-catalog-course-title"
+            onSubmit={handleSaveCatalogCourse}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(760px, 100%)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: 24,
+              borderRadius: 8,
+              background: "#ffffff",
+              boxShadow: "0 20px 40px rgba(15, 23, 42, 0.2)",
+            }}
+          >
+            <h2
+              id="edit-catalog-course-title"
+              style={{
+                margin: "0 0 18px",
+                color: "#800000",
+                fontSize: "1.25rem",
+              }}
+            >
+              Edit Catalog Course
+            </h2>
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Code (optional)</label>
+                <input
+                  className={styles.formInput}
+                  value={catalogEditForm.code}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      code: event.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Title</label>
+                <input
+                  className={styles.formInput}
+                  value={catalogEditForm.title}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      title: event.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Units</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.formInput}
+                  value={catalogEditForm.units}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      units: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Lecture</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.formInput}
+                  value={catalogEditForm.lec}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      lec: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Laboratory</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.formInput}
+                  value={catalogEditForm.lab}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      lab: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Type</label>
+                <select
+                  className={styles.formSelect}
+                  value={catalogEditForm.type}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      type: event.target.value,
+                    })
+                  }
+                >
+                  <option>Professional</option>
+                  <option>General Education</option>
+                  <option>Mandated</option>
+                  <option>Institutional</option>
+                  <option>Professional Elective</option>
+                </select>
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>Prerequisites</label>
+                <input
+                  className={styles.formInput}
+                  value={catalogEditForm.prerequisites}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      prerequisites: event.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div
+                className={styles.formField}
+                style={{ gridColumn: "1 / -1" }}
+              >
+                <label className={styles.formLabel}>Description</label>
+                <textarea
+                  className={styles.formInput}
+                  rows={3}
+                  value={catalogEditForm.description}
+                  onChange={(event) =>
+                    setCatalogEditForm({
+                      ...catalogEditForm,
+                      description: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <fieldset
+              style={{
+                margin: "18px 0",
+                padding: 12,
+                border: "1px solid #d8dee8",
+                borderRadius: 6,
+              }}
+            >
+              <legend style={{ padding: "0 5px", fontWeight: 600 }}>
+                Catalog visibility
+              </legend>
+              <div style={{ display: "grid", gap: 9 }}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={catalogEditScopes.shared}
+                    onChange={(event) =>
+                      toggleCatalogEditScope(
+                        "shared",
+                        "shared",
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  Shared across all programs
+                </label>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {[
+                    ...new Set([
+                      ...catalogDepartmentOptions,
+                      ...catalogEditScopes.departments,
+                    ]),
+                  ]
+                    .sort((a, b) => a.localeCompare(b))
+                    .map((value) => (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={catalogEditScopes.departments.includes(
+                            value,
+                          )}
+                          disabled={catalogEditScopes.shared}
+                          onChange={(event) =>
+                            toggleCatalogEditScope(
+                              "department",
+                              value,
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        {value}
+                      </label>
+                    ))}
+                  {programs.map((row) => (
+                    <label
+                      key={row.id}
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={catalogEditScopes.programIds.includes(row.id)}
+                        disabled={catalogEditScopes.shared}
+                        onChange={(event) =>
+                          toggleCatalogEditScope(
+                            "program",
+                            row.id,
+                            event.target.checked,
+                          )
+                        }
+                      />
+                      {row.name}
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, maxWidth: 420 }}>
+                  <input
+                    className={styles.formInput}
+                    value={catalogNewDepartment}
+                    onChange={(event) =>
+                      setCatalogNewDepartment(event.target.value)
+                    }
+                    placeholder="Add another department"
+                    aria-label="Add another department scope"
+                    disabled={catalogEditScopes.shared}
+                  />
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={addCatalogEditDepartment}
+                    disabled={
+                      catalogEditScopes.shared || !catalogNewDepartment.trim()
+                    }
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </fieldset>
+
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+            >
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setCatalogCourseToEdit(null)}
+                disabled={isSavingCatalogCourse}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={isSavingCatalogCourse}
+              >
+                {isSavingCatalogCourse ? "Saving..." : "Save Course"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {catalogCourseToArchive ? (
+        <div
+          role="presentation"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10002,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            background: "rgba(15, 23, 42, 0.5)",
+          }}
+          onClick={() => setCatalogCourseToArchive(null)}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="archive-catalog-course-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(440px, 100%)",
+              padding: 24,
+              borderRadius: 8,
+              background: "#ffffff",
+            }}
+          >
+            <h2
+              id="archive-catalog-course-title"
+              style={{ margin: "0 0 12px", color: "#800000" }}
+            >
+              Delete Catalog Course?
+            </h2>
+            <p
+              style={{ margin: "0 0 20px", color: "#475569", lineHeight: 1.5 }}
+            >
+              {catalogCourseToArchive.code
+                ? `${catalogCourseToArchive.code} · `
+                : ""}
+              {catalogCourseToArchive.title} will no longer appear in catalog
+              search. Existing curricula will not change.
+            </p>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+            >
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setCatalogCourseToArchive(null)}
+                disabled={isArchivingCatalogCourse}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleArchiveCatalogCourse}
+                disabled={isArchivingCatalogCourse}
+              >
+                {isArchivingCatalogCourse
+                  ? "Deleting..."
+                  : "Delete from Catalog"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* CUSTOM MODAL for Add Academic Year */}
       {modalConfig.isOpen && (
         <div
@@ -1338,7 +2331,8 @@ const CurriculumManager = () => {
               padding: "28px 32px",
               width: "100%",
               maxWidth: "460px",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1398,8 +2392,12 @@ const CurriculumManager = () => {
                     textAlign: "center",
                     transition: "background-color 0.15s ease",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#600000")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#800000")
+                  }
                 >
                   Save Option
                 </button>
@@ -1419,8 +2417,12 @@ const CurriculumManager = () => {
                     textAlign: "center",
                     transition: "background-color 0.15s ease",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8c5d6")}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cbd5e1")}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#b8c5d6")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#cbd5e1")
+                  }
                 >
                   Cancel
                 </button>
@@ -1476,9 +2478,10 @@ const CurriculumManager = () => {
                 lineHeight: 1.45,
               }}
             >
-              Add, edit, or remove engineering programs. Changes are saved to the
-              shared programs catalog used across profiles, curriculum, advisers,
-              and student management. Programs still in use cannot be deleted.
+              Add, edit, or remove engineering programs. Changes are saved to
+              the shared programs catalog used across profiles, curriculum,
+              advisers, and student management. Programs still in use cannot be
+              deleted.
             </p>
 
             <form
@@ -1583,14 +2586,18 @@ const CurriculumManager = () => {
                           type="text"
                           className={styles.formInput}
                           value={editingProgramName}
-                          onChange={(e) => setEditingProgramName(e.target.value)}
+                          onChange={(e) =>
+                            setEditingProgramName(e.target.value)
+                          }
                           aria-label="Edit program name"
                         />
                         <input
                           type="text"
                           className={styles.formInput}
                           value={editingProgramCode}
-                          onChange={(e) => setEditingProgramCode(e.target.value)}
+                          onChange={(e) =>
+                            setEditingProgramCode(e.target.value)
+                          }
                           aria-label="Edit program code"
                         />
                       </div>
@@ -1669,7 +2676,10 @@ const CurriculumManager = () => {
                               cursor: "pointer",
                             }}
                           >
-                            <i className="fas fa-pen-to-square" aria-hidden="true" />
+                            <i
+                              className="fas fa-pen-to-square"
+                              aria-hidden="true"
+                            />
                           </button>
                           <button
                             type="button"
@@ -1687,10 +2697,15 @@ const CurriculumManager = () => {
                               border: "1px solid #fecaca",
                               backgroundColor: "#ffffff",
                               color: "#ef4444",
-                              cursor: isSavingProgram ? "not-allowed" : "pointer",
+                              cursor: isSavingProgram
+                                ? "not-allowed"
+                                : "pointer",
                             }}
                           >
-                            <i className="fas fa-trash-can" aria-hidden="true" />
+                            <i
+                              className="fas fa-trash-can"
+                              aria-hidden="true"
+                            />
                           </button>
                         </>
                       )}
@@ -1714,8 +2729,12 @@ const CurriculumManager = () => {
                 fontSize: "0.95rem",
                 cursor: "pointer",
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8c5d6")}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cbd5e1")}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = "#b8c5d6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = "#cbd5e1")
+              }
             >
               Close
             </button>
@@ -1747,7 +2766,8 @@ const CurriculumManager = () => {
               maxHeight: "92vh",
               overflowY: "auto",
               padding: "24px 28px",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1805,12 +2825,20 @@ const CurriculumManager = () => {
 
             {curriculumToView.attachments?.length > 0 && (
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontWeight: 600, marginBottom: 10, color: "#334155" }}>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: 10,
+                    color: "#334155",
+                  }}
+                >
                   Attachments
                 </div>
                 {curriculumToView.attachments.map((attachment, index) => (
                   <div key={index} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div
+                      style={{ display: "flex", gap: 8, alignItems: "center" }}
+                    >
                       <div style={{ flex: 1 }}>{attachment.name}</div>
                       <button
                         type="button"
@@ -1839,7 +2867,11 @@ const CurriculumManager = () => {
                 className={styles.secondaryButton}
                 onClick={() => downloadCurriculumAppraisal(curriculumToView)}
               >
-                <i className="fas fa-download" aria-hidden="true" style={{ marginRight: 6 }} />
+                <i
+                  className="fas fa-download"
+                  aria-hidden="true"
+                  style={{ marginRight: 6 }}
+                />
                 Download
               </button>
               <button
@@ -1910,7 +2942,8 @@ const CurriculumManager = () => {
               }}
             >
               Are you sure you want to permanently delete the curriculum for{" "}
-              <strong>{curriculumToDelete.title}</strong>? This action cannot be undone.
+              <strong>{curriculumToDelete.title}</strong>? This action cannot be
+              undone.
             </p>
 
             <div
@@ -1937,8 +2970,12 @@ const CurriculumManager = () => {
                   textAlign: "center",
                   transition: "background-color 0.15s ease",
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#600000")}
-                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#600000")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#800000")
+                }
               >
                 Yes, Delete Curriculum
               </button>
@@ -1959,8 +2996,12 @@ const CurriculumManager = () => {
                   textAlign: "center",
                   transition: "background-color 0.15s ease",
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b8b8b8")}
-                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#cccccc")}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#b8b8b8")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#cccccc")
+                }
               >
                 Cancel
               </button>
