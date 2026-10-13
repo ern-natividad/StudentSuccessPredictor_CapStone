@@ -188,6 +188,12 @@
   background: #fff7ed;
 }
 
+.gradeImportStatusReady {
+  color: #166534;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
 .gradeImportStatusSuccess {
   color: #166534;
   border-color: #bbf7d0;
@@ -385,6 +391,42 @@
   font-size: 12px;
 }
 
+.gradeImportActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.gradeImportCancelButton {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.gradeImportCancelButton:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.gradeImportCancelButton:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+
+.gradeImportCancelButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .gradeImportProgressMeta strong {
   color: #991b1b;
 }
@@ -459,6 +501,156 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.studentImportOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.studentImportDialog {
+  width: min(860px, 100%);
+  max-height: min(90vh, 900px);
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.2);
+}
+
+.studentImportDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.studentImportTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.studentImportCloseButton {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.studentImportCloseButton:hover {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.studentImportChoices {
+  display: grid;
+  gap: 12px;
+}
+
+.studentImportChoice {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #475569;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.studentImportChoice:hover {
+  transform: translateY(-1px);
+  border-color: #fecaca;
+  background: #fffafa;
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.07);
+}
+
+.studentImportChoice:focus-visible,
+.studentImportCloseButton:focus-visible,
+.studentImportBackButton:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+
+.studentImportChoiceIcon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: #fff1f2;
+  color: #991b1b;
+  font-size: 16px;
+}
+
+.studentImportChoice strong,
+.studentImportChoice small {
+  display: block;
+}
+
+.studentImportChoice strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.studentImportChoice small {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.studentImportChoice > i {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.studentImportBackButton {
+  margin: -8px 0 4px;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studentImportDialog > .gradeImportCard {
+  padding: 18px 0 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.studentImportDialog > .gradeImportCard > .gradeImportHeader {
+  display: none;
 }
 
 .studentAccountImportButton:hover:not(:disabled) {
@@ -2358,6 +2550,27 @@
 }
 
 @media (max-width: 720px) {
+  .studentImportOverlay {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .studentImportDialog {
+    max-height: calc(100vh - 24px);
+    padding: 18px 16px;
+  }
+
+  .studentImportChoice {
+    grid-template-columns: 38px minmax(0, 1fr) 14px;
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .studentImportChoiceIcon {
+    width: 38px;
+    height: 38px;
+  }
+
   .gradeImportCard {
     padding: 18px 16px 20px;
   }

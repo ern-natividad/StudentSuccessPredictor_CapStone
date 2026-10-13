@@ -89,6 +89,11 @@ const StudentAccountUploader = ({ onImported }) => {
     if (inputRef.current) inputRef.current.value = "";
   };
 
+  const cancelImport = () => {
+    clearFile();
+    toast.info("Student account import cancelled.");
+  };
+
   const processFile = async (file) => {
     if (!file) return;
     if (!/\.(xlsx|csv)$/i.test(file.name)) {
@@ -237,16 +242,18 @@ const StudentAccountUploader = ({ onImported }) => {
             <strong>{selectedFile.name}</strong>
             <span>{students.length} student rows</span>
           </div>
-          <button
-            type="button"
-            className={styles.gradeImportClearButton}
-            aria-label="Remove selected student file"
-            title="Remove file"
-            disabled={busy}
-            onClick={clearFile}
-          >
-            <FiX size={16} aria-hidden="true" />
-          </button>
+          {!result && (
+            <button
+              type="button"
+              className={styles.gradeImportClearButton}
+              aria-label="Cancel student account import"
+              title="Cancel import"
+              disabled={busy}
+              onClick={cancelImport}
+            >
+              <FiX size={16} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 
@@ -350,8 +357,21 @@ const StudentAccountUploader = ({ onImported }) => {
 
       <div
         className={styles.gradeImportProgressMeta}
-        style={{ justifyContent: "flex-end", marginTop: 14 }}
+        style={{
+          justifyContent: "flex-end",
+          gap: 8,
+          marginTop: 14,
+        }}
       >
+        {selectedFile && !busy && !result && (
+          <button
+            type="button"
+            className={styles.gradeImportCancelButton}
+            onClick={cancelImport}
+          >
+            Cancel import
+          </button>
+        )}
         <button
           type="button"
           className={styles.studentAccountImportButton}

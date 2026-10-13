@@ -103,15 +103,22 @@ const ExcelGradeUploader = () => {
   const [errors, setErrors] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [rowCount, setRowCount] = useState(0);
+  const [parsedRows, setParsedRows] = useState([]);
   const [status, setStatus] = useState("idle");
 
   const resetUpload = () => {
     setSelectedFile(null);
     setRowCount(0);
+    setParsedRows([]);
     setErrors([]);
     setProgress({ stage: "", value: 0 });
     setStatus("idle");
     if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const cancelImport = () => {
+    resetUpload();
+    toast.info("Grade import cancelled.");
   };
 
   const downloadTemplate = () => {
@@ -140,6 +147,7 @@ const ExcelGradeUploader = () => {
 
     setBusy(true);
     setErrors([]);
+    setParsedRows([]);
     setSelectedFile(file);
     setStatus("processing");
     try {
@@ -163,6 +171,26 @@ const ExcelGradeUploader = () => {
         throw new Error(`${rowErrors.length} row${rowErrors.length === 1 ? "" : "s"} need correction.`);
       }
 
+      setParsedRows(parsedRows);
+      setProgress({ stage: "Ready to import", value: 0 });
+      setStatus("ready");
+      toast.success(`${parsedRows.length} grade rows are ready to import.`);
+    } catch (error) {
+      toast.error(error.message || "Unable to prepare grade records.");
+      setStatus("error");
+      setProgress({ stage: "File validation failed", value: 0 });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const importGrades = async () => {
+    if (!parsedRows.length || busy) return;
+
+    setBusy(true);
+    setErrors([]);
+    setStatus("processing");
+    try {
       setProgress({ stage: "Saving grades", value: 65 });
       const result = await api.importStudentGrades(parsedRows);
       setProgress({ stage: "Updating predictions", value: 90 });
@@ -187,18 +215,20 @@ const ExcelGradeUploader = () => {
 
   const statusLabel = {
     idle: "Ready for a file",
+    ready: "Ready to import",
     processing: progress.stage || "Preparing import",
     success: "Import complete",
     error: "Needs attention",
   }[status];
 
-  const StatusIcon = status === "success"
-    ? FiCheckCircle
-    : status === "error"
-      ? FiAlertCircle
-      : status === "processing"
-        ? FiRefreshCw
-        : FiUploadCloud;
+  const StatusIcon =
+    status === "success" || status === "ready"
+      ? FiCheckCircle
+      : status === "error"
+        ? FiAlertCircle
+        : status === "processing"
+          ? FiRefreshCw
+          : FiUploadCloud;
 
   return (
     <div className={`${styles.contentCard} ${styles.gradeImportCard}`}>
@@ -257,8 +287,8 @@ const ExcelGradeUploader = () => {
             <strong>{selectedFile.name}</strong>
             <span>{(selectedFile.size / 1024).toFixed(1)} KB{rowCount ? ` · ${rowCount.toLocaleString()} rows detected` : ""}</span>
           </div>
-          {!busy && (
-            <button type="button" className={styles.gradeImportClearButton} onClick={resetUpload} aria-label="Remove selected file" title="Remove selected file">
+          {!busy && status !== "success" && (
+            <button type="button" className={styles.gradeImportClearButton} onClick={cancelImport} aria-label="Cancel grade import" title="Cancel import">
               <FiX size={17} aria-hidden="true" />
             </button>
           )}
@@ -286,6 +316,28 @@ const ExcelGradeUploader = () => {
       {status === "success" && !busy && (
         <div className={styles.gradeImportSuccess} role="status">
           <FiCheckCircle size={17} aria-hidden="true" /> Grades saved and prediction updates requested.
+        </div>
+      )}
+      {selectedFile && status !== "success" && (
+        <div className={styles.gradeImportActions}>
+          <button
+            type="button"
+            className={styles.gradeImportCancelButton}
+            onClick={cancelImport}
+            disabled={busy}
+          >
+            Cancel import
+          </button>
+          <button
+            type="button"
+            className={styles.studentAccountImportButton}
+            onClick={importGrades}
+            disabled={busy || parsedRows.length === 0}
+          >
+            {busy && status === "processing"
+              ? "Importing…"
+              : `Import ${parsedRows.length || ""} grades`}
+          </button>
         </div>
       )}
     </div>

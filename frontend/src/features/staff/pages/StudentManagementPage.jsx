@@ -148,6 +148,7 @@ const StudentManagementPage = () => {
   }, [getStudentsForStaff, isAdmin, loggedInStaff, students]);
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [importMode, setImportMode] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [isGradeHistoryModalOpen, setIsGradeHistoryModalOpen] = useState(false);
@@ -713,6 +714,13 @@ const StudentManagementPage = () => {
               : "Review assigned learners, manage grade entries, and keep student support tasks organized in one space."}
           </p>
         </div>
+        <button
+          type="button"
+          className={styles.studentAccountImportButton}
+          onClick={() => setImportMode("choose")}
+        >
+          <i className="fas fa-file-import" aria-hidden="true" /> Import
+        </button>
       </div>
 
       {directoryError && (
@@ -731,11 +739,109 @@ const StudentManagementPage = () => {
         ))}
       </div>
 
-      {isAdmin && (
-        <StudentAccountUploader onImported={refreshStudentDirectory} />
-      )}
+      {importMode && (
+        <div
+          className={styles.studentImportOverlay}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setImportMode("");
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setImportMode("");
+          }}
+        >
+          <div
+            className={styles.studentImportDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-import-title"
+          >
+            <div className={styles.studentImportDialogHeader}>
+              <div>
+                <div className={styles.contentCardEyebrow}>Student management</div>
+                <h2 id="student-import-title" className={styles.studentImportTitle}>
+                  {importMode === "choose"
+                    ? "Import student data"
+                    : importMode === "accounts"
+                      ? "Import student accounts"
+                      : "Import student grades"}
+                </h2>
+                <p className={styles.gradeImportDescription}>
+                  {importMode === "choose"
+                    ? "Choose the type of file you want to import."
+                    : "Upload a CSV or Excel file using the required template and validation rules."}
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.studentImportCloseButton}
+                onClick={() => setImportMode("")}
+                aria-label="Close import dialog"
+              >
+                <i className="fas fa-times" aria-hidden="true" />
+              </button>
+            </div>
 
-      <ExcelGradeUploader />
+            {importMode === "choose" ? (
+              <div className={styles.studentImportChoices}>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className={styles.studentImportChoice}
+                    onClick={() => setImportMode("accounts")}
+                  >
+                    <span className={styles.studentImportChoiceIcon}>
+                      <i className="fas fa-user-plus" aria-hidden="true" />
+                    </span>
+                    <span>
+                      <strong>Student Account File</strong>
+                      <small>
+                        Add student profiles from a CSV or Excel file.
+                      </small>
+                    </span>
+                    <i
+                      className="fas fa-chevron-right"
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.studentImportChoice}
+                  onClick={() => setImportMode("grades")}
+                >
+                  <span className={styles.studentImportChoiceIcon}>
+                    <i className="fas fa-graduation-cap" aria-hidden="true" />
+                  </span>
+                  <span>
+                    <strong>Student Grades</strong>
+                    <small>
+                      Add grade records for multiple students at once.
+                    </small>
+                  </span>
+                  <i className="fas fa-chevron-right" aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={styles.studentImportBackButton}
+                  onClick={() => setImportMode("choose")}
+                >
+                  <i className="fas fa-arrow-left" aria-hidden="true" />{" "}
+                  Choose another import
+                </button>
+                {importMode === "accounts" && isAdmin ? (
+                  <StudentAccountUploader
+                    onImported={refreshStudentDirectory}
+                  />
+                ) : null}
+                {importMode === "grades" ? <ExcelGradeUploader /> : null}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedStudent && (
         <div className={styles.selectedStudentCard}>

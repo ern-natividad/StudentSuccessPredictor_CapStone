@@ -44,6 +44,7 @@
 - Not yet done in Early Alerts (Problem: If the student's risk is Medium/Moderate Risk level then the staff and admin helped the student solved their case, they will be count as Low Risk Level again, do it the same with the other modules such as Students List Page, Dashboard Overview, Performance Forecasting Page, Online Advising Page)
 - Fixed the Search Bar in the Student's List Page
 - Alerts page (The case/open case should not be clickable if the student's risk level is low only from Medium to Critical Risk level should be monitored or the button should be available but if in the Resolved cases even if the students has low risk level their case can still reopen)
+- Student management page (fix the imports: make it look professional and clean. 1 button for two imports then the users will choose what to import after clicking the IMPORT button (Student Account File/ Student Grades - by following the current rules/policies that it has ) because currently the imports consumes to much space in the Student Management Module)
 
 
 **SYSTEM IMPORTANT FEATURES**
