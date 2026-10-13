@@ -3,6 +3,7 @@ import {
   buildPerformanceRecommendation,
   buildPredictionFromGrades,
 } from "../utils/predictionEngine.js";
+import { getResolvedStudentUserIds } from "./studentRiskService.js";
 
 const DEFAULT_ACADEMIC_YEAR = "2026-2027";
 const FORECAST_VIEW = "vw_academic_performance_forecasting";
@@ -168,6 +169,7 @@ const enrichForecastRows = async (rows) => {
   const userIds = [
     ...new Set((infoRows || []).map((row) => row.user_id).filter(Boolean)),
   ];
+  const resolvedStudentIds = await getResolvedStudentUserIds(userIds);
 
   let usersById = new Map();
   if (userIds.length > 0) {
@@ -195,6 +197,9 @@ const enrichForecastRows = async (rows) => {
 
     return {
       ...row,
+      risk_level: resolvedStudentIds.has(info?.user_id)
+        ? "Low"
+        : row.risk_level,
       full_name: resolvedName,
       year_level: info?.year_level || "N/A",
       program: row.program || info?.department || "N/A",
@@ -214,10 +219,6 @@ export const getAcademicPerformanceForecasts = async ({
     query = query.eq("academic_year", academicYear);
   }
 
-  if (riskLevel && riskLevel !== "All") {
-    query = query.eq("risk_level", riskLevel);
-  }
-
   if (program && program !== "All") {
     query = query.eq("program", program);
   }
@@ -226,6 +227,10 @@ export const getAcademicPerformanceForecasts = async ({
   if (error) throw error;
 
   let forecasts = await enrichForecastRows(data || []);
+
+  if (riskLevel && riskLevel !== "All") {
+    forecasts = forecasts.filter((row) => row.risk_level === riskLevel);
+  }
 
   const normalizedSearch = search.trim().toLowerCase();
   if (normalizedSearch) {

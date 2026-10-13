@@ -1,6 +1,7 @@
 import { supabase } from "../config/supabaseClient.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { buildPredictionFromGrades } from "../utils/predictionEngine.js";
+import { getResolvedStudentUserIds } from "../services/studentRiskService.js";
 
 export const getStudentPrediction = async (req, res) => {
   const { userId } = req.params;
@@ -34,9 +35,15 @@ export const getStudentPrediction = async (req, res) => {
     });
   }
 
+  const prediction = buildPredictionFromGrades(grades);
+  const resolvedStudentIds = await getResolvedStudentUserIds([userId]);
+  if (resolvedStudentIds.has(userId)) {
+    prediction.risk_level = "Low";
+  }
+
   return res.status(200).json({
     student: { id: student.id, full_name: student.full_name },
-    prediction: buildPredictionFromGrades(grades),
+    prediction,
   });
 };
 

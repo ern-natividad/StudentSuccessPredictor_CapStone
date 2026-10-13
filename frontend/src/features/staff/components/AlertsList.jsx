@@ -23,6 +23,11 @@ const PROGRESS_OPTIONS = [
   { value: "resolved", label: "Resolved" },
 ];
 
+const canMonitorRiskLevel = (riskLevel) =>
+  ["medium", "moderate", "high", "critical"].includes(
+    String(riskLevel || "").trim().toLowerCase(),
+  );
+
 const formatEventTime = (value) => {
   if (!value) return "";
   return new Date(value).toLocaleString(undefined, {
@@ -47,6 +52,8 @@ const AlertsList = () => {
   const [interventionsLoading, setInterventionsLoading] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [progressDrafts, setProgressDrafts] = useState({});
+  const [riskLevel, setRiskLevel] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const loadInterventions = useCallback(async () => {
     if (!isBackendAuthEnabled()) {
@@ -102,6 +109,37 @@ const AlertsList = () => {
     [mergedAlerts],
   );
 
+  const alertSummaryCounts = useMemo(() => {
+    const counts = { low: 0, medium: 0, high: 0, critical: 0 };
+
+    mergedAlerts.forEach((alert) => {
+      const severity =
+        alert.intervention?.status === "resolved"
+          ? "low"
+          : String(alert.sev || "").toLowerCase();
+      if (Object.hasOwn(counts, severity)) counts[severity] += 1;
+    });
+
+    return counts;
+  }, [mergedAlerts]);
+
+  const filteredActiveAlerts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return activeAlerts.filter((alert) => {
+      const alertRiskLevel = String(alert.riskLevel || alert.sev || "")
+        .trim()
+        .toLowerCase();
+      const matchesRisk = !riskLevel || alertRiskLevel === riskLevel.toLowerCase();
+      const matchesSearch =
+        !query ||
+        String(alert.name || "").toLowerCase().includes(query) ||
+        String(alert.studentId || "").toLowerCase().includes(query);
+
+      return matchesRisk && matchesSearch;
+    });
+  }, [activeAlerts, riskLevel, searchTerm]);
+
   const resolvedCases = useMemo(() => {
     const rows = interventions.filter((item) => item.status === "resolved");
     if (isAdmin) return rows;
@@ -123,9 +161,9 @@ const AlertsList = () => {
     totalItems: activeAlertTotal,
     totalPages: activeAlertPages,
     pageSize: activeAlertPageSize,
-  } = useListPagination(activeAlerts, {
+  } = useListPagination(filteredActiveAlerts, {
     pageSize: 8,
-    resetKey: activeAlerts.length,
+    resetKey: `${riskLevel}|${searchTerm}`,
   });
 
   const {
@@ -184,6 +222,11 @@ const AlertsList = () => {
   };
 
   const handleEscalate = async (alert) => {
+    if (!canMonitorRiskLevel(alert.riskLevel)) {
+      toast.error("Cases can only be opened for Medium to Critical risk.");
+      return;
+    }
+
     if (!alert.userId) {
       toast.error("Missing student user id for this alert.");
       return;
@@ -274,7 +317,11 @@ const AlertsList = () => {
         status: draft.status,
         note: draft.note,
       });
-      toast.success("Progress updated.");
+      toast.success(
+        draft.status === "resolved"
+          ? "Case resolved. Student risk level is now Low."
+          : "Progress updated.",
+      );
       setProgressDrafts((prev) => {
         const next = { ...prev };
         delete next[intervention.id];
@@ -336,25 +383,25 @@ const AlertsList = () => {
         <div className={styles.responsiveStatsGrid}>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {activeAlerts.filter((a) => a.sev === "low").length}
+              {alertSummaryCounts.low}
             </div>
             <div className={commonStyles.statLabel}>Low</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {activeAlerts.filter((a) => a.sev === "medium").length}
+              {alertSummaryCounts.medium}
             </div>
             <div className={commonStyles.statLabel}>Medium</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {activeAlerts.filter((a) => a.sev === "high").length}
+              {alertSummaryCounts.high}
             </div>
             <div className={commonStyles.statLabel}>High</div>
           </div>
           <div className={commonStyles.statBlock}>
             <div className={commonStyles.statValue}>
-              {activeAlerts.filter((a) => a.sev === "critical").length}
+              {alertSummaryCounts.critical}
             </div>
             <div className={commonStyles.statLabel}>Critical</div>
           </div>
@@ -362,16 +409,44 @@ const AlertsList = () => {
       </div>
 
       <div className={styles.card}>
+        <div className={styles.listToolbar}>
+          <div className={styles.listToolbarFilters}>
+            <select
+              className={styles.listToolbarSelect}
+              value={riskLevel}
+              onChange={(event) => setRiskLevel(event.target.value)}
+              aria-label="Filter alerts by risk level"
+            >
+              <option value="">All Risk Levels</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+            <input
+              type="search"
+              className={styles.listToolbarSearch}
+              placeholder="Search by student name or ID..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              aria-label="Search alerts by student name or ID"
+            />
+          </div>
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {paginatedActiveAlerts.map((alert) => {
             const intervention = alert.intervention;
             const status = intervention?.status;
             const draft = intervention ? getDraft(intervention) : null;
-            const showStaffEscalate = !isAdmin && (!status || status === "resolved");
-            const showAdminOpenCase = isAdmin && !status;
-            const showAdminAcknowledge = isAdmin && status === "pending_admin";
+            const canMonitor = canMonitorRiskLevel(alert.riskLevel);
+            const showStaffEscalate =
+              canMonitor && !isAdmin && (!status || status === "resolved");
+            const showAdminOpenCase = canMonitor && isAdmin && !status;
+            const showAdminAcknowledge =
+              canMonitor && isAdmin && status === "pending_admin";
             const showCancelPending = status === "pending_admin";
             const showProgress =
+              canMonitor &&
               Boolean(status) &&
               status !== "pending_admin" &&
               status !== "resolved";
@@ -544,6 +619,21 @@ const AlertsList = () => {
                       Waiting for Admin acknowledgement.
                     </div>
                   ) : null}
+                  {status &&
+                  status !== "resolved" &&
+                  !canMonitor ? (
+                    <div
+                      className={styles.alertDesc}
+                      style={{ marginTop: "0.5rem" }}
+                    >
+                      Case monitoring is available for Medium to Critical risk.
+                    </div>
+                  ) : null}
+                  {!status && !canMonitor ? (
+                    <div className={styles.alertDesc}>
+                      Case actions are available for Medium to Critical risk.
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className={styles.alertMeta}>
@@ -618,6 +708,14 @@ const AlertsList = () => {
             </div>
           )}
 
+          {!isLoading &&
+            activeAlerts.length > 0 &&
+            filteredActiveAlerts.length === 0 && (
+              <div className={commonStyles.emptyState}>
+                No alerts match your search or risk level filter.
+              </div>
+            )}
+
           {isLoading && (
             <div className={commonStyles.emptyState}>Loading alerts…</div>
           )}
@@ -655,7 +753,11 @@ const AlertsList = () => {
                           {item.student_id || item.student_user_id}
                         </div>
                       </td>
-                      <td>{item.risk_level || item.severity || "—"}</td>
+                      <td>
+                        {item.status === "resolved"
+                          ? "Low"
+                          : item.risk_level || item.severity || "—"}
+                      </td>
                       <td>{item.latest_note || "—"}</td>
                       <td>{formatEventTime(item.updated_at)}</td>
                       <td>

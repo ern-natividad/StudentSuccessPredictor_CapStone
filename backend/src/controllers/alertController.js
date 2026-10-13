@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabaseClient.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { getCurrentStudentRiskLevel } from "../services/studentRiskService.js";
 
 const INTERVENTION_SELECT = `
   id,
@@ -29,12 +30,12 @@ const normalizeSeverity = (value) => {
   return "low";
 };
 
-const normalizeRiskLevel = (value) => {
-  const raw = String(value || "").trim().toLowerCase();
-  if (raw === "critical") return "Critical";
-  if (raw === "high") return "High";
-  if (raw === "medium") return "Medium";
-  return "Low";
+const updateStudentRiskLevel = async (studentUserId, riskLevel) => {
+  const { error } = await supabase
+    .from("student_info")
+    .update({ risk_level: riskLevel })
+    .eq("user_id", studentUserId);
+  if (error) throw error;
 };
 
 const insertEvent = async ({
@@ -189,8 +190,6 @@ export const escalateAlert = async (req, res) => {
     studentInfoId = null,
     studentId = "",
     studentName = "",
-    riskLevel = "Low",
-    severity = "low",
     note = "",
   } = req.body || {};
 
@@ -208,8 +207,16 @@ export const escalateAlert = async (req, res) => {
     throw new HttpError(404, "Student account not found.");
   }
 
-  const normalizedRisk = normalizeRiskLevel(riskLevel);
-  const normalizedSeverity = normalizeSeverity(severity);
+  const currentRiskLevel = await getCurrentStudentRiskLevel(studentUserId);
+  if (currentRiskLevel === "Low") {
+    throw new HttpError(
+      400,
+      "Cases can only be opened for students with Medium to Critical risk.",
+    );
+  }
+
+  const normalizedRisk = currentRiskLevel;
+  const normalizedSeverity = normalizeSeverity(normalizedRisk);
   const displayName = studentName || student.full_name || "Student";
   const now = new Date().toISOString();
 
@@ -298,6 +305,15 @@ export const acknowledgeIntervention = async (req, res) => {
     throw new HttpError(400, "Only pending escalations can be acknowledged.");
   }
 
+  if (
+    (await getCurrentStudentRiskLevel(intervention.student_user_id)) === "Low"
+  ) {
+    throw new HttpError(
+      400,
+      "Cases can only be monitored for students with Medium to Critical risk.",
+    );
+  }
+
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("alert_interventions")
@@ -311,6 +327,10 @@ export const acknowledgeIntervention = async (req, res) => {
     .select(INTERVENTION_SELECT)
     .single();
   if (error) throw error;
+
+  if (status === "resolved") {
+    await updateStudentRiskLevel(intervention.student_user_id, "Low");
+  }
 
   await insertEvent({
     interventionId: intervention.id,
@@ -349,6 +369,15 @@ export const updateInterventionProgress = async (req, res) => {
     );
   }
 
+  if (
+    (await getCurrentStudentRiskLevel(intervention.student_user_id)) === "Low"
+  ) {
+    throw new HttpError(
+      400,
+      "Cases can only be monitored for students with Medium to Critical risk.",
+    );
+  }
+
   const trimmedNote = String(note || "").trim();
   const now = new Date().toISOString();
 
@@ -363,6 +392,10 @@ export const updateInterventionProgress = async (req, res) => {
     .select(INTERVENTION_SELECT)
     .single();
   if (error) throw error;
+
+  if (status === "resolved") {
+    await updateStudentRiskLevel(intervention.student_user_id, "Low");
+  }
 
   await insertEvent({
     interventionId: intervention.id,
@@ -467,6 +500,11 @@ export const reopenIntervention = async (req, res) => {
     .select(INTERVENTION_SELECT)
     .single();
   if (error) throw error;
+
+  await updateStudentRiskLevel(
+    intervention.student_user_id,
+    intervention.risk_level,
+  );
 
   await insertEvent({
     interventionId: intervention.id,
