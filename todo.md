@@ -15,6 +15,7 @@
 **ALL ROLES**
 - Not yet done in Early Alerts (Problem: If the student's risk is Medium/Moderate Risk level then the staff and admin helped the student solved their case, they will be count as Low Risk Level again, do it the same with the other modules such as Students List Page, Dashboard Overview, Performance Forecasting Page, Online Advising Page)
 - Fixed the Search Bar in the Student's List Page
+- Alerts page (The case/open case should not be clickable if the student's risk level is low only from Medium to Critical Risk level should be monitored or the button should be available)
 
 🟡 *In Progress*
 - 
