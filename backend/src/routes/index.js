@@ -10,6 +10,7 @@ import programRoutes from "./programRoutes.js";
 import alertRoutes from "./alertRoutes.js";
 import announcementRoutes from "./announcementRoutes.js";
 import courseCatalogRoutes from "./courseCatalogRoutes.js";
+import studentImportRoutes from "./studentImportRoutes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/programs", programRoutes);
 router.use("/alerts", alertRoutes);
 router.use("/announcements", announcementRoutes);
 router.use("/course-catalog", courseCatalogRoutes);
+router.use("/students/import", studentImportRoutes);
 
 export default router;

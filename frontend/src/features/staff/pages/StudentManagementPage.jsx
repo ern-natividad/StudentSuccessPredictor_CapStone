@@ -38,6 +38,7 @@ import {
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 import ExcelGradeUploader from "../components/ExcelGradeUploader";
+import StudentAccountUploader from "../components/StudentAccountUploader";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
@@ -122,6 +123,7 @@ const StudentManagementPage = () => {
     updateStudentInfoRecord,
     directoryLoading,
     directoryError,
+    refreshStudentDirectory,
   } = useDashboard();
 
   const isAdmin = user?.role === "admin";
@@ -160,7 +162,9 @@ const StudentManagementPage = () => {
   const [editingGradeRecord, setEditingGradeRecord] = useState(null);
   const [deletingGradeRecord, setDeletingGradeRecord] = useState(null);
   const [selectedGradeIds, setSelectedGradeIds] = useState(new Set());
-  const [studentInfoForm, setStudentInfoForm] = useState(createEmptyStudentInfoForm);
+  const [studentInfoForm, setStudentInfoForm] = useState(
+    createEmptyStudentInfoForm,
+  );
   const [studentGrades, setStudentGrades] = useState([]);
   const [gradesLoading, setGradesLoading] = useState(false);
   const [gradesError, setGradesError] = useState("");
@@ -214,8 +218,8 @@ const StudentManagementPage = () => {
   const schoolYearFormOptions = useMemo(() => {
     const currentYear = getCurrentAcademicYear();
     const yearsFromRecords = getUniqueAcademicYears(studentGrades);
-    return [...new Set([currentYear, ...yearsFromRecords])].sort((left, right) =>
-      right.localeCompare(left),
+    return [...new Set([currentYear, ...yearsFromRecords])].sort(
+      (left, right) => right.localeCompare(left),
     );
   }, [studentGrades]);
 
@@ -346,8 +350,7 @@ const StudentManagementPage = () => {
       schoolYear: getSchoolYearFromRecord(record),
       grade: normalizeGradeFormValue(record.grade),
       remarks:
-        remarksFromGrade(record.grade) ||
-        normalizeRemarksValue(record.remarks),
+        remarksFromGrade(record.grade) || normalizeRemarksValue(record.remarks),
     });
   };
 
@@ -382,7 +385,8 @@ const StudentManagementPage = () => {
       department: student.department || "Engineering",
       program: resolvedProgram,
       section: student.section || student.assignedSectionId || "",
-      year_level: student.yearLevel || student.year_level || YEAR_LEVEL_OPTIONS[0],
+      year_level:
+        student.yearLevel || student.year_level || YEAR_LEVEL_OPTIONS[0],
       risk_level: student.risk_level || "Low",
     });
     setIsEditStudentModalOpen(true);
@@ -455,9 +459,12 @@ const StudentManagementPage = () => {
   const toggleAllVisibleGrades = () => {
     setSelectedGradeIds((currentIds) => {
       const visibleIds = filteredStudentGrades.map((record) => record.id);
-      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => currentIds.has(id));
+      const allSelected =
+        visibleIds.length > 0 && visibleIds.every((id) => currentIds.has(id));
       if (allSelected) {
-        return new Set([...currentIds].filter((id) => !visibleIds.includes(id)));
+        return new Set(
+          [...currentIds].filter((id) => !visibleIds.includes(id)),
+        );
       }
       return new Set([...currentIds, ...visibleIds]);
     });
@@ -569,7 +576,10 @@ const StudentManagementPage = () => {
         grade: selectedGrade,
         remarks,
       };
-      const result = await api.updateStudentGrade(editingGradeRecord.id, payload);
+      const result = await api.updateStudentGrade(
+        editingGradeRecord.id,
+        payload,
+      );
       if (!result?.grade?.subject_code) {
         throw new Error(
           "Grade updated, but subject code was not stored. Restart the backend and try again.",
@@ -608,20 +618,27 @@ const StudentManagementPage = () => {
         );
         setStudentGrades(nextGrades);
         updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
-        setSelectedGradeIds((currentIds) =>
-          new Set([...currentIds].filter((id) => !deletedIds.includes(id))),
+        setSelectedGradeIds(
+          (currentIds) =>
+            new Set([...currentIds].filter((id) => !deletedIds.includes(id))),
         );
         closeDeleteGradeModal();
         if (failedCount > 0) {
-          toast.error(`${deletedIds.length} deleted. ${failedCount} record${failedCount === 1 ? "" : "s"} could not be deleted.`);
+          toast.error(
+            `${deletedIds.length} deleted. ${failedCount} record${failedCount === 1 ? "" : "s"} could not be deleted.`,
+          );
         } else {
-          toast.success(`${deletedIds.length} grade records deleted successfully.`);
+          toast.success(
+            `${deletedIds.length} grade records deleted successfully.`,
+          );
         }
         return;
       }
 
       await api.deleteStudentGrade(deletingGradeRecord.id);
-      const nextGrades = studentGrades.filter((record) => record.id !== deletingGradeRecord.id);
+      const nextGrades = studentGrades.filter(
+        (record) => record.id !== deletingGradeRecord.id,
+      );
       setStudentGrades(nextGrades);
       updateStudentGradeRecord(selectedStudent.student_id, nextGrades);
       setSelectedGradeIds((currentIds) => {
@@ -698,8 +715,12 @@ const StudentManagementPage = () => {
         </div>
       </div>
 
-      {directoryError && <div className={styles.contentCard}>{directoryError}</div>}
-      {directoryLoading && <div className={styles.contentCard}>Loading student directory…</div>}
+      {directoryError && (
+        <div className={styles.contentCard}>{directoryError}</div>
+      )}
+      {directoryLoading && (
+        <div className={styles.contentCard}>Loading student directory…</div>
+      )}
 
       <div className={styles.summaryGrid}>
         {summaryStats.map((item) => (
@@ -709,6 +730,10 @@ const StudentManagementPage = () => {
           </div>
         ))}
       </div>
+
+      {isAdmin && (
+        <StudentAccountUploader onImported={refreshStudentDirectory} />
+      )}
 
       <ExcelGradeUploader />
 
@@ -721,7 +746,9 @@ const StudentManagementPage = () => {
             </div>
             <div className={styles.contentCardMeta}>
               {selectedStudent.student_id} • {selectedStudent.yearLevel} •{" "}
-              {selectedStudent.program || selectedStudent.department || "Program pending"}
+              {selectedStudent.program ||
+                selectedStudent.department ||
+                "Program pending"}
             </div>
           </div>
           <div className={styles.selectedStudentTag}>
@@ -814,7 +841,10 @@ const StudentManagementPage = () => {
                         aria-label={`Edit student info for ${row.full_name}`}
                         title="Edit student info"
                       >
-                        <i className="fas fa-pen-to-square" aria-hidden="true" />
+                        <i
+                          className="fas fa-pen-to-square"
+                          aria-hidden="true"
+                        />
                       </button>
                       <button
                         type="button"
@@ -920,7 +950,9 @@ const StudentManagementPage = () => {
               }}
             >
               <label style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                <span
+                  style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
+                >
                   Filter by school year
                 </span>
                 <select
@@ -933,7 +965,10 @@ const StudentManagementPage = () => {
                   }}
                 >
                   {schoolYearFilterOptions.map((option) => (
-                    <option key={option.value || "all-years"} value={option.value}>
+                    <option
+                      key={option.value || "all-years"}
+                      value={option.value}
+                    >
                       {option.label}
                     </option>
                   ))}
@@ -941,7 +976,9 @@ const StudentManagementPage = () => {
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+                <span
+                  style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}
+                >
                   Filter by semester
                 </span>
                 <select
@@ -978,7 +1015,14 @@ const StudentManagementPage = () => {
                 }}
               >
                 <label
-                  style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155", cursor: "pointer" }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                    color: "#334155",
+                    cursor: "pointer",
+                  }}
                 >
                   <input
                     type="checkbox"
@@ -1000,11 +1044,13 @@ const StudentManagementPage = () => {
                     padding: "8px 12px",
                     borderRadius: 7,
                     border: "1px solid #fecaca",
-                    background: selectedGradeIds.size > 0 ? "#fff1f2" : "#f1f5f9",
+                    background:
+                      selectedGradeIds.size > 0 ? "#fff1f2" : "#f1f5f9",
                     color: selectedGradeIds.size > 0 ? "#b91c1c" : "#94a3b8",
                     fontWeight: 700,
                     fontSize: 12,
-                    cursor: selectedGradeIds.size > 0 ? "pointer" : "not-allowed",
+                    cursor:
+                      selectedGradeIds.size > 0 ? "pointer" : "not-allowed",
                   }}
                 >
                   Delete selected
@@ -1017,7 +1063,9 @@ const StudentManagementPage = () => {
             ) : gradesError ? (
               <p style={{ color: "#b91c1c", marginTop: 16 }}>{gradesError}</p>
             ) : filteredStudentGrades.length === 0 ? (
-              <p style={{ marginTop: 16 }}>No grade history found for these filters.</p>
+              <p style={{ marginTop: 16 }}>
+                No grade history found for these filters.
+              </p>
             ) : (
               <div
                 className={commonStyles.tableWrapper}
@@ -1048,14 +1096,30 @@ const StudentManagementPage = () => {
                           aria-label="Select all visible grade records"
                         />
                       </th>
-                      <th style={{ padding: "12px 16px", textAlign: "left" }}>Code</th>
-                      <th style={{ padding: "12px 16px", textAlign: "left" }}>Subject</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>School Year</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Semester</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Grade</th>
-                      <th style={{ padding: "12px 16px", textAlign: "left" }}>Remarks</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Date</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Actions</th>
+                      <th style={{ padding: "12px 16px", textAlign: "left" }}>
+                        Code
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "left" }}>
+                        Subject
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>
+                        School Year
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>
+                        Semester
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>
+                        Grade
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "left" }}>
+                        Remarks
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>
+                        Date
+                      </th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1088,7 +1152,10 @@ const StudentManagementPage = () => {
                                 }}
                               >
                                 ({section.records.length}{" "}
-                                {section.records.length === 1 ? "subject" : "subjects"})
+                                {section.records.length === 1
+                                  ? "subject"
+                                  : "subjects"}
+                                )
                               </span>
                             </td>
                           </tr>
@@ -1099,7 +1166,12 @@ const StudentManagementPage = () => {
                             className={commonStyles.tableRow}
                             style={{ borderBottom: "1px solid #f1f5f9" }}
                           >
-                            <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                            <td
+                              style={{
+                                padding: "12px 8px",
+                                textAlign: "center",
+                              }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={selectedGradeIds.has(record.id)}
@@ -1107,16 +1179,40 @@ const StudentManagementPage = () => {
                                 aria-label={`Select ${record.subject_name}`}
                               />
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "700" }}>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "left",
+                                fontWeight: "700",
+                              }}
+                            >
                               {record.subject_code || "—"}
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600" }}>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "left",
+                                fontWeight: "600",
+                              }}
+                            >
                               {record.subject_name}
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                              {formatSchoolYear(getSchoolYearFromRecord(record))}
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {formatSchoolYear(
+                                getSchoolYearFromRecord(record),
+                              )}
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "center",
+                              }}
+                            >
                               {formatSemesterCode(record.semester)}
                             </td>
                             <td
@@ -1148,10 +1244,20 @@ const StudentManagementPage = () => {
                             >
                               {record.remarks || "-"}
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "center",
+                              }}
+                            >
                               {new Date(record.created_at).toLocaleDateString()}
                             </td>
-                            <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <td
+                              style={{
+                                padding: "12px 16px",
+                                textAlign: "center",
+                              }}
+                            >
                               <div className={styles.tableActionGroup}>
                                 <button
                                   type="button"
@@ -1160,7 +1266,10 @@ const StudentManagementPage = () => {
                                   title="Edit grade"
                                   aria-label={`Edit grade for ${record.subject_name}`}
                                 >
-                                  <i className="fas fa-pen-to-square" aria-hidden="true" />
+                                  <i
+                                    className="fas fa-pen-to-square"
+                                    aria-hidden="true"
+                                  />
                                 </button>
                                 <button
                                   type="button"
@@ -1170,7 +1279,10 @@ const StudentManagementPage = () => {
                                   aria-label={`Delete grade for ${record.subject_name}`}
                                   style={{ color: "#ef4444" }}
                                 >
-                                  <i className="fas fa-trash-can" aria-hidden="true" />
+                                  <i
+                                    className="fas fa-trash-can"
+                                    aria-hidden="true"
+                                  />
                                 </button>
                               </div>
                             </td>
@@ -1228,7 +1340,9 @@ const StudentManagementPage = () => {
                 borderBottom: "1px solid #f1f5f9",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
                 <div
                   style={{
                     width: "42px",
@@ -1263,8 +1377,9 @@ const StudentManagementPage = () => {
                       fontSize: "0.85rem",
                     }}
                   >
-                    Add one or more subject grades for {selectedStudent.full_name} in
-                    the same school year and semester.
+                    Add one or more subject grades for{" "}
+                    {selectedStudent.full_name} in the same school year and
+                    semester.
                   </p>
                 </div>
               </div>
@@ -1333,7 +1448,8 @@ const StudentManagementPage = () => {
               </div>
 
               <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                {SCHOOL_YEAR_INFO_TEXT} {SEMESTER_INFO_TEXT} {GRADE_INPUT_HELP_TEXT}
+                {SCHOOL_YEAR_INFO_TEXT} {SEMESTER_INFO_TEXT}{" "}
+                {GRADE_INPUT_HELP_TEXT}
               </p>
 
               <div style={{ display: "grid", gap: "10px" }}>
@@ -1351,7 +1467,9 @@ const StudentManagementPage = () => {
                   <button
                     type="button"
                     onClick={handleAddGradeRow}
-                    disabled={gradeBatch.rows.length >= MAX_GRADE_ROWS || isSavingGrade}
+                    disabled={
+                      gradeBatch.rows.length >= MAX_GRADE_ROWS || isSavingGrade
+                    }
                     style={{
                       border: "1px solid #fecdd3",
                       background: "#fff1f2",
@@ -1364,7 +1482,8 @@ const StudentManagementPage = () => {
                         gradeBatch.rows.length >= MAX_GRADE_ROWS
                           ? "not-allowed"
                           : "pointer",
-                      opacity: gradeBatch.rows.length >= MAX_GRADE_ROWS ? 0.6 : 1,
+                      opacity:
+                        gradeBatch.rows.length >= MAX_GRADE_ROWS ? 0.6 : 1,
                     }}
                   >
                     <i className="fas fa-plus" aria-hidden="true" /> Add subject
@@ -1421,7 +1540,13 @@ const StudentManagementPage = () => {
                       }}
                     >
                       <div style={{ display: "grid", gap: "4px" }}>
-                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
                           Code
                         </label>
                         <input
@@ -1429,13 +1554,23 @@ const StudentManagementPage = () => {
                           placeholder="CE 101"
                           value={row.subjectCode}
                           onChange={(e) =>
-                            handleGradeRowChange(row.id, "subjectCode", e.target.value)
+                            handleGradeRowChange(
+                              row.id,
+                              "subjectCode",
+                              e.target.value,
+                            )
                           }
                           style={modalFieldInputStyle}
                         />
                       </div>
                       <div style={{ display: "grid", gap: "4px" }}>
-                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
                           Description
                         </label>
                         <input
@@ -1443,13 +1578,23 @@ const StudentManagementPage = () => {
                           placeholder="Subject name"
                           value={row.subject}
                           onChange={(e) =>
-                            handleGradeRowChange(row.id, "subject", e.target.value)
+                            handleGradeRowChange(
+                              row.id,
+                              "subject",
+                              e.target.value,
+                            )
                           }
                           style={modalFieldInputStyle}
                         />
                       </div>
                       <div style={{ display: "grid", gap: "4px" }}>
-                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
                           Grade
                         </label>
                         <input
@@ -1458,13 +1603,23 @@ const StudentManagementPage = () => {
                           placeholder="1.25 / INC"
                           value={row.grade}
                           onChange={(e) =>
-                            handleGradeRowChange(row.id, "grade", e.target.value)
+                            handleGradeRowChange(
+                              row.id,
+                              "grade",
+                              e.target.value,
+                            )
                           }
                           style={modalFieldInputStyle}
                         />
                       </div>
                       <div style={{ display: "grid", gap: "4px" }}>
-                        <label style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
                           Remarks
                         </label>
                         <input
@@ -1474,7 +1629,9 @@ const StudentManagementPage = () => {
                           style={{
                             ...modalFieldInputStyle,
                             backgroundColor: "#ffffff",
-                            color: isAlertRemark(row.remarks) ? "#dc2626" : "#334155",
+                            color: isAlertRemark(row.remarks)
+                              ? "#dc2626"
+                              : "#334155",
                             fontWeight: isAlertRemark(row.remarks) ? 700 : 500,
                             cursor: "default",
                           }}
@@ -1598,7 +1755,9 @@ const StudentManagementPage = () => {
                 borderBottom: "1px solid #f1f5f9",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
                 <div
                   style={{
                     width: "42px",
@@ -1856,9 +2015,16 @@ const StudentManagementPage = () => {
           >
             <h2
               id="delete-grade-title"
-              style={{ margin: "0 0 12px", color: "#800000", fontSize: "1.25rem", fontWeight: 700 }}
+              style={{
+                margin: "0 0 12px",
+                color: "#800000",
+                fontSize: "1.25rem",
+                fontWeight: 700,
+              }}
             >
-              {deletingGradeRecord.bulk ? "Delete Grade Records" : "Delete Grade Record"}
+              {deletingGradeRecord.bulk
+                ? "Delete Grade Records"
+                : "Delete Grade Record"}
             </h2>
             <p
               style={{
@@ -1871,8 +2037,10 @@ const StudentManagementPage = () => {
               {deletingGradeRecord.bulk ? (
                 <>
                   Are you sure you want to permanently delete{" "}
-                  <strong>{deletingGradeRecord.count} selected grade records</strong>?
-                  This action cannot be undone.
+                  <strong>
+                    {deletingGradeRecord.count} selected grade records
+                  </strong>
+                  ? This action cannot be undone.
                 </>
               ) : (
                 <>
@@ -1916,7 +2084,8 @@ const StudentManagementPage = () => {
                   transition: "background-color 0.15s ease",
                 }}
                 onMouseOver={(e) => {
-                  if (!isDeletingGrade) e.currentTarget.style.backgroundColor = "#600000";
+                  if (!isDeletingGrade)
+                    e.currentTarget.style.backgroundColor = "#600000";
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = "#800000";
@@ -1946,7 +2115,8 @@ const StudentManagementPage = () => {
                   transition: "background-color 0.15s ease",
                 }}
                 onMouseOver={(e) => {
-                  if (!isDeletingGrade) e.currentTarget.style.backgroundColor = "#b8b8b8";
+                  if (!isDeletingGrade)
+                    e.currentTarget.style.backgroundColor = "#b8b8b8";
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = "#cccccc";
@@ -2001,7 +2171,9 @@ const StudentManagementPage = () => {
                 borderBottom: "1px solid #f1f5f9",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
                 <div
                   style={{
                     width: "42px",

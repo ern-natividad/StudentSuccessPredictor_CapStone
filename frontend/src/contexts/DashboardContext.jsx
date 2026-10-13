@@ -1,15 +1,25 @@
-import { createContext, useState, useCallback, useEffect, useMemo } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
-import { filterStudentsForAdviser, parseAssignedSections } from "../utils/adviserAssignmentUtils";
+import {
+  filterStudentsForAdviser,
+  parseAssignedSections,
+} from "../utils/adviserAssignmentUtils";
 import { fetchEarlyAlerts, scopeEarlyAlerts } from "../utils/earlyAlertsUtils";
 import { api, isBackendAuthEnabled } from "../services/api";
 import { supabase } from "../lib/supabaseClient";
 
 export const DashboardContext = createContext();
 
-const getViewedAlertsKey = (userId) => `hawkpredict-viewed-alerts:${userId || "guest"}`;
+const getViewedAlertsKey = (userId) =>
+  `hawkpredict-viewed-alerts:${userId || "guest"}`;
 
 const loadViewedAlertIds = (userId) => {
   try {
@@ -22,11 +32,16 @@ const loadViewedAlertIds = (userId) => {
 
 const saveViewedAlertIds = (userId, viewedIds) => {
   if (!userId) return;
-  localStorage.setItem(getViewedAlertsKey(userId), JSON.stringify([...viewedIds]));
+  localStorage.setItem(
+    getViewedAlertsKey(userId),
+    JSON.stringify([...viewedIds]),
+  );
 };
 
 const normalizeRiskLevel = (riskLevel) => {
-  const normalized = String(riskLevel || "").trim().toLowerCase();
+  const normalized = String(riskLevel || "")
+    .trim()
+    .toLowerCase();
   const riskLevels = {
     low: "Low",
     medium: "Medium",
@@ -52,6 +67,11 @@ export const DashboardProvider = ({ children }) => {
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [directoryError, setDirectoryError] = useState("");
+  const [directoryRefreshVersion, setDirectoryRefreshVersion] = useState(0);
+
+  const refreshStudentDirectory = useCallback(() => {
+    setDirectoryRefreshVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     const canLoadRoleAccounts = user?.isAuthenticated;
@@ -84,22 +104,30 @@ export const DashboardProvider = ({ children }) => {
               // Keep the users-table UUID for API calls that require user_id,
               // but display the official ID stored in student_info.student_id.
               user_id: account.id,
-              student_id: studentInfo?.student_id || account.id || `student-${index + 1}`,
+              student_id:
+                studentInfo?.student_id || account.id || `student-${index + 1}`,
               full_name:
                 account.full_name ||
                 account.email?.split("@")[0] ||
                 `Student ${index + 1}`,
               year_level:
-                studentInfo?.year_level ?? account.year_level ?? account.year ?? "N/A",
+                studentInfo?.year_level ??
+                account.year_level ??
+                account.year ??
+                "N/A",
               yearLevel:
-                studentInfo?.year_level ?? account.year_level ?? account.year ?? "N/A",
+                studentInfo?.year_level ??
+                account.year_level ??
+                account.year ??
+                "N/A",
               current_gpa: Number(account.current_gpa ?? 0),
               predicted_gpa: Number(account.predicted_gpa ?? 0),
               confidence_score: Number(account.confidence_score ?? 0),
               risk_level: normalizeRiskLevel(
                 studentInfo?.risk_level || account.risk_level,
               ),
-              assignedSectionId: account.assignedSectionId || studentInfo?.section || null,
+              assignedSectionId:
+                account.assignedSectionId || studentInfo?.section || null,
               section: studentInfo?.section || null,
               assignedStaffId: account.assignedStaffId || null,
               department: studentInfo?.department || null,
@@ -154,7 +182,7 @@ export const DashboardProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, user?.role, user?.isAuthenticated]);
+  }, [directoryRefreshVersion, user?.id, user?.role, user?.isAuthenticated]);
 
   useEffect(() => {
     if (user?.id) {
@@ -232,7 +260,9 @@ export const DashboardProvider = ({ children }) => {
       filtered = filtered.filter(
         (s) =>
           s.full_name.toLowerCase().includes(q) ||
-          String(s.student_id || "").toLowerCase().includes(q),
+          String(s.student_id || "")
+            .toLowerCase()
+            .includes(q),
       );
     }
 
@@ -440,7 +470,8 @@ export const DashboardProvider = ({ children }) => {
               department: infoUpdates.department ?? student.department,
               program: infoUpdates.program ?? student.program,
               section: infoUpdates.section ?? student.section,
-              assignedSectionId: infoUpdates.section ?? student.assignedSectionId,
+              assignedSectionId:
+                infoUpdates.section ?? student.assignedSectionId,
               risk_level: infoUpdates.risk_level ?? student.risk_level,
             }
           : student,
@@ -558,6 +589,7 @@ export const DashboardProvider = ({ children }) => {
     alertsLoading,
     directoryLoading,
     directoryError,
+    refreshStudentDirectory,
     notificationsPanelOpen,
     toggleNotificationsPanel,
     closeNotificationsPanel,

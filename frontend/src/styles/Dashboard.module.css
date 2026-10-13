@@ -257,7 +257,10 @@
   align-content: center;
   gap: 7px;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .gradeImportDropzone:hover:not(:disabled),
@@ -446,6 +449,32 @@
   background: #f0fdf4;
 }
 
+.studentAccountImportButton {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid #991b1b;
+  border-radius: 8px;
+  background: #991b1b;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studentAccountImportButton:hover:not(:disabled) {
+  background: #7f1d1d;
+}
+
+.studentAccountImportButton:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+
+.studentAccountImportButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .selectedStudentTag {
   background: #fff1f2;
   color: #b91c1c;
@@ -469,8 +498,12 @@
   padding: 0;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.2s ease, border-color 0.2s ease,
-    color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tableActionButton:hover {
@@ -552,7 +585,10 @@
   padding: 0;
   cursor: pointer;
   font-size: 0.95rem;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
@@ -619,8 +655,9 @@
 
 .studentTable td:nth-child(2) {
   color: #475569;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-size: 12px;
 }
 
@@ -631,7 +668,7 @@
 /* TOP NAV */
 .topNav {
   height: 56px;
-  background: #8b0000; 
+  background: #8b0000;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
@@ -716,7 +753,7 @@
 }
 
 .navItem {
-  padding: 12px 16px; 
+  padding: 12px 16px;
   font-size: 13px;
   font-weight: 500;
   color: #ffcdd2;
@@ -728,10 +765,10 @@
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
-  justify-content: center; 
+  justify-content: center;
   gap: 8px;
   white-space: nowrap;
-  position: relative; 
+  position: relative;
   width: 100%;
   box-sizing: border-box;
 }
@@ -742,7 +779,7 @@
 }
 
 .navItem.active {
-  background: rgba(0, 0, 0, 0.2); 
+  background: rgba(0, 0, 0, 0.2);
   color: #ffffff;
   font-weight: 600;
 }
@@ -754,11 +791,11 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #ffffff; 
+  background: #ffffff;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
 }
 
-.navItem.active i, 
+.navItem.active i,
 .navItem.active svg {
   color: #ffffff !important;
   transform: scale(1.05);
@@ -1195,7 +1232,9 @@
   overflow-x: hidden;
   flex-shrink: 0;
   gap: 2px;
-  transition: width 0.2s ease-in-out, transform 0.25s ease;
+  transition:
+    width 0.2s ease-in-out,
+    transform 0.25s ease;
   white-space: nowrap;
 }
 
@@ -1216,7 +1255,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .sidebarCollapseButton:hover,
@@ -1777,7 +1818,6 @@
   height: 40px;
 }
 
-
 .sidebar.collapsed .sidebarSectionLabel {
   display: none;
 }
@@ -1801,12 +1841,7 @@
 }
 
 .darkSidebar.collapsed .sidebarItem.active {
-  background: rgba(
-    139,
-    0,
-    0,
-    0.18
-  ) !important;
+  background: rgba(139, 0, 0, 0.18) !important;
   border-left: 3px solid #8b0000 !important;
 }
 
@@ -1830,14 +1865,9 @@
 }
 
 .darkSidebar .sidebarItem.active {
-  background: rgba(
-    139,
-    0,
-    0,
-    0.18
-  ) !important;
+  background: rgba(139, 0, 0, 0.18) !important;
   color: #fff !important;
-  border-left-color: #8b0000 !important; 
+  border-left-color: #8b0000 !important;
 }
 
 .darkSidebar .sidebarDivider {
@@ -1845,9 +1875,9 @@
 }
 
 .sidebar.collapsed .sidebarItem.active {
-  background: rgba(0, 0, 0, 0.2) !important; 
+  background: rgba(0, 0, 0, 0.2) !important;
   color: #ffffff !important;
-  border-left: 3px solid #ffffff !important; 
+  border-left: 3px solid #ffffff !important;
 }
 
 .sidebar.collapsed .sidebarItem.active .siIcon {
@@ -1856,8 +1886,8 @@
 }
 
 .darkSidebar.collapsed .sidebarItem.active {
-  background: rgba(139, 0, 0, 0.18) !important; 
-  border-left: 3px solid #8b0000 !important; 
+  background: rgba(139, 0, 0, 0.18) !important;
+  border-left: 3px solid #8b0000 !important;
 }
 
 /* ==========================================================================
@@ -1866,14 +1896,14 @@
 
 .sidebar.collapsed {
   width: 64px;
-  transition: width 0.1s ease-out; 
+  transition: width 0.1s ease-out;
 }
 
 .sidebar.collapsed:hover {
   width: 220px !important;
   transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
-  z-index: 10; 
+  z-index: 10;
 }
 
 .sidebar.collapsed .sidebarSectionLabel,
@@ -1925,8 +1955,8 @@
 }
 
 .darkSidebar.collapsed .sidebarItem.active {
-  background: rgba(139, 0, 0, 0.18) !important; 
-  border-left: 3px solid #8b0000 !important; 
+  background: rgba(139, 0, 0, 0.18) !important;
+  border-left: 3px solid #8b0000 !important;
 }
 
 .darkSidebar.collapsed:hover .sidebarItem.active {
@@ -1944,7 +1974,9 @@
   background: #ffffff;
   font-size: 13px;
   color: #0f172a;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .gradesFilterSelect:focus {
@@ -2119,7 +2151,10 @@
   padding: 32px 22px 22px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   min-height: 200px;
   display: flex;
@@ -2202,7 +2237,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .syBackButton:hover {
@@ -2224,7 +2261,9 @@
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .syExportButton:hover {
@@ -2638,4 +2677,3 @@
     width: min(280px, 86vw) !important;
   }
 }
-

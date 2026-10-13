@@ -158,6 +158,18 @@ export const api = {
   getStudentGrades: (studentId) => request(`/grades/${studentId}`),
   getMyGrades: () => request(`/grades/me`),
 
+  previewStudentAccounts: (students) =>
+    request("/students/import/preview", {
+      method: "POST",
+      body: JSON.stringify({ students }),
+    }),
+
+  importStudentAccounts: (students) =>
+    request("/students/import", {
+      method: "POST",
+      body: JSON.stringify({ students }),
+    }),
+
   getMyPrediction: () => request("/predictions/me"),
   getStudentPrediction: (studentId) => request(`/predictions/${studentId}`),
 
