@@ -33,8 +33,11 @@ const CurriculumViewer = () => {
   const { programNames } = usePrograms();
   const [published, setPublished] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterProgram, setFilterProgram] = useState("");
+  const [filterProgram, setFilterProgram] = useState("All");
   const [compareByCurriculumId, setCompareByCurriculumId] = useState({});
+  const [collapsedCurriculumIds, setCollapsedCurriculumIds] = useState(
+    () => new Set(),
+  );
 
   const loadCurricula = async () => {
     try {
@@ -68,9 +71,33 @@ const CurriculumViewer = () => {
     };
   }, []);
 
-  const visible = filterProgram
-    ? published.filter((c) => c.program === filterProgram)
-    : published;
+  const programOptions = [
+    ...new Map(
+      [...programNames, ...published.map((curriculum) => curriculum.program)]
+        .filter((program) => typeof program === "string" && program.trim())
+        .map((program) => [program.trim().toLowerCase(), program.trim()]),
+    ).values(),
+  ];
+  const visible =
+    filterProgram === "All"
+      ? published
+      : published.filter(
+          (curriculum) =>
+            curriculum.program?.trim().toLowerCase() ===
+            filterProgram.trim().toLowerCase(),
+        );
+
+  const toggleCurriculum = (curriculumId) => {
+    setCollapsedCurriculumIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(curriculumId)) {
+        next.delete(curriculumId);
+      } else {
+        next.add(curriculumId);
+      }
+      return next;
+    });
+  };
 
   const downloadAttachment = (att) => {
     const a = document.createElement("a");
@@ -209,15 +236,12 @@ const CurriculumViewer = () => {
               value={filterProgram}
               onChange={(e) => setFilterProgram(e.target.value)}
             >
-              <option value="">All Programs</option>
-              {programNames.map((programName) => (
+              <option value="All">All Programs</option>
+              {programOptions.map((programName) => (
                 <option key={programName} value={programName}>
                   {programName}
                 </option>
               ))}
-              {filterProgram && !programNames.includes(filterProgram) ? (
-                <option value={filterProgram}>{filterProgram}</option>
-              ) : null}
             </select>
           </div>
         </div>
@@ -242,6 +266,8 @@ const CurriculumViewer = () => {
                 typeof selectedCompareIndex === "number"
                   ? uniqueVersions[selectedCompareIndex]
                   : null;
+              const isExpanded = !collapsedCurriculumIds.has(c.id);
+              const curriculumContentId = `curriculum-content-${c.id}`;
 
               return (
               <div
@@ -257,15 +283,36 @@ const CurriculumViewer = () => {
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div className={styles.moduleTitleSmall}>
-                      {c.title} — {c.academicYear}
-                    </div>
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      aria-controls={curriculumContentId}
+                      onClick={() => toggleCurriculum(c.id)}
+                      style={{
+                        display: "block",
+                        border: 0,
+                        padding: 0,
+                        background: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        font: "inherit",
+                      }}
+                    >
+                      <span
+                        className={styles.moduleTitleSmall}
+                        style={{ display: "block", marginBottom: 0 }}
+                      >
+                        {c.title} — {c.academicYear}
+                      </span>
+                    </button>
                     <div className={styles.moduleSubtitle}>
                       Department: {c.department} | Program: {c.program} |
                       Total Units: {c.courses ? c.courses.length : 0}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {isExpanded && (
+                      <>
                     <button
                       type="button"
                       className={styles.performanceIconButton}
@@ -292,9 +339,21 @@ const CurriculumViewer = () => {
                       </select>
                     </div>
                     ) : null}
+                    <button
+                      type="button"
+                      className={styles.performanceIconButton}
+                      onClick={() => toggleCurriculum(c.id)}
+                      title="Close curriculum"
+                      aria-label={`Close ${c.title}`}
+                    >
+                      <i className="fas fa-xmark" aria-hidden="true" />
+                    </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
+                <div id={curriculumContentId} hidden={!isExpanded}>
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontWeight: 600, marginBottom: 8 }}>
                     Student Appraisal Sheet Format
@@ -375,6 +434,7 @@ const CurriculumViewer = () => {
                     ))}
                   </div>
                 )}
+                </div>
               </div>
               );
             })}
