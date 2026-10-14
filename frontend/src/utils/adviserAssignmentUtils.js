@@ -20,6 +20,19 @@ const isRealSectionValue = (value) => {
   return Boolean(normalized) && !PLACEHOLDER_SECTION_VALUES.has(normalized);
 };
 
+const getSectionMatchValues = (value) => {
+  const normalized = normalizeMatchValue(value);
+  if (!isRealSectionValue(normalized)) return [];
+
+  const values = new Set([normalized]);
+  const suffix = normalized
+    .split(/[-\s]+/)
+    .at(-1)
+    ?.match(/^\d*([a-z])$/i)?.[1];
+  if (suffix) values.add(suffix.toLowerCase());
+  return [...values];
+};
+
 export const parseAssignedSections = (value) => {
   if (!value) return [];
 
@@ -95,7 +108,8 @@ export const isStudentAssignedToAdviser = (
 ) => {
   const normalizedAdviserSection = normalizeMatchValue(adviserSection);
   const normalizedAdviserYear = normalizeMatchValue(adviserYearLevel);
-  const normalizedStudentSection = normalizeMatchValue(
+  const adviserSectionValues = getSectionMatchValues(adviserSection);
+  const studentSectionValues = getSectionMatchValues(
     getStudentSectionValue(student),
   );
   const normalizedStudentYear = normalizeMatchValue(
@@ -111,7 +125,9 @@ export const isStudentAssignedToAdviser = (
   }
 
   const sectionAndYearMatch =
-    normalizedStudentSection === normalizedAdviserSection &&
+    adviserSectionValues.some((section) =>
+      studentSectionValues.includes(section),
+    ) &&
     normalizedStudentYear === normalizedAdviserYear;
 
   if (!sectionAndYearMatch) return false;

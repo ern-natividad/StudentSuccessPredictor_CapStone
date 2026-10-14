@@ -6,8 +6,14 @@ import { useToast } from "../../../components/Common/Toast";
 import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
 import { api } from "../../../services/api";
+import { getPublishedCurricula } from "../../../services/curriculumService";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
+import {
+  getCourseLab,
+  getCourseLec,
+  getCourseTotalUnits,
+} from "../../../utils/curriculumAppraisalUtils";
 import {
   SEMESTER_FILTER_OPTIONS,
   SEMESTER_FORM_OPTIONS,
@@ -21,6 +27,7 @@ import {
   groupGradesBySchoolYearAndSemester,
   matchesSchoolYearFilter,
   matchesSemesterFilter,
+  normalizeSemesterCode,
 } from "../../../utils/gradeSemesterUtils";
 import {
   getStaffAssignedSections,
@@ -87,6 +94,77 @@ const modalFieldInputStyle = {
 };
 
 const normalizeGradeFormValue = (value) => normalizeGradeValue(value) || "";
+
+const normalizeCourseCode = (value) =>
+  String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+const getAcademicYearStart = (value) => {
+  const match = String(value ?? "")
+    .trim()
+    .match(/^(\d{4})\s*[-–/]\s*(\d{4})$/);
+  if (!match || Number(match[2]) !== Number(match[1]) + 1) return null;
+  return Number(match[1]);
+};
+
+const getCourseYearLevel = (value) => {
+  const match = String(value ?? "").match(/\d+/);
+  return match ? Number(match[0]) : null;
+};
+
+const resolveGradeCourseUnits = (record, curricula, program) => {
+  const schoolYearStart = getAcademicYearStart(
+    getSchoolYearFromRecord(record),
+  );
+  const semester = normalizeSemesterCode(record.semester);
+  const courseCode = normalizeCourseCode(record.subject_code);
+  if (!schoolYearStart || !semester || !courseCode || !program) return null;
+
+  const candidates = (curricula || []).flatMap((curriculum) => {
+    if (
+      String(curriculum.program || "").trim().toLowerCase() !==
+      String(program).trim().toLowerCase()
+    ) {
+      return [];
+    }
+
+    const cohortStartYear = getAcademicYearStart(curriculum.academicYear);
+    if (!cohortStartYear) return [];
+
+    return (Array.isArray(curriculum.courses) ? curriculum.courses : [])
+      .filter((course) => {
+        const yearLevel = getCourseYearLevel(course.yearLevel);
+        return (
+          normalizeCourseCode(course.code) === courseCode &&
+          normalizeSemesterCode(course.semester) === semester &&
+          yearLevel !== null &&
+          cohortStartYear + yearLevel - 1 === schoolYearStart
+        );
+      })
+      .map((course) => ({
+        lecture: getCourseLec(course),
+        lab: getCourseLab(course),
+        total: getCourseTotalUnits(course),
+      }));
+  });
+
+  const uniqueCandidates = [
+    ...new Map(
+      candidates.map((units) => [
+        `${units.lecture}|${units.lab}|${units.total}`,
+        units,
+      ]),
+    ).values(),
+  ];
+  return uniqueCandidates.length === 1 ? uniqueCandidates[0] : null;
+};
+
+const formatUnits = (value) =>
+  Number.isInteger(value)
+    ? String(value)
+    : String(Number(value.toFixed(2)));
 
 const normalizeRemarksValue = (value) => {
   const raw = String(value ?? "").trim();
@@ -169,6 +247,7 @@ const StudentManagementPage = () => {
   const [studentGrades, setStudentGrades] = useState([]);
   const [gradesLoading, setGradesLoading] = useState(false);
   const [gradesError, setGradesError] = useState("");
+  const [publishedCurricula, setPublishedCurricula] = useState([]);
 
   const selectedStudent = useMemo(
     () =>
@@ -178,6 +257,21 @@ const StudentManagementPage = () => {
       displayStudentList[0] ||
       null,
     [displayStudentList, selectedStudentId],
+  );
+
+  const gradeUnitsById = useMemo(
+    () =>
+      new Map(
+        studentGrades.map((record) => [
+          record.id,
+          resolveGradeCourseUnits(
+            record,
+            publishedCurricula,
+            selectedStudent?.program,
+          ),
+        ]),
+      ),
+    [studentGrades, publishedCurricula, selectedStudent?.program],
   );
 
   const filteredStudentGrades = useMemo(
@@ -235,6 +329,25 @@ const StudentManagementPage = () => {
       setGradeBatch(createEmptyGradeBatch());
     }
   }, [selectedStudent]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublishedCurricula()
+      .then((curricula) => {
+        if (isMounted) setPublishedCurricula(curricula);
+      })
+      .catch((error) => {
+        if (isMounted) {
+          toast.error(
+            error.message || "Unable to load curricula for grade units.",
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [toast]);
 
   useEffect(() => {
     const loadGrades = async () => {
@@ -1182,15 +1295,18 @@ const StudentManagementPage = () => {
                   style={{ width: "100%", borderCollapse: "collapse" }}
                 >
                   <colgroup>
+                    <col style={{ width: "4%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6%" }} />
                     <col style={{ width: "5%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "18%" }} />
-                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "5%" }} />
+                    <col style={{ width: "6%" }} />
                     <col style={{ width: "10%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "15%" }} />
                   </colgroup>
                   <thead className={commonStyles.tableHead}>
                     <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
@@ -1217,6 +1333,15 @@ const StudentManagementPage = () => {
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>
                         Grade
                       </th>
+                      <th style={{ padding: "12px 8px", textAlign: "center" }}>
+                        Lec
+                      </th>
+                      <th style={{ padding: "12px 8px", textAlign: "center" }}>
+                        Lab
+                      </th>
+                      <th style={{ padding: "12px 8px", textAlign: "center" }}>
+                        Total units
+                      </th>
                       <th style={{ padding: "12px 16px", textAlign: "left" }}>
                         Remarks
                       </th>
@@ -1234,7 +1359,7 @@ const StudentManagementPage = () => {
                         {section.label ? (
                           <tr>
                             <td
-                              colSpan={9}
+                              colSpan={12}
                               style={{
                                 padding: "10px 16px",
                                 background: "#f8fafc",
@@ -1335,6 +1460,44 @@ const StudentManagementPage = () => {
                               }}
                             >
                               {record.grade}
+                            </td>
+                            <td
+                              style={{
+                                padding: "12px 8px",
+                                textAlign: "center",
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              {gradeUnitsById.get(record.id)
+                                ? formatUnits(
+                                    gradeUnitsById.get(record.id).lecture,
+                                  )
+                                : "—"}
+                            </td>
+                            <td
+                              style={{
+                                padding: "12px 8px",
+                                textAlign: "center",
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              {gradeUnitsById.get(record.id)
+                                ? formatUnits(gradeUnitsById.get(record.id).lab)
+                                : "—"}
+                            </td>
+                            <td
+                              style={{
+                                padding: "12px 8px",
+                                textAlign: "center",
+                                fontVariantNumeric: "tabular-nums",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {gradeUnitsById.get(record.id)
+                                ? formatUnits(
+                                    gradeUnitsById.get(record.id).total,
+                                  )
+                                : "—"}
                             </td>
                             <td
                               style={{
