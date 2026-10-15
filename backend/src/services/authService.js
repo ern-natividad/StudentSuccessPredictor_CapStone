@@ -3,6 +3,7 @@ import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabaseClient.js";
+import { supabaseAuth } from "../config/supabaseAuthClient.js";
 import {
   signToken,
   signPendingMfaToken,
@@ -542,7 +543,7 @@ export const registerUser = async (payload, meta = {}) => {
     throw new HttpError(409, "An account with this email already exists.");
   }
 
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
     email: normalizedEmail,
     password: password,
   });

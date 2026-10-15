@@ -1,9 +1,9 @@
-import { supabase } from '../config/supabaseClient.js';
+import { supabaseAuth } from '../config/supabaseAuthClient.js';
 import { initiatePasswordReset, verifyPasswordOtp } from './authService.js';
 
 class AuthService {
   async signUp(email, password, name) {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseAuth.auth.signUp({
       email,
       password,
       options: { data: { full_name: name || '' } }
@@ -16,9 +16,9 @@ class AuthService {
     if (!email || !password) {
       throw new Error("Email and password are required.");
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-      email: email.trim(), 
-      password: password 
+    const { data, error } = await supabaseAuth.auth.signInWithPassword({
+      email: email.trim(),
+      password: password
     });
     if (error) throw error;
     return data;
@@ -41,7 +41,7 @@ class AuthService {
   // Handle updating to a brand new password
   async updatePassword(newPassword) {
     if (!newPassword) throw new Error("New password is required.");
-    const { data, error } = await supabase.auth.updateUser({
+    const { data, error } = await supabaseAuth.auth.updateUser({
       password: newPassword
     });
     if (error) throw error;
