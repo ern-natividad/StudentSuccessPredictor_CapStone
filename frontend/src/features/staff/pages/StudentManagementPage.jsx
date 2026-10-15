@@ -50,7 +50,6 @@ import StudentAccountUploader from "../components/StudentAccountUploader";
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
 const REMARKS_OPTIONS = ["Pass", "Fail", "INC", "AW", "UW"];
-const MAX_GRADE_ROWS = 15;
 
 const createEmptyGradeForm = () => ({
   subjectCode: "",
@@ -61,18 +60,10 @@ const createEmptyGradeForm = () => ({
   remarks: "",
 });
 
-const createEmptyGradeRow = () => ({
-  id: `grade-row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  subjectCode: "",
-  subject: "",
-  grade: "",
-  remarks: "",
-});
-
 const createEmptyGradeBatch = () => ({
   semester: "1",
   schoolYear: getCurrentAcademicYear(),
-  rows: [createEmptyGradeRow()],
+  rows: [],
 });
 
 const modalFieldLabelStyle = {
@@ -256,16 +247,45 @@ const StudentManagementPage = () => {
   const [gradesLoading, setGradesLoading] = useState(false);
   const [gradesError, setGradesError] = useState("");
   const [publishedCurricula, setPublishedCurricula] = useState([]);
+  const [eligibleSubjectsResult, setEligibleSubjectsResult] = useState(null);
 
+  const effectiveSelectedStudentId =
+    selectedStudentId || displayStudentList[0]?.student_id || "";
   const selectedStudent = useMemo(
     () =>
       displayStudentList.find(
-        (student) => student.student_id === selectedStudentId,
+        (student) => student.student_id === effectiveSelectedStudentId,
       ) ||
       displayStudentList[0] ||
       null,
-    [displayStudentList, selectedStudentId],
+    [displayStudentList, effectiveSelectedStudentId],
   );
+  const eligibleSubjectsRequestKey = JSON.stringify({
+    studentId: selectedStudent?.user_id,
+    schoolYear: gradeBatch.schoolYear,
+    semester: gradeBatch.semester,
+    grades: studentGrades.map((grade) => [
+      grade.id,
+      grade.subject_code,
+      grade.school_year,
+      grade.semester,
+      grade.grade,
+    ]),
+  });
+  const hasCurrentEligibleSubjects =
+    eligibleSubjectsResult?.requestKey === eligibleSubjectsRequestKey;
+  const eligibleGradeSubjects = hasCurrentEligibleSubjects
+    ? eligibleSubjectsResult.subjects
+    : [];
+  const eligibleSubjectsError = hasCurrentEligibleSubjects
+    ? eligibleSubjectsResult.error
+    : "";
+  const eligibleSubjectsLoading =
+    isGradeModalOpen && !hasCurrentEligibleSubjects;
+
+  const pendingGradeCount = gradeBatch.rows.filter(
+    (row) => !row.existingGrade && String(row.grade || "").trim(),
+  ).length;
 
   const gradeUnitsById = useMemo(
     () =>
@@ -327,18 +347,6 @@ const StudentManagementPage = () => {
   }, [studentGrades]);
 
   useEffect(() => {
-    if (!selectedStudentId && displayStudentList.length > 0) {
-      setSelectedStudentId(displayStudentList[0].student_id);
-    }
-  }, [displayStudentList, selectedStudentId]);
-
-  useEffect(() => {
-    if (selectedStudent) {
-      setGradeBatch(createEmptyGradeBatch());
-    }
-  }, [selectedStudent]);
-
-  useEffect(() => {
     let isMounted = true;
     getPublishedCurricula()
       .then((curricula) => {
@@ -356,6 +364,74 @@ const StudentManagementPage = () => {
       isMounted = false;
     };
   }, [toast]);
+
+  useEffect(() => {
+    if (!isGradeModalOpen || !selectedStudent) return undefined;
+
+    let isMounted = true;
+    api
+      .getEligibleGradeSubjects(
+        selectedStudent.user_id,
+        gradeBatch.semester,
+      )
+      .then(({ subjects = [] }) => {
+        if (!isMounted) return;
+        setEligibleSubjectsResult({
+          requestKey: eligibleSubjectsRequestKey,
+          subjects,
+          error: "",
+        });
+        const existingByCode = new Map();
+        studentGrades
+          .filter(
+            (record) =>
+              getSchoolYearFromRecord(record) === gradeBatch.schoolYear &&
+              normalizeSemesterCode(record.semester) === gradeBatch.semester,
+          )
+          .forEach((record) => {
+            const code = normalizeCourseCode(record.subject_code);
+            if (code && !existingByCode.has(code)) {
+              existingByCode.set(code, record);
+            }
+          });
+        setGradeBatch((previous) => ({
+          ...previous,
+          rows: subjects.map((course) => {
+            const existing = existingByCode.get(
+              normalizeCourseCode(course.code),
+            );
+            return {
+              id: `grade-row-${course.code}`,
+              subjectCode: course.code,
+              subject: course.title,
+              grade: "",
+              remarks: "",
+              existingGrade: existing || null,
+            };
+          }),
+        }));
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setEligibleSubjectsResult({
+          requestKey: eligibleSubjectsRequestKey,
+          subjects: [],
+          error:
+            error.message || "Unable to load subjects from the curriculum.",
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    gradeBatch.schoolYear,
+    gradeBatch.semester,
+    eligibleSubjectsRequestKey,
+    isGradeModalOpen,
+    selectedStudent,
+    studentGrades,
+  ]);
 
   useEffect(() => {
     const loadGrades = async () => {
@@ -463,23 +539,6 @@ const StudentManagementPage = () => {
     }));
   };
 
-  const handleAddGradeRow = () => {
-    setGradeBatch((prev) => {
-      if (prev.rows.length >= MAX_GRADE_ROWS) return prev;
-      return { ...prev, rows: [...prev.rows, createEmptyGradeRow()] };
-    });
-  };
-
-  const handleRemoveGradeRow = (rowId) => {
-    setGradeBatch((prev) => {
-      if (prev.rows.length <= 1) return prev;
-      return {
-        ...prev,
-        rows: prev.rows.filter((row) => row.id !== rowId),
-      };
-    });
-  };
-
   const handleEditGradeChange = (field, value) => {
     setEditGradeForm((prev) => {
       if (field !== "grade") {
@@ -498,6 +557,7 @@ const StudentManagementPage = () => {
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
     setGradeBatch(createEmptyGradeBatch());
+    setEligibleSubjectsResult(null);
     setIsGradeModalOpen(true);
   };
 
@@ -651,25 +711,19 @@ const StudentManagementPage = () => {
     const preparedRows = [];
     for (let index = 0; index < gradeBatch.rows.length; index += 1) {
       const row = gradeBatch.rows[index];
+      if (row.existingGrade || !String(row.grade || "").trim()) continue;
       const selectedGrade = normalizeGradeValue(row.grade);
       const remarks = remarksFromGrade(selectedGrade) || row.remarks.trim();
-      const subjectCode = row.subjectCode.trim();
-      const subject = row.subject.trim();
-      const isBlankRow =
-        !subjectCode && !subject && !String(row.grade || "").trim();
-
-      if (isBlankRow) continue;
-
-      if (!subjectCode || !subject || !isValidGradeValue(selectedGrade)) {
+      if (!isValidGradeValue(selectedGrade)) {
         toast.error(
-          `Row ${index + 1}: enter subject code, description, and a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
+          `${row.subjectCode}: enter a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
         );
         return;
       }
 
       preparedRows.push({
-        subject_code: subjectCode,
-        subject_name: subject,
+        subject_code: row.subjectCode,
+        subject_name: row.subject,
         semester: gradeBatch.semester,
         school_year: gradeBatch.schoolYear.trim(),
         grade: selectedGrade,
@@ -1177,7 +1231,7 @@ const StudentManagementPage = () => {
                     className={commonStyles.tableRow}
                     style={{
                       background:
-                        row.student_id === selectedStudentId
+                        row.student_id === effectiveSelectedStudentId
                           ? "#fef2f2"
                           : "transparent",
                       cursor: "pointer",
@@ -1877,44 +1931,38 @@ const StudentManagementPage = () => {
               </p>
 
               <div style={{ display: "grid", gap: "10px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                  }}
-                >
-                  <label style={{ ...modalFieldLabelStyle, margin: 0 }}>
-                    Subjects ({gradeBatch.rows.length})
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleAddGradeRow}
-                    disabled={
-                      gradeBatch.rows.length >= MAX_GRADE_ROWS || isSavingGrade
-                    }
-                    style={{
-                      border: "1px solid #fecdd3",
-                      background: "#fff1f2",
-                      color: "#9f1239",
-                      borderRadius: "8px",
-                      padding: "0.4rem 0.75rem",
-                      fontSize: "0.8rem",
-                      fontWeight: 700,
-                      cursor:
-                        gradeBatch.rows.length >= MAX_GRADE_ROWS
-                          ? "not-allowed"
-                          : "pointer",
-                      opacity:
-                        gradeBatch.rows.length >= MAX_GRADE_ROWS ? 0.6 : 1,
-                    }}
-                  >
-                    <i className="fas fa-plus" aria-hidden="true" /> Add subject
-                  </button>
-                </div>
+                <label style={{ ...modalFieldLabelStyle, margin: 0 }}>
+                  Curriculum subjects ({eligibleGradeSubjects.length})
+                </label>
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
+                  Subjects come from this student’s published program
+                  curriculum. Subjects with an existing grade must be edited
+                  from grade history.
+                </p>
 
-                {gradeBatch.rows.map((row, index) => (
+                {eligibleSubjectsLoading ? (
+                  <p role="status" style={{ margin: 0, color: "#64748b" }}>
+                    Loading subjects from the published curriculum…
+                  </p>
+                ) : null}
+                {eligibleSubjectsError ? (
+                  <p role="alert" style={{ margin: 0, color: "#b91c1c" }}>
+                    {eligibleSubjectsError}
+                  </p>
+                ) : null}
+                {!eligibleSubjectsLoading &&
+                !eligibleSubjectsError &&
+                eligibleGradeSubjects.length === 0 ? (
+                  <p role="status" style={{ margin: 0, color: "#b91c1c" }}>
+                    No published subjects were found for this student’s
+                    assigned program, year level, and semester. Check that the
+                    student’s program is assigned correctly and that its
+                    curriculum is published.
+                  </p>
+                ) : null}
+
+                {!eligibleSubjectsLoading && !eligibleSubjectsError
+                  ? gradeBatch.rows.map((row) => (
                   <div
                     key={row.id}
                     style={{
@@ -1934,83 +1982,28 @@ const StudentManagementPage = () => {
                       }}
                     >
                       <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
-                        Subject {index + 1}
+                        {row.subjectCode} · {row.subject}
                       </strong>
-                      {gradeBatch.rows.length > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveGradeRow(row.id)}
-                          aria-label={`Remove subject row ${index + 1}`}
-                          title="Remove row"
+                      {row.existingGrade ? (
+                        <span
                           style={{
-                            border: "none",
-                            background: "transparent",
-                            color: "#ef4444",
-                            cursor: "pointer",
-                            fontSize: "0.85rem",
+                            color: "#64748b",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
                           }}
                         >
-                          <i className="fas fa-trash-can" aria-hidden="true" />
-                        </button>
+                          Already recorded: {row.existingGrade.grade}
+                        </span>
                       ) : null}
                     </div>
 
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(120px, 1fr))",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                         gap: "8px",
                       }}
                     >
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <label
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Code
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="CE 101"
-                          value={row.subjectCode}
-                          onChange={(e) =>
-                            handleGradeRowChange(
-                              row.id,
-                              "subjectCode",
-                              e.target.value,
-                            )
-                          }
-                          style={modalFieldInputStyle}
-                        />
-                      </div>
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <label
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Description
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Subject name"
-                          value={row.subject}
-                          onChange={(e) =>
-                            handleGradeRowChange(
-                              row.id,
-                              "subject",
-                              e.target.value,
-                            )
-                          }
-                          style={modalFieldInputStyle}
-                        />
-                      </div>
                       <div style={{ display: "grid", gap: "4px" }}>
                         <label
                           style={{
@@ -2026,6 +2019,7 @@ const StudentManagementPage = () => {
                           inputMode="decimal"
                           placeholder="1.25 / INC"
                           value={row.grade}
+                          disabled={Boolean(row.existingGrade) || isSavingGrade}
                           onChange={(e) =>
                             handleGradeRowChange(
                               row.id,
@@ -2063,7 +2057,8 @@ const StudentManagementPage = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                    ))
+                  : null}
               </div>
 
               <div
@@ -2102,7 +2097,12 @@ const StudentManagementPage = () => {
                 <button
                   type="button"
                   onClick={handleAddGrade}
-                  disabled={isSavingGrade}
+                  disabled={
+                    isSavingGrade ||
+                    eligibleSubjectsLoading ||
+                    Boolean(eligibleSubjectsError) ||
+                    pendingGradeCount === 0
+                  }
                   style={{
                     padding: "0.55rem 1.25rem",
                     borderRadius: "8px",
@@ -2111,8 +2111,14 @@ const StudentManagementPage = () => {
                     color: "#ffffff",
                     fontWeight: "600",
                     fontSize: "0.875rem",
-                    cursor: isSavingGrade ? "not-allowed" : "pointer",
-                    opacity: isSavingGrade ? 0.75 : 1,
+                    cursor:
+                      isSavingGrade || eligibleSubjectsLoading || pendingGradeCount === 0
+                        ? "not-allowed"
+                        : "pointer",
+                    opacity:
+                      isSavingGrade || eligibleSubjectsLoading || pendingGradeCount === 0
+                        ? 0.75
+                        : 1,
                     boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
                     transition: "all 0.15s ease",
                   }}
@@ -2127,9 +2133,9 @@ const StudentManagementPage = () => {
                 >
                   {isSavingGrade
                     ? "Saving..."
-                    : gradeBatch.rows.length > 1
-                      ? "Save All Grades"
-                      : "Save Grade Record"}
+                    : pendingGradeCount > 1
+                      ? `Save ${pendingGradeCount} Grades`
+                      : "Save Grade"}
                 </button>
               </div>
             </div>

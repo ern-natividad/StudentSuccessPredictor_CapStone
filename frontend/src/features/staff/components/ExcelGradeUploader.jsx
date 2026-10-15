@@ -305,6 +305,7 @@ const analyzeImport = (
         subject_name: String(course.title || original).trim(),
         semester,
         school_year: `${schoolYearStart}-${schoolYearStart + 1}`,
+        cohort_start_year: cohortStartYear,
         grade,
         remarks: remarksFromGrade(grade) || null,
         units,
@@ -499,6 +500,7 @@ const ExcelGradeUploader = () => {
         subject_name,
         semester,
         school_year,
+        cohort_start_year,
         grade,
         remarks,
       }) => ({
@@ -507,6 +509,7 @@ const ExcelGradeUploader = () => {
         subject_name,
         semester,
         school_year,
+        cohort_start_year,
         grade,
         remarks,
       }),
