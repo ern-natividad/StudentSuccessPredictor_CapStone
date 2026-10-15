@@ -44,9 +44,8 @@ const buildSummary = (rows = []) => {
     totalStudents: rows.length,
     mae,
     moderateRisk: rows.filter((row) => row.risk_level === "Medium").length,
-    highRisk: rows.filter(
-      (row) => row.risk_level === "High" || row.risk_level === "Critical",
-    ).length,
+    highRisk: rows.filter((row) => row.risk_level === "High").length,
+    criticalRisk: rows.filter((row) => row.risk_level === "Critical").length,
   };
 };
 
@@ -253,6 +252,11 @@ const AcademicPerformanceModule = () => {
           <div className={styles.metricLabel}>Predicted High Risk</div>
           <div className={styles.metricValue}>{displaySummary.highRisk}</div>
           <div className={styles.metricSubtext}>Intervention required</div>
+        </div>
+        <div className={styles.metricCard}>
+          <div className={styles.metricLabel}>Predicted Critical Risk</div>
+          <div className={styles.metricValue}>{displaySummary.criticalRisk}</div>
+          <div className={styles.metricSubtext}>Immediate intervention required</div>
         </div>
       </div>
 
