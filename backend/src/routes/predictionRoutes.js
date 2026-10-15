@@ -2,13 +2,27 @@ import { Router } from "express";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
+  getPredictionModelInfo,
   getMyPrediction,
   getStudentPrediction,
+  getStudentPredictionsBulk,
 } from "../controllers/predictionController.js";
 
 const router = Router();
 
+router.get(
+  "/models",
+  requireAuth,
+  requireRole("admin"),
+  asyncHandler(getPredictionModelInfo),
+);
 router.get("/me", requireAuth, requireRole("student"), asyncHandler(getMyPrediction));
+router.post(
+  "/bulk",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(getStudentPredictionsBulk),
+);
 router.get(
   "/:userId",
   requireAuth,

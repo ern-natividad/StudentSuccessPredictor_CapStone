@@ -49,7 +49,7 @@ const normalizeRiskLevel = (riskLevel) => {
     critical: "Critical",
   };
 
-  return riskLevels[normalized] || "Low";
+  return riskLevels[normalized] || "Not available";
 };
 
 export const DashboardProvider = ({ children }) => {

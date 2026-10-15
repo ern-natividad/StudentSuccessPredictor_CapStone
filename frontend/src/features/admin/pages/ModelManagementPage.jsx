@@ -1,111 +1,80 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../../../services/api";
 import styles from "../../../styles/Dashboard.module.css";
-import commonStyles from "../../../styles/Common.module.css";
-
-const ModelUploadArea = () => {
-  const [showUpload, setShowUpload] = useState(false);
-
-  return (
-    <>
-      <button
-        onClick={() => setShowUpload(!showUpload)}
-        style={{
-          width: "100%",
-          padding: "12px",
-          background: "#F5C200",
-          border: "none",
-          borderRadius: "6px",
-          color: "#0f0d08",
-          fontWeight: "600",
-          cursor: "pointer",
-          marginBottom: "12px",
-        }}
-      >
-        {showUpload ? "Cancel" : "Upload New Model"}
-      </button>
-      {showUpload && (
-        <div
-          style={{
-            border: "2px dashed rgba(245,194,0,0.3)",
-            borderRadius: "6px",
-            padding: "20px 12px",
-            textAlign: "center",
-            color: "#5a5240",
-            fontSize: "12px",
-          }}
-        >
-          <i
-            className="fas fa-cloud-upload-alt"
-            style={{ fontSize: "24px", marginBottom: "8px", display: "block" }}
-          ></i>
-          Drop model file here or click to select
-        </div>
-      )}
-    </>
-  );
-};
 
 const ModelManagementPage = () => {
-  const modelVersion = "1.3.0";
+  const [modelInfo, setModelInfo] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getPredictionModelInfo()
+      .then((data) => {
+        if (isMounted) setModelInfo(data);
+      })
+      .catch((requestError) => {
+        if (isMounted) setError(requestError.message || "Unable to load model evaluation.");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div>
       <h1 className={styles.pageTitle}>Model Management</h1>
-      <div
-        className={commonStyles.grid}
-        style={{
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        }}
-      >
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Current Model</div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Version</div>
-            <div className={commonStyles.metricValue}>{modelVersion}</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Accuracy</div>
-            <div className={commonStyles.metricValue}>94.2%</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>Last Trained</div>
-            <div style={{ fontSize: "12px", color: "#5a5240" }}>
-              Yesterday 14:30
+      {loading && <div className={styles.card}>Loading model evaluation…</div>}
+      {!loading && error && <div className={styles.card}>{error}</div>}
+      {!loading && !error && modelInfo && (
+        <>
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>HawkPredict Next-Term GWA Models</div>
+            <p>
+              Version: <strong>{modelInfo.model_version}</strong>
+              {" · "}Recommended model: <strong>{modelInfo.selected_model}</strong>
+            </p>
+            <p>
+              Evaluated on {modelInfo.evaluation_summary?.test_sample_count ?? "—"} held-out examples
+              from {modelInfo.evaluation_summary?.test_student_count ?? "—"} students.
+              Error is measured as MAE (mean absolute error); lower is better.
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "0.65rem", borderBottom: "1px solid #e2e8f0" }}>Model</th>
+                    <th style={{ padding: "0.65rem", borderBottom: "1px solid #e2e8f0" }}>MAE</th>
+                    <th style={{ padding: "0.65rem", borderBottom: "1px solid #e2e8f0" }}>RMSE</th>
+                    <th style={{ padding: "0.65rem", borderBottom: "1px solid #e2e8f0" }}>R²</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(modelInfo.metrics || {}).map(([name, metrics]) => (
+                    <tr key={name}>
+                      <td style={{ padding: "0.65rem", borderBottom: "1px solid #f1f5f9" }}>
+                        {name}{name === modelInfo.selected_model ? " (recommended)" : ""}
+                      </td>
+                      <td style={{ padding: "0.65rem", borderBottom: "1px solid #f1f5f9" }}>{metrics.mae}</td>
+                      <td style={{ padding: "0.65rem", borderBottom: "1px solid #f1f5f9" }}>{metrics.rmse}</td>
+                      <td style={{ padding: "0.65rem", borderBottom: "1px solid #f1f5f9" }}>{metrics.r2}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            {modelInfo.prototype_only && (
+              <p style={{ marginBottom: 0, color: "#92400e", background: "#fffbeb", padding: "0.75rem", borderRadius: "6px" }}>
+                {modelInfo.note}
+              </p>
+            )}
           </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Model Training</div>
-          <p
-            style={{
-              fontSize: "13px",
-              color: "#5a5240",
-              marginBottom: "12px",
-            }}
-          >
-            Upload a new prediction model file to update the system. Supported
-            formats: <strong>.pkl</strong>, <strong>.joblib</strong>.
-          </p>
-          <ModelUploadArea />
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Performance History</div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>v1.3.0 Accuracy</div>
-            <div className={commonStyles.metricValue}>94.2%</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>v1.2.0 Accuracy</div>
-            <div className={commonStyles.metricValue}>91.8%</div>
-          </div>
-          <div className={commonStyles.metric}>
-            <div className={commonStyles.metricLabel}>v1.1.0 Accuracy</div>
-            <div className={commonStyles.metricValue}>88.5%</div>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

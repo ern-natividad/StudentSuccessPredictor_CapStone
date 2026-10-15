@@ -73,46 +73,6 @@ const StudentPrediction = () => {
     };
   }, [user?.isAuthenticated]);
 
-  const currentGpa = Number(prediction?.current_gpa ?? 0);
-  const predictedGpa = Number(prediction?.predicted_gpa ?? 0);
-  const absError = Number(
-    prediction?.abs_error ?? Math.abs(currentGpa - predictedGpa),
-  );
-  const errorRate = Number(
-    prediction?.percent_error ??
-      (currentGpa > 0 ? (absError / currentGpa) * 100 : 0),
-  );
-
-  const getRiskBadge = (risk) => {
-    const stylesMap = {
-      low: { bg: "#f0fdf4", color: "#166534", border: "#dcfce7" },
-      medium: { bg: "#fffbeb", color: "#d97706", border: "#fef3c7" },
-      high: { bg: "#fff7ed", color: "#ea580c", border: "#ffedd5" },
-      critical: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-    };
-
-    const currentStyle = stylesMap[risk?.toLowerCase()] || stylesMap.low;
-
-    return (
-      <span
-        style={{
-          fontSize: "0.8rem",
-          fontWeight: "700",
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          padding: "0.3rem 0.7rem",
-          borderRadius: "6px",
-          backgroundColor: currentStyle.bg,
-          color: currentStyle.color,
-          border: `1px solid ${currentStyle.border}`,
-          display: "inline-block",
-        }}
-      >
-        {risk || "Low"}
-      </span>
-    );
-  };
-
   return (
     <div className={styles.pageShell} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* Header Card */}
@@ -144,11 +104,10 @@ const StudentPrediction = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "16px",
           }}
         >
-          {/* Main Key Metrics Summary Card */}
           <div
             style={{
               background: "#ffffff",
@@ -156,247 +115,79 @@ const StudentPrediction = () => {
               border: "1px solid #e2e8f0",
               padding: "1.25rem 1.5rem",
               boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
+              gridColumn: "1 / -1",
             }}
           >
-            <div>
-              <div style={SECTION_HEADING_STYLE}>
-                Performance Summary
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "1rem",
-                }}
-              >
-                {/* Current GWA Box */}
-                <div
-                  style={{
-                    backgroundColor: "#f8fafc",
-                    padding: "1rem 1.25rem",
-                    borderRadius: "10px",
-                    border: "1px solid #f1f5f9",
-                  }}
-                >
-                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Current GWA
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "2.25rem",
-                      fontWeight: "800",
-                      color: "#800000",
-                      lineHeight: "1.1",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    {currentGpa.toFixed(2)}
-                  </div>
-                </div>
-
-                {/* Success Probability Box */}
-                <div
-                  style={{
-                    backgroundColor: "#f0fdf4",
-                    padding: "1rem 1.25rem",
-                    borderRadius: "10px",
-                    border: "1px solid #dcfce7",
-                  }}
-                >
-                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#166534", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Success Probability
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "2.25rem",
-                      fontWeight: "800",
-                      color: "#15803d",
-                      lineHeight: "1.1",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    {prediction.success_probability}%
-                  </div>
-                </div>
-
-                {/* Abs. Error Box — same fields as AcademicPerformanceModule */}
-                <div
-                  style={{
-                    backgroundColor: "#fff7ed",
-                    padding: "1rem 1.25rem",
-                    borderRadius: "10px",
-                    border: "1px solid #ffedd5",
-                  }}
-                >
-                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#c2410c", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Abs. Error
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "2.25rem",
-                      fontWeight: "800",
-                      color: "#ea580c",
-                      lineHeight: "1.1",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    {absError.toFixed(2)}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#9a3412", marginTop: "0.35rem", fontWeight: "500" }}>
-                    |Actual GWA − Predicted GWA|
-                  </div>
-                </div>
-
-                {/* Error Rate Box — same fields as AcademicPerformanceModule */}
-                <div
-                  style={{
-                    backgroundColor: "#fef2f2",
-                    padding: "1rem 1.25rem",
-                    borderRadius: "10px",
-                    border: "1px solid #fecaca",
-                  }}
-                >
-                  <div style={{ fontSize: "0.825rem", fontWeight: "700", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Error Rate
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "2.25rem",
-                      fontWeight: "800",
-                      color: "#dc2626",
-                      lineHeight: "1.1",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    {errorRate.toFixed(1)}%
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#991b1b", marginTop: "0.35rem", fontWeight: "500" }}>
-                    Absolute error ÷ Actual GWA
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "0.85rem",
-                color: "#64748b",
-                fontWeight: "500",
-                marginTop: "1.25rem",
-                paddingTop: "0.75rem",
-                borderTop: "1px dashed #e2e8f0",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#800000", display: "inline-block" }} />
-              Calculated based on {prediction.grade_count} recorded {prediction.grade_count === 1 ? "grade" : "grades"}.
-            </div>
-          </div>
-
-          {/* Detailed Forecast Metrics Card */}
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "12px",
-              border: "1px solid #e2e8f0",
-              padding: "1.25rem 1.5rem",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div style={SECTION_HEADING_STYLE}>
-              Prediction Breakdown
-            </div>
-
+            <div style={SECTION_HEADING_STYLE}>Next-Term GWA Forecast</div>
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "0.85rem",
-                flex: 1,
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "12px",
+                marginBottom: "1rem",
               }}
             >
-              <div
-                style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #f1f5f9",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "#64748b", marginBottom: "0.25rem" }}>
-                  Risk Status
+              <div style={{ background: "#f8fafc", borderRadius: "8px", padding: "1rem" }}>
+                <div style={{ color: "#64748b", fontSize: "0.8rem", fontWeight: 700 }}>
+                  Current cumulative GWA
                 </div>
-                <div>{getRiskBadge(prediction.risk_level)}</div>
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #f1f5f9",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "#64748b" }}>
-                  Predicted GWA
-                </div>
-                <div style={{ fontSize: "1.25rem", fontWeight: "700", color: "#0f172a", marginTop: "0.15rem" }}>
-                  {predictedGpa.toFixed(2)}
+                <div style={{ color: "#800000", fontSize: "1.8rem", fontWeight: 800 }}>
+                  {Number(prediction.current_gwa ?? prediction.current_gpa).toFixed(2)}
                 </div>
               </div>
-
-              <div
-                style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #f1f5f9",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "#64748b" }}>
-                  Confidence Score
+              <div style={{ background: "#f8fafc", borderRadius: "8px", padding: "1rem" }}>
+                <div style={{ color: "#64748b", fontSize: "0.8rem", fontWeight: 700 }}>
+                  Forecast for {prediction.target_semester
+                    ? `${prediction.target_semester} semester, ${prediction.target_school_year}`
+                    : "next term"}
                 </div>
-                <div style={{ fontSize: "1.25rem", fontWeight: "700", color: "#0f172a", marginTop: "0.15rem" }}>
-                  {prediction.confidence_score}%
+                <div style={{ color: "#800000", fontSize: "1.8rem", fontWeight: 800 }}>
+                  {Number(prediction.predicted_gwa).toFixed(2)}
                 </div>
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #f1f5f9",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "#64748b" }}>
-                  Grade Trend
-                </div>
-                <div style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a", marginTop: "0.15rem" }}>
-                  {prediction.trend > 0 ? "📉 Declining" : prediction.trend < 0 ? "📈 Improving" : "➡️ Stable"}
+                <div style={{ color: "#475569", fontSize: "0.85rem" }}>
+                  Selected model: {prediction.selected_model || "Grade-trend estimate"}
                 </div>
               </div>
             </div>
+
+            {prediction.model_predictions && (
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: "0.6rem", color: "#334155" }}>
+                  Results from all three models
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: "10px",
+                  }}
+                >
+                  {Object.entries(prediction.model_predictions).map(([modelName, value]) => (
+                    <div
+                      key={modelName}
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        padding: "0.85rem 1rem",
+                        background: modelName === prediction.selected_model ? "#fff7ed" : "#ffffff",
+                      }}
+                    >
+                      <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#475569" }}>
+                        {modelName}{modelName === prediction.selected_model ? " (selected)" : ""}
+                      </div>
+                      <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#800000" }}>
+                        {Number(value).toFixed(2)}
+                      </div>
+                      {prediction.evaluation_metrics?.[modelName]?.mae != null && (
+                        <div style={{ color: "#64748b", fontSize: "0.75rem" }}>
+                          Validation MAE: {Number(prediction.evaluation_metrics[modelName].mae).toFixed(4)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {prediction.message && (
               <p
@@ -406,9 +197,19 @@ const StudentPrediction = () => {
                   marginTop: "0.85rem",
                   marginBottom: 0,
                   lineHeight: "1.4",
+                  padding: "0.75rem",
+                  background: "#fffbeb",
+                  borderRadius: "8px",
                 }}
               >
                 {prediction.message}
+              </p>
+            )}
+            {!prediction.message && (
+              <p style={{ color: "#64748b", fontSize: "0.82rem", marginBottom: 0 }}>
+                {prediction.prototype_only
+                  ? "Prototype forecast based on recorded grades and published curriculum units. It is an estimate, not a guarantee."
+                  : `Calculated from ${prediction.grade_count} recorded numeric grades.`}
               </p>
             )}
           </div>

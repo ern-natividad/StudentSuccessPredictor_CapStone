@@ -54,20 +54,24 @@ export const fetchEarlyAlerts = async () => {
 
   const predictionsByUserId = {};
   if (isBackendAuthEnabled() && records.length > 0) {
-    await Promise.all(
-      records.map(async (student) => {
-        const userObj = getUserFromJoin(student.users);
-        const userId = userObj?.id || student.user_id;
-        if (!userId) return;
-
-        try {
-          const result = await api.getStudentPrediction(userId);
-          predictionsByUserId[userId] = result.prediction || null;
-        } catch {
-          predictionsByUserId[userId] = null;
-        }
-      }),
-    );
+    const userIds = [
+      ...new Set(
+        records
+          .map((student) => {
+            const userObj = getUserFromJoin(student.users);
+            return userObj?.id || student.user_id;
+          })
+          .filter(Boolean),
+      ),
+    ];
+    try {
+      const result = await api.getStudentPredictions(userIds);
+      for (const entry of result.predictions || []) {
+        predictionsByUserId[entry.user_id] = entry.prediction || null;
+      }
+    } catch (error) {
+      console.error("Unable to load early-alert student predictions:", error);
+    }
   }
 
   return records

@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabaseClient.js";
@@ -24,8 +24,12 @@ import {
 import { HttpError } from "../middleware/errorHandler.js";
 import { sendPasswordResetOtpEmail } from "./emailService.js";
 
-// Clear state-free backend cache for transient verification tokens
-const otpCache = new Map();
+const PASSWORD_RESET_OTP_TTL_MS = 10 * 60 * 1000;
+const PASSWORD_RESET_OTP_MAX_ATTEMPTS = 5;
+const PASSWORD_RESET_REQUEST_MESSAGE =
+  "If an account exists for this email, a verification code will be sent.";
+const INVALID_PASSWORD_RESET_CODE_MESSAGE =
+  "The verification code is invalid or expired. Please check the code or request a new one.";
 
 const GENERIC_AUTH_ERROR = "Invalid email or password.";
 
@@ -464,6 +468,11 @@ export const recordSessionTimeout = async (authUser, meta = {}) => {
 
 export const hashPassword = (plain) => bcrypt.hash(plain, 12);
 
+const hashPasswordResetValue = (purpose, value) =>
+  createHmac("sha256", env.jwtSecret)
+    .update(`password-reset:${purpose}:${value}`)
+    .digest("hex");
+
 const PASSWORD_RULES = [
   {
     test: (value) => value.length >= 8,
@@ -597,22 +606,39 @@ export const initiatePasswordReset = async (email, meta = {}) => {
   const user = await findUserByEmail(normalizedEmail);
 
   if (!user) {
-    throw new HttpError(404, "Email address not found.");
+    return { success: true, message: PASSWORD_RESET_REQUEST_MESSAGE };
   }
 
-  // 1. Generate a local 6-digit code
-  const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const generatedCode = randomInt(100000, 1000000).toString();
 
-  // 2. Store code in server memory cache with a 10-minute expiration
-  otpCache.set(normalizedEmail, {
-    code: generatedCode,
-    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-  });
+  const emailHash = hashPasswordResetValue("email", normalizedEmail);
+  const codeHash = hashPasswordResetValue("code", generatedCode);
+  const { error: challengeError } = await supabase
+    .from("password_reset_challenges")
+    .upsert(
+      {
+        email_hash: emailHash,
+        code_hash: codeHash,
+        expires_at: new Date(Date.now() + PASSWORD_RESET_OTP_TTL_MS).toISOString(),
+        failed_attempts: 0,
+        verified_user_id: null,
+        verified_at: null,
+      },
+      { onConflict: "email_hash" },
+    );
+  if (challengeError) throw challengeError;
 
-  // 3. Send the verification code through Brevo Transactional Email.
   try {
     await sendPasswordResetOtpEmail({ to: normalizedEmail, code: generatedCode });
   } catch (mailError) {
+    const { error: deleteError } = await supabase
+      .from("password_reset_challenges")
+      .delete()
+      .eq("email_hash", emailHash)
+      .eq("code_hash", codeHash);
+    if (deleteError) {
+      console.error("Unable to remove unsent password reset challenge:", deleteError);
+    }
     console.error("Mail Dispatch Failure:", mailError);
     throw new HttpError(
       500,
@@ -622,47 +648,36 @@ export const initiatePasswordReset = async (email, meta = {}) => {
 
   return {
     success: true,
-    message: "6-digit verification code sent to email.",
+    message: PASSWORD_RESET_REQUEST_MESSAGE,
   };
 };
 
 /**
- * Verifies the manually keyed 6-digit OTP code text against server memory cache.
+ * Verifies the manually keyed 6-digit OTP code against the shared database challenge.
  */
 export const verifyPasswordOtp = async (email, code, meta = {}) => {
   const normalizedEmail = email.trim().toLowerCase();
-  const cachedData = otpCache.get(normalizedEmail);
-
-  if (!cachedData) {
-    throw new HttpError(
-      400,
-      "No active verification request found for this email.",
-    );
+  if (!/^\d{6}$/.test(String(code))) {
+    throw new HttpError(400, INVALID_PASSWORD_RESET_CODE_MESSAGE);
   }
-
-  if (Date.now() > cachedData.expiresAt) {
-    otpCache.delete(normalizedEmail);
-    throw new HttpError(
-      400,
-      "Your verification code has expired. Please request a new one.",
-    );
-  }
-
-  if (cachedData.code !== code.trim()) {
-    throw new HttpError(400, "Invalid or incorrect verification code.");
-  }
-
   const user = await findUserByEmail(normalizedEmail);
   if (!user) {
-    throw new HttpError(404, "Target account identifier no longer exists.");
+    throw new HttpError(400, INVALID_PASSWORD_RESET_CODE_MESSAGE);
   }
 
-  otpCache.set(normalizedEmail, {
-    ...cachedData,
-    verified: true,
-    verifiedUserId: user.id,
-    verifiedAt: Date.now(),
-  });
+  const { data: verified, error: verifyError } = await supabase.rpc(
+    "verify_password_reset_challenge",
+    {
+      p_email_hash: hashPasswordResetValue("email", normalizedEmail),
+      p_code_hash: hashPasswordResetValue("code", String(code)),
+      p_user_id: user.id,
+      p_max_attempts: PASSWORD_RESET_OTP_MAX_ATTEMPTS,
+    },
+  );
+  if (verifyError) throw verifyError;
+  if (!verified) {
+    throw new HttpError(400, INVALID_PASSWORD_RESET_CODE_MESSAGE);
+  }
 
   return {
     success: true,
@@ -682,15 +697,22 @@ export const completePasswordReset = async (userId, newPassword, meta = {}, emai
     );
   }
 
-  const normalizedEmail = email?.trim().toLowerCase();
-  if (normalizedEmail) {
-    const cachedData = otpCache.get(normalizedEmail);
-    if (!cachedData?.verified || cachedData.verifiedUserId !== userId) {
-      throw new HttpError(
-        400,
-        "Please verify your email code before resetting your password.",
-      );
-    }
+  const normalizedEmail =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!normalizedEmail) {
+    throw new HttpError(400, "Email address is required to complete password reset.");
+  }
+  assertValidPassword(newPassword);
+  const { data: consumed, error: consumeError } = await supabase.rpc(
+    "consume_password_reset_challenge",
+    {
+      p_email_hash: hashPasswordResetValue("email", normalizedEmail),
+      p_user_id: userId,
+    },
+  );
+  if (consumeError) throw consumeError;
+  if (!consumed) {
+    throw new HttpError(400, "Please verify your email code before resetting your password.");
   }
 
   const { data: user, error: userError } = await supabase
@@ -702,8 +724,6 @@ export const completePasswordReset = async (userId, newPassword, meta = {}, emai
   if (userError || !user) {
     throw new HttpError(404, "Target account identifier not found.");
   }
-
-  assertValidPassword(newPassword);
 
   const { error: authError } = await supabase.auth.admin.updateUserById(
     userId,
@@ -723,10 +743,6 @@ export const completePasswordReset = async (userId, newPassword, meta = {}, emai
 
   if (dbError) {
     throw dbError;
-  }
-
-  if (normalizedEmail) {
-    otpCache.delete(normalizedEmail);
   }
 
   await recordAuditLog({

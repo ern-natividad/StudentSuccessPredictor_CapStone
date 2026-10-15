@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -115,18 +115,21 @@ const DashboardOverview = () => {
           rows = [];
         }
 
-        // Always load live predictions for risk — same source as Students List / Early Alerts.
-        const predictionEntries = await Promise.all(
-          visibleStudents.map(async (student) => {
-            try {
-              const result = await api.getStudentPrediction(student.user_id);
-              return [student.user_id, result.prediction || null];
-            } catch {
-              return [student.user_id, null];
-            }
-          }),
-        );
-        const livePredictions = Object.fromEntries(predictionEntries);
+        // Load the cohort forecasts in one request, matching the Students List.
+        let livePredictions = {};
+        try {
+          const result = await api.getStudentPredictions(
+            visibleStudents.map((student) => student.user_id),
+          );
+          livePredictions = Object.fromEntries(
+            (result.predictions || []).map(({ user_id, prediction }) => [
+              user_id,
+              prediction || null,
+            ]),
+          );
+        } catch (error) {
+          console.error("Unable to load dashboard student predictions:", error);
+        }
 
         if (rows.length === 0) {
           rows = visibleStudents

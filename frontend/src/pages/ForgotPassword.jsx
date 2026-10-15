@@ -167,8 +167,8 @@ const ForgotPassword = () => {
               <>
                 <div className={styles.fvHeading}>Forgot Password</div>
                 <div className={styles.fvSub}>
-                  Enter your registered email or username and we&apos;ll send
-                  you a verification code.
+                  Enter your email. If an account exists for it, we&apos;ll
+                  send a verification code.
                 </div>
 
                 {error && (
@@ -210,8 +210,8 @@ const ForgotPassword = () => {
               <>
                 <div className={styles.fvHeading}>Enter Verification Code</div>
                 <div className={styles.fvSub}>
-                  We sent a 6-digit code to <strong>{email}</strong>. Enter it
-                  below to continue.
+                  If an account exists for <strong>{email}</strong>, a 6-digit
+                  code was sent. Enter it below to continue.
                 </div>
 
                 {error && (
