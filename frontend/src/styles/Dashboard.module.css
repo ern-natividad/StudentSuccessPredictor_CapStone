@@ -975,6 +975,161 @@
   border-radius: 12px;
 }
 
+.studentDirectoryFilters {
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
+.studentDirectoryFiltersHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.studentDirectoryFiltersTitle {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.studentDirectoryClearButton {
+  padding: 7px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studentDirectoryClearButton:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.studentDirectoryClearButton:focus-visible,
+.studentDirectoryFilterField input:focus-visible,
+.studentDirectoryFilterField select:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+.studentDirectoryClearButton:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.studentDirectoryFilterGrid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.studentDirectoryFilterField {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.studentDirectoryFilterField input,
+.studentDirectoryFilterField select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.studentDirectoryFilterField input::placeholder {
+  color: #94a3b8;
+}
+
+.studentDirectoryEmpty {
+  padding: 32px 16px !important;
+  color: #64748b !important;
+  text-align: center;
+  font-size: 14px;
+}
+
+.adviserOverviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.adviserOverviewActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.adviserOverviewFilters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.adviserOverviewFilters .listToolbarSearch {
+  flex: 1 1 220px;
+  width: min(280px, 24vw);
+}
+
+.adviserOverviewFilters .listToolbarSelect {
+  min-width: 170px;
+}
+
+.adviserOverviewAddButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #8b0000;
+  box-shadow: 0 2px 4px rgba(139, 0, 0, 0.15);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.adviserOverviewAddButton:hover {
+  background: #700000;
+  box-shadow: 0 4px 10px rgba(139, 0, 0, 0.18);
+}
+
+.adviserOverviewAddButton:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
 .studentTable {
   min-width: 1080px;
   table-layout: fixed;
@@ -3035,6 +3190,24 @@
   .summaryValue {
     font-size: 1.35rem;
   }
+
+  .studentDirectoryFilters {
+    padding: 14px;
+  }
+
+  .studentDirectoryFiltersHeader {
+    align-items: flex-start;
+  }
+
+  .studentDirectoryFilterGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 481px) and (max-width: 900px) {
+  .studentDirectoryFilterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Disable hover-expand sidebar on touch devices */
@@ -3055,6 +3228,47 @@
     padding: 10px 0 !important;
     justify-content: center !important;
     border-left-width: 0 !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  .adviserOverviewHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .adviserOverviewActions,
+  .adviserOverviewFilters {
+    width: 100%;
+  }
+
+  .adviserOverviewFilters .listToolbarSearch {
+    width: auto;
+  }
+
+  .adviserOverviewAddButton {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .adviserOverviewActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adviserOverviewFilters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adviserOverviewFilters .listToolbarSearch,
+  .adviserOverviewFilters .listToolbarSelect {
+    width: 100%;
+  }
+
+  .adviserOverviewAddButton {
+    align-self: stretch;
   }
 }
 

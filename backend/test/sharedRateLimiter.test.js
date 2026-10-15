@@ -75,6 +75,54 @@ test("rate limit counters are shared across backend instances", async (t) => {
   assert.equal(calls[1].params.p_key_hash, calls[2].params.p_key_hash);
 });
 
+test("missing shared rate-limit RPC falls back to process-local limiting", async (t) => {
+  const [{ default: express }, { supabase }, { createSharedRateLimiter }] =
+    await Promise.all([
+      import("express"),
+      import("../src/config/supabaseClient.js"),
+      import("../src/middleware/rateLimiter.js"),
+    ]);
+  const originalRpc = supabase.rpc;
+  let rpcCalls = 0;
+  supabase.rpc = async () => {
+    rpcCalls += 1;
+    return {
+      data: null,
+      error: {
+        code: "PGRST202",
+        message: "Could not find the function in the schema cache",
+      },
+    };
+  };
+
+  const app = express();
+  app.get(
+    "/limited",
+    createSharedRateLimiter("test-auth-missing-rpc", {
+      windowMs: 60_000,
+      max: 2,
+    }),
+    (_req, res) => res.status(200).json({ ok: true }),
+  );
+  app.use((error, _req, res, _next) =>
+    res.status(error.status || 500).json({ error: error.message }),
+  );
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  t.after(async () => {
+    supabase.rpc = originalRpc;
+    await new Promise((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  });
+
+  const url = `http://127.0.0.1:${server.address().port}/limited`;
+  assert.equal((await fetch(url)).status, 200);
+  assert.equal((await fetch(url)).status, 200);
+  assert.equal((await fetch(url)).status, 429);
+  assert.equal(rpcCalls, 1);
+});
+
 test("requests fail closed when shared rate-limit storage is unavailable", async (t) => {
   const [{ default: express }, { supabase }, { createSharedRateLimiter }] =
     await Promise.all([

@@ -14,7 +14,7 @@
 
 **ALL ROLES**
 - Fix the auto increment in the preenrollmentmodule
--
+- The program filter and section in the Performance Forecasting modules, does not fetch the real program from the Students Management Page program column
 
 🟡 *In Progress*
 - 

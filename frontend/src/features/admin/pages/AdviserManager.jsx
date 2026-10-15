@@ -60,6 +60,8 @@ const AdviserManager = () => {
 
   const [selectedEditRowId, setSelectedEditRowId] = useState(null);
   const [viewSectionId, setViewSectionId] = useState(null);
+  const [adviserSearch, setAdviserSearch] = useState("");
+  const [yearAssignedFilter, setYearAssignedFilter] = useState("");
   const [editStaffId, setEditStaffId] = useState(staffMembers[0]?.id || "");
   const [editSectionIds, setEditSectionIds] = useState(["A"]);
   const [editYearAssigned, setEditYearAssigned] = useState(YEAR_LEVEL_OPTIONS[0]);
@@ -186,6 +188,36 @@ const AdviserManager = () => {
     sectionOptions,
   ]);
 
+  const yearAssignedOptions = useMemo(
+    () =>
+      [...new Set(sectionOverviewRows.map((row) => row.yearAssigned))]
+        .filter(Boolean)
+        .sort((left, right) => {
+          const leftIndex = YEAR_LEVEL_OPTIONS.indexOf(left);
+          const rightIndex = YEAR_LEVEL_OPTIONS.indexOf(right);
+          if (leftIndex >= 0 && rightIndex >= 0) return leftIndex - rightIndex;
+          if (leftIndex >= 0) return -1;
+          if (rightIndex >= 0) return 1;
+          return left.localeCompare(right);
+        }),
+    [sectionOverviewRows],
+  );
+
+  const filteredOverviewRows = useMemo(() => {
+    const searchTerm = adviserSearch.trim().toLowerCase();
+
+    return sectionOverviewRows.filter((row) => {
+      const matchesYear =
+        !yearAssignedFilter || row.yearAssigned === yearAssignedFilter;
+      const matchesSearch =
+        !searchTerm ||
+        [row.name, row.section, row.program, row.yearAssigned, row.role]
+          .some((value) => String(value || "").toLowerCase().includes(searchTerm));
+
+      return matchesYear && matchesSearch;
+    });
+  }, [adviserSearch, sectionOverviewRows, yearAssignedFilter]);
+
   const {
     currentPage,
     setCurrentPage,
@@ -193,9 +225,9 @@ const AdviserManager = () => {
     totalItems: adviserTotalItems,
     totalPages: adviserTotalPages,
     pageSize: adviserPageSize,
-  } = useListPagination(sectionOverviewRows, {
+  } = useListPagination(filteredOverviewRows, {
     pageSize: 10,
-    resetKey: `${removedRowIds.length}|${staffMembers.length}`,
+    resetKey: `${removedRowIds.length}|${staffMembers.length}|${adviserSearch}|${yearAssignedFilter}`,
   });
 
   const viewSectionStudents = useMemo(() => {
@@ -374,40 +406,40 @@ const AdviserManager = () => {
       {directoryError && <div className={styles.card}>{directoryError}</div>}
 
       <div className={styles.card}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className={styles.adviserOverviewHeader}>
           <div className={styles.cardTitle}>Section Overview</div>
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            style={{
-              padding: "10px 18px",
-              minWidth: 160,
-              background: "#8b0000",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 8,
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
-              transition: "all 0.15s ease",
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#700000")}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#8b0000")}
-          >
-            <i className="fas fa-plus" aria-hidden="true" /> Add Teacher
-          </button>
+          <div className={styles.adviserOverviewActions}>
+            <div className={styles.adviserOverviewFilters}>
+              <input
+                type="search"
+                className={styles.listToolbarSearch}
+                value={adviserSearch}
+                placeholder="Search adviser, section, program, or role..."
+                onChange={(event) => setAdviserSearch(event.target.value)}
+                aria-label="Search advisers by name, section, program, or role"
+              />
+              <select
+                className={styles.listToolbarSelect}
+                value={yearAssignedFilter}
+                onChange={(event) => setYearAssignedFilter(event.target.value)}
+                aria-label="Filter advisers by year assigned"
+              >
+                <option value="">All assigned years</option>
+                {yearAssignedOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              className={styles.adviserOverviewAddButton}
+              onClick={handleOpenAddModal}
+            >
+              <i className="fas fa-plus" aria-hidden="true" /> Add Teacher
+            </button>
+          </div>
         </div>
         <div className={commonStyles.tableWrapper} style={{ marginTop: 12, overflowX: "auto" }}>
           <table
@@ -494,10 +526,12 @@ const AdviserManager = () => {
                   </td>
                 </tr>
               ))}
-              {!directoryLoading && sectionOverviewRows.length === 0 && (
+              {!directoryLoading && filteredOverviewRows.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
-                    No adviser records displayed.
+                    {sectionOverviewRows.length === 0
+                      ? "No adviser records displayed."
+                      : "No advisers match the selected search and year filter."}
                   </td>
                 </tr>
               )}

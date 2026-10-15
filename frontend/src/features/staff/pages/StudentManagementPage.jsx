@@ -228,6 +228,12 @@ const StudentManagementPage = () => {
   }, [getStudentsForStaff, isAdmin, loggedInStaff, students]);
 
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentFilters, setStudentFilters] = useState({
+    yearLevel: "",
+    program: "",
+    section: "",
+  });
   const [importMode, setImportMode] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
@@ -372,13 +378,56 @@ const StudentManagementPage = () => {
 
   const studentTableRows = useMemo(
     () =>
-      displayStudentList.map((student, rowIndex) => ({
+      displayStudentList.map((student) => ({
         ...student,
-        rowIndex: rowIndex + 1,
         sectionName: getStudentSectionLabel(student, getSectionById),
       })),
     [displayStudentList, getSectionById],
   );
+
+  const studentFilterOptions = useMemo(() => {
+    const getUniqueValues = (values) =>
+      [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))]
+        .sort((left, right) => left.localeCompare(right));
+
+    return {
+      yearLevels: getUniqueValues(
+        studentTableRows.map((student) => student.yearLevel || student.year_level),
+      ),
+      programs: getUniqueValues(
+        studentTableRows.map((student) => student.program || student.department),
+      ),
+      sections: getUniqueValues(
+        studentTableRows.map((student) => student.sectionName),
+      ),
+    };
+  }, [studentTableRows]);
+
+  const filteredStudentRows = useMemo(() => {
+    const searchTerm = studentSearch.trim().toLowerCase();
+
+    return studentTableRows
+      .filter((student) => {
+        const yearLevel = String(
+          student.yearLevel || student.year_level || "",
+        ).trim();
+        const program = String(
+          student.program || student.department || "",
+        ).trim();
+
+        return (
+          (!studentFilters.yearLevel ||
+            yearLevel === studentFilters.yearLevel) &&
+          (!studentFilters.program || program === studentFilters.program) &&
+          (!studentFilters.section ||
+            student.sectionName === studentFilters.section) &&
+          (!searchTerm ||
+            [student.full_name, student.student_id]
+              .some((value) => String(value || "").toLowerCase().includes(searchTerm)))
+        );
+      })
+      .map((student, index) => ({ ...student, rowIndex: index + 1 }));
+  }, [studentFilters, studentSearch, studentTableRows]);
 
   const {
     currentPage,
@@ -387,9 +436,9 @@ const StudentManagementPage = () => {
     totalItems: studentTotalItems,
     totalPages: studentTotalPages,
     pageSize: studentPageSize,
-  } = useListPagination(studentTableRows, {
+  } = useListPagination(filteredStudentRows, {
     pageSize: 10,
-    resetKey: displayStudentList.length,
+    resetKey: `${studentSearch}|${studentFilters.yearLevel}|${studentFilters.program}|${studentFilters.section}|${displayStudentList.length}`,
   });
 
   const handleGradeBatchMetaChange = (field, value) => {
@@ -978,6 +1027,102 @@ const StudentManagementPage = () => {
         </div>
       )}
 
+      <section className={styles.studentDirectoryFilters} aria-label="Filter students">
+        <div className={styles.studentDirectoryFiltersHeader}>
+          <div>
+            <div className={styles.contentCardEyebrow}>Find a student</div>
+            <div className={styles.studentDirectoryFiltersTitle}>
+              Search and filter directory
+            </div>
+          </div>
+          <button
+            type="button"
+            className={styles.studentDirectoryClearButton}
+            disabled={
+              !studentSearch &&
+              !studentFilters.yearLevel &&
+              !studentFilters.program &&
+              !studentFilters.section
+            }
+            onClick={() => {
+              setStudentSearch("");
+              setStudentFilters({ yearLevel: "", program: "", section: "" });
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+        <div className={styles.studentDirectoryFilterGrid}>
+          <label className={styles.studentDirectoryFilterField}>
+            <span>Search students</span>
+            <input
+              type="search"
+              value={studentSearch}
+              placeholder="Name or student ID"
+              onChange={(event) => setStudentSearch(event.target.value)}
+              aria-label="Search students by name or student ID"
+            />
+          </label>
+          <label className={styles.studentDirectoryFilterField}>
+            <span>Year level</span>
+            <select
+              value={studentFilters.yearLevel}
+              onChange={(event) =>
+                setStudentFilters((current) => ({
+                  ...current,
+                  yearLevel: event.target.value,
+                }))
+              }
+            >
+              <option value="">All year levels</option>
+              {studentFilterOptions.yearLevels.map((yearLevel) => (
+                <option key={yearLevel} value={yearLevel}>
+                  {yearLevel}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.studentDirectoryFilterField}>
+            <span>Program</span>
+            <select
+              value={studentFilters.program}
+              onChange={(event) =>
+                setStudentFilters((current) => ({
+                  ...current,
+                  program: event.target.value,
+                }))
+              }
+            >
+              <option value="">All programs</option>
+              {studentFilterOptions.programs.map((program) => (
+                <option key={program} value={program}>
+                  {program}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.studentDirectoryFilterField}>
+            <span>Section</span>
+            <select
+              value={studentFilters.section}
+              onChange={(event) =>
+                setStudentFilters((current) => ({
+                  ...current,
+                  section: event.target.value,
+                }))
+              }
+            >
+              <option value="">All sections</option>
+              {studentFilterOptions.sections.map((section) => (
+                <option key={section} value={section}>
+                  {section}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
       <div className={styles.contentCard}>
         <div className={styles.contentCardHeader}>
           <div>
@@ -989,7 +1134,7 @@ const StudentManagementPage = () => {
             </div>
           </div>
           <div className={styles.contentCardHint}>
-            {displayStudentList.length} students visible
+            Showing {studentTotalItems} of {displayStudentList.length} students
           </div>
         </div>
 
@@ -1019,70 +1164,78 @@ const StudentManagementPage = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedStudentRows.map((row) => (
-                <tr
-                  key={row.student_id}
-                  className={commonStyles.tableRow}
-                  style={{
-                    background:
-                      row.student_id === selectedStudentId
-                        ? "#fef2f2"
-                        : "transparent",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setSelectedStudentId(row.student_id)}
-                >
-                  <td>{row.rowIndex}</td>
-                  <td>{row.student_id}</td>
-                  <td>{row.full_name}</td>
-                  <td>{row.program || "—"}</td>
-                  <td>{row.sectionName}</td>
-                  <td>{row.yearLevel}</td>
-                  <td>
-                    <div className={styles.tableActionGroup}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGradeHistoryModal(row.student_id);
-                        }}
-                        className={styles.tableActionButton}
-                        aria-label={`View grade history for ${row.full_name}`}
-                        title="View grade history"
-                      >
-                        <i className="fas fa-eye" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditStudentModal(row.student_id);
-                        }}
-                        className={styles.tableActionButton}
-                        aria-label={`Edit student info for ${row.full_name}`}
-                        title="Edit student info"
-                      >
-                        <i
-                          className="fas fa-pen-to-square"
-                          aria-hidden="true"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGradeModal(row.student_id);
-                        }}
-                        className={styles.tableActionButton}
-                        aria-label={`Add grade for ${row.full_name}`}
-                        title="Add grade"
-                      >
-                        <i className="fas fa-plus" aria-hidden="true" />
-                      </button>
-                    </div>
+              {paginatedStudentRows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className={styles.studentDirectoryEmpty}>
+                    No students match these search and filter criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedStudentRows.map((row) => (
+                  <tr
+                    key={row.student_id}
+                    className={commonStyles.tableRow}
+                    style={{
+                      background:
+                        row.student_id === selectedStudentId
+                          ? "#fef2f2"
+                          : "transparent",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setSelectedStudentId(row.student_id)}
+                  >
+                    <td>{row.rowIndex}</td>
+                    <td>{row.student_id}</td>
+                    <td>{row.full_name}</td>
+                    <td>{row.program || row.department || "—"}</td>
+                    <td>{row.sectionName}</td>
+                    <td>{row.yearLevel || row.year_level || "—"}</td>
+                    <td>
+                      <div className={styles.tableActionGroup}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openGradeHistoryModal(row.student_id);
+                          }}
+                          className={styles.tableActionButton}
+                          aria-label={`View grade history for ${row.full_name}`}
+                          title="View grade history"
+                        >
+                          <i className="fas fa-eye" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditStudentModal(row.student_id);
+                          }}
+                          className={styles.tableActionButton}
+                          aria-label={`Edit student info for ${row.full_name}`}
+                          title="Edit student info"
+                        >
+                          <i
+                            className="fas fa-pen-to-square"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openGradeModal(row.student_id);
+                          }}
+                          className={styles.tableActionButton}
+                          aria-label={`Add grade for ${row.full_name}`}
+                          title="Add grade"
+                        >
+                          <i className="fas fa-plus" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
