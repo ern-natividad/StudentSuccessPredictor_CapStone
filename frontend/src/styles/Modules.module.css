@@ -139,15 +139,114 @@
   padding-top: var(--space-xs);
 }
 
+.aiStudentPicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.aiStudentPickerLabel {
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.aiStudentSearch {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-border-neutral);
+  border-radius: 12px;
+  background: var(--color-bg-main);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.aiStudentSearch:focus-within {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px var(--color-brand-primary-light);
+}
+
+.aiStudentSearchIcon {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+.aiStudentSearchInput {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.aiStudentSearchInput::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+.aiStudentSearchInput:disabled {
+  cursor: not-allowed;
+}
+
+.aiStudentSearchClear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.aiStudentSearchClear:hover {
+  background: var(--color-brand-primary-light);
+  color: var(--color-brand-primary);
+}
+
+.aiStudentSearchClear:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.aiStudentPickerHint {
+  min-height: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
 .aiSidebarSelect {
   width: 100%;
-  margin-top: var(--space-xs);
-  padding: 0.75rem 0.9rem;
-  border-radius: 14px;
+  min-width: 0;
+  padding: 0.75rem 0.8rem;
+  border-radius: 12px;
   border: 1px solid var(--color-border-neutral);
   background: var(--color-bg-main);
   color: var(--color-text-primary);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.aiSidebarSelect:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.aiSidebarSelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .aiQuickPromptList {

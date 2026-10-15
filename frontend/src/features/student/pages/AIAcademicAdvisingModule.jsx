@@ -1,5 +1,13 @@
-import { useState, useRef, useEffect } from "react";
-import { FiCheck, FiCopy, FiEdit2, FiSend, FiSquare, FiX } from "react-icons/fi";
+import { useState, useRef, useEffect, useMemo } from "react";
+import {
+  FiCheck,
+  FiCopy,
+  FiEdit2,
+  FiSearch,
+  FiSend,
+  FiSquare,
+  FiX,
+} from "react-icons/fi";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
 import styles from "../../../styles/Modules.module.css";
@@ -61,6 +69,7 @@ const AIAcademicAdvisingModule = () => {
 
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -75,6 +84,22 @@ const AIAcademicAdvisingModule = () => {
   const chatUserId = user?.id || "anon";
   const contextKey = `${role}-${selectedStudentUserId || snapshot?.studentUserId || "self"}`;
   const canSend = !isThinking && !loading && Boolean(snapshot);
+  const filteredStudents = useMemo(() => {
+    const searchTerm = studentSearch.trim().toLowerCase();
+    if (!searchTerm) return accessibleStudents;
+
+    return accessibleStudents.filter(
+      (student) =>
+        student.full_name?.toLowerCase().includes(searchTerm) ||
+        String(student.student_id || "").toLowerCase().includes(searchTerm),
+    );
+  }, [accessibleStudents, studentSearch]);
+  const selectedStudent = accessibleStudents.find(
+    (student) => student.user_id === selectedStudentUserId,
+  );
+  const isSelectedStudentInResults = filteredStudents.some(
+    (student) => student.user_id === selectedStudentUserId,
+  );
 
   const isAbortError = (error) =>
     error?.name === "AbortError" ||
@@ -442,10 +467,40 @@ const AIAcademicAdvisingModule = () => {
           <div className={styles.aiSidebarLabel}>AI Advisor</div>
 
           {(role === "staff" || role === "admin") && (
-            <div>
-              <div className={styles.aiSidebarTitle}>Select student</div>
+            <div className={styles.aiStudentPicker}>
+              <label className={styles.aiStudentPickerLabel} htmlFor="advising-student-search">
+                Select student
+              </label>
+              <div className={styles.aiStudentSearch}>
+                <FiSearch
+                  className={styles.aiStudentSearchIcon}
+                  aria-hidden="true"
+                />
+                <input
+                  id="advising-student-search"
+                  type="text"
+                  role="searchbox"
+                  className={styles.aiStudentSearchInput}
+                  placeholder="Search name or student ID"
+                  aria-label="Search students by name or student ID"
+                  value={studentSearch}
+                  disabled={loading || accessibleStudents.length === 0}
+                  onChange={(event) => setStudentSearch(event.target.value)}
+                />
+                {studentSearch && (
+                  <button
+                    type="button"
+                    className={styles.aiStudentSearchClear}
+                    aria-label="Clear student search"
+                    onClick={() => setStudentSearch("")}
+                  >
+                    <FiX aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               <select
                 className={styles.aiSidebarSelect}
+                aria-label="Select a student for advising"
                 value={selectedStudentUserId}
                 disabled={loading || accessibleStudents.length === 0}
                 onChange={(event) => setSelectedStudentUserId(event.target.value)}
@@ -453,13 +508,25 @@ const AIAcademicAdvisingModule = () => {
                 {accessibleStudents.length === 0 ? (
                   <option value="">No students available</option>
                 ) : (
-                  accessibleStudents.map((student) => (
-                    <option key={student.user_id} value={student.user_id}>
-                      {student.full_name} ({student.student_id})
-                    </option>
-                  ))
+                  <>
+                    {selectedStudent && !isSelectedStudentInResults && (
+                      <option value={selectedStudent.user_id}>
+                        {selectedStudent.full_name} ({selectedStudent.student_id}) - Current selection
+                      </option>
+                    )}
+                    {filteredStudents.map((student) => (
+                      <option key={student.user_id} value={student.user_id}>
+                        {student.full_name} ({student.student_id})
+                      </option>
+                    ))}
+                  </>
                 )}
               </select>
+              <div className={styles.aiStudentPickerHint} aria-live="polite">
+                {filteredStudents.length === 0
+                  ? "No matching students. Your current selection is unchanged."
+                  : `${filteredStudents.length} ${filteredStudents.length === 1 ? "student" : "students"}${studentSearch.trim() ? " found" : " available"}`}
+              </div>
             </div>
           )}
 
