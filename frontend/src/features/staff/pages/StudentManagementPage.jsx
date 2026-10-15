@@ -49,7 +49,7 @@ import StudentAccountUploader from "../components/StudentAccountUploader";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
-const REMARKS_OPTIONS = ["Pass", "Fail", "INC"];
+const REMARKS_OPTIONS = ["Pass", "Fail", "INC", "AW", "UW"];
 const MAX_GRADE_ROWS = 15;
 
 const createEmptyGradeForm = () => ({
@@ -171,6 +171,8 @@ const normalizeRemarksValue = (value) => {
   if (REMARKS_OPTIONS.includes(raw)) return raw;
   const lower = raw.toLowerCase();
   if (lower.includes("fail")) return "Fail";
+  if (lower === "aw" || lower.includes("authorized withdrawal")) return "AW";
+  if (lower === "uw" || lower.includes("unauthorized withdrawal")) return "UW";
   if (lower === "inc" || lower.includes("incomplete")) return "INC";
   if (lower.includes("pass")) return "Pass";
   return "Pass";
@@ -2184,7 +2186,7 @@ const StudentManagementPage = () => {
                   }}
                 />
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Auto-set from grade: 3 and below = Pass, INC = INC, 5 = Fail.
+                  Auto-set from grade: 3 and below = Pass, INC stays INC, AW/UW stay as withdrawal statuses, 5 = Fail.
                 </p>
               </div>
 

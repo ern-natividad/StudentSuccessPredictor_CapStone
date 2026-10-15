@@ -13,6 +13,7 @@ import { getPublishedCurricula } from "../../../services/curriculumService";
 import { getUserDirectory } from "../../../services/userDirectory";
 import { useToast } from "../../../components/Common/Toast";
 import { normalizeSemesterCode } from "../../../utils/gradeSemesterUtils";
+import { findCourseMatches } from "../../../utils/courseImportUtils";
 import { normalizeGradeValue, remarksFromGrade } from "../../../utils/gradeValueUtils";
 import styles from "../../../styles/Dashboard.module.css";
 
@@ -26,6 +27,8 @@ const HEADER_ALIASES = {
   cohortstartyear: "cohort_start_year",
   studentname: "student_name",
   fullname: "student_name",
+  firstname: "first_name",
+  lastname: "last_name",
 };
 
 const normalizeHeader = (value) =>
@@ -38,12 +41,6 @@ const normalizeIdentifier = (value) =>
   String(value ?? "")
     .trim()
     .toLowerCase();
-
-const normalizeCourseKey = (value) =>
-  String(value ?? "")
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
 
 const readCohortStartYear = (value) => {
   const text = String(value ?? "").trim();
@@ -85,20 +82,6 @@ const findStudent = (identifier, header, studentById) => {
   return candidateIds;
 };
 
-const findCourseMatches = (header, courses) => {
-  const headerKey = normalizeCourseKey(header);
-  if (!headerKey) return [];
-  return courses.filter((course) => {
-    const codeKey = normalizeCourseKey(course.code);
-    const titleKey = normalizeCourseKey(course.title);
-    return (
-      headerKey === codeKey ||
-      headerKey === titleKey ||
-      (codeKey.length >= 3 && headerKey.startsWith(codeKey))
-    );
-  });
-};
-
 const analyzeImport = (
   sheetRows,
   directory,
@@ -121,10 +104,22 @@ const analyzeImport = (
   const ignoredColumns = new Set(
     headers
       .map(({ key }, index) =>
-        ["student_id", "user_id", "cohort_start_year", "student_name"].includes(key)
-          ? index
-          : -1,
-      )
+      [
+        "student_id",
+        "user_id",
+        "cohort_start_year",
+        "student_name",
+        "first_name",
+        "last_name",
+        "email",
+        "program",
+        "department",
+        "section",
+        "year_level",
+      ].includes(key)
+        ? index
+        : -1,
+    )
       .filter((index) => index >= 0),
   );
 
@@ -259,13 +254,18 @@ const analyzeImport = (
     student.curriculum = curriculum.title;
     student.curriculumId = curriculum.id;
     const courses = Array.isArray(curriculum.courses) ? curriculum.courses : [];
+    const spreadsheetHeaders = headers.map(({ original }) => original);
 
     headers.forEach(({ original }, columnIndex) => {
       if (ignoredColumns.has(columnIndex)) return;
       const rawGrade = String(row?.[columnIndex] ?? "").trim();
       if (!rawGrade) return;
 
-      const matchingCourses = findCourseMatches(original, courses);
+      const matchingCourses = findCourseMatches(
+        original,
+        courses,
+        spreadsheetHeaders,
+      );
       if (matchingCourses.length === 0) {
         const message = `Row ${rowNumber}: "${original}" is not a course in ${curriculum.title}.`;
         student.issues.push(message);

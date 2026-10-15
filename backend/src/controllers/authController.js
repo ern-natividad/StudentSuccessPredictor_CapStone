@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { normalizeGradeValue } from "../utils/gradeValueUtils.js";
 import { randomUUID } from "node:crypto";
 import { getRequestMeta } from "../utils/requestMeta.js";
+import { assertStaffCanAccessStudents } from "../services/staffStudentAccessService.js";
 import { supabase } from '../config/supabaseClient.js';
 import {
   loginWithPassword,
@@ -148,15 +150,21 @@ export const verifyForgotPasswordCode = asyncHandler(async (req, res) => {
 export const forgotPasswordReset = asyncHandler(async (req, res) => {
   const { userId, email, identifier, newPassword } = req.body;
   const meta = getRequestMeta(req);
+  const resetEmail = email || identifier;
 
-  if (!newPassword) {
+  if (typeof resetEmail !== "string" || !resetEmail.trim()) {
+    return res.status(400).json({
+      error: "Email address is required to verify the password reset request.",
+    });
+  }
+  if (typeof newPassword !== "string" || !newPassword) {
     return res.status(400).json({ error: "New password is required." });
   }
 
   let targetId = userId;
 
-  if (!targetId && (email || identifier)) {
-    const fallbackEmail = (email || identifier).trim().toLowerCase();
+  if (!targetId) {
+    const fallbackEmail = resetEmail.trim().toLowerCase();
 
     const { data: foundUser, error: fetchError } = await supabase
       .from("users")
@@ -200,7 +208,7 @@ export const forgotPasswordReset = asyncHandler(async (req, res) => {
     targetId,
     newPassword,
     meta,
-    email || identifier,
+    resetEmail,
   );
 
   return res.status(200).json({
@@ -295,24 +303,16 @@ export const addStudentGrade = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { gradeRecord } = req.body;
   const subject = gradeRecord?.subject?.trim();
-  const rawGrade = String(gradeRecord?.grade ?? "")
-    .trim()
-    .toUpperCase();
-  const isInc = rawGrade === "INC";
-  const allowedNumeric = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5];
-  const numeric = Number(rawGrade);
-  const matched = allowedNumeric.find(
-    (g) => Number.isFinite(numeric) && Math.abs(g - numeric) < 0.001,
-  );
-  const grade = isInc ? "INC" : matched !== undefined ? String(matched) : null;
+  const grade = normalizeGradeValue(gradeRecord?.grade);
 
   if (!subject || grade === null) {
     return res.status(400).json({
       error:
-        "A subject and a grade of 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5 are required.",
+        "A subject and a valid grade are required. Grades may be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5, INC, AW, UW, or INC (Completed: [final grade]).",
     });
   }
 
+  await assertStaffCanAccessStudents(req.user, [id]);
   const { data: student, error: fetchError } = await supabase
     .from("users")
     .select("id, role, grade_records")

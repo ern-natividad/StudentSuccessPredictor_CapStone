@@ -1,35 +1,19 @@
 import { supabase } from "../config/supabaseClient.js";
 import { env } from "../config/env.js";
 import { HttpError } from "../middleware/errorHandler.js";
+import { assertStaffCanAccessStudents } from "../services/staffStudentAccessService.js";
+import { normalizeGradeValue } from "../utils/gradeValueUtils.js";
 
 const GRADE_SELECT_COLUMNS =
   "id, user_id, subject_code, subject_name, semester, school_year, grade, remarks, created_at";
 
 const parseGrade = (value) => {
-  const raw = String(value ?? "")
-    .trim()
-    .toUpperCase();
-
-  if (raw === "INC") return "INC";
-
-  const allowed = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5];
-  const numeric = Number(raw);
-  if (!Number.isFinite(numeric)) {
-    throw new HttpError(
-      400,
-      "Grade must be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5.",
-    );
-  }
-
-  const matched = allowed.find((grade) => Math.abs(grade - numeric) < 0.001);
-  if (matched === undefined) {
-    throw new HttpError(
-      400,
-      "Grade must be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, INC, or 5.",
-    );
-  }
-
-  return String(matched);
+  const normalized = normalizeGradeValue(value);
+  if (normalized) return normalized;
+  throw new HttpError(
+    400,
+    "Grade must be 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 5, INC, AW, or UW. Completed INC values must include an allowed final grade.",
+  );
 };
 
 const normalizeSemester = (value) => {
@@ -110,7 +94,7 @@ const validateImportRow = (row, index) => {
 const requestPredictions = async (userIds) => {
   if (!env.predictionServiceUrl) return { requested: false };
 
-  const response = await fetch(`${env.predictionServiceUrl.replace(/\/$/, "")}/predict`, {
+  const response = await fetch(`${env.predictionServiceUrl.replace(/\/$/, "")}/forecast`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -185,6 +169,7 @@ export const importStudentGrades = async (req, res) => {
 
   const rows = grades.map(validateImportRow);
   const userIds = [...new Set(rows.map((row) => row.user_id))];
+  await assertStaffCanAccessStudents(req.user, userIds);
   const { data: students, error: studentError } = await supabase
     .from("users")
     .select("id, role")
@@ -215,6 +200,7 @@ export const getStudentGrades = async (req, res) => {
   if (req.user.role === "student" && req.user.sub !== userId) {
     throw new HttpError(403, "You can only view your own grades.");
   }
+  await assertStaffCanAccessStudents(req.user, [userId]);
 
   const { data, error } = await supabase
     .from("student_grades")
@@ -229,6 +215,7 @@ export const createStudentGrade = async (req, res) => {
   const { user_id: userId } = req.body;
   if (!userId) throw new HttpError(400, "Student user_id is required.");
   const grade = validateGradePayload(req.body);
+  await assertStaffCanAccessStudents(req.user, [userId]);
 
   const { data: student, error: studentError } = await supabase
     .from("users")
@@ -269,6 +256,7 @@ export const createStudentGradesBulk = async (req, res) => {
   if (grades.length > 20) {
     throw new HttpError(400, "You can add at most 20 grades at once.");
   }
+  await assertStaffCanAccessStudents(req.user, [userId]);
 
   const { data: student, error: studentError } = await supabase
     .from("users")
@@ -314,6 +302,15 @@ export const createStudentGradesBulk = async (req, res) => {
 
 export const updateStudentGrade = async (req, res) => {
   const grade = validateGradePayload(req.body);
+  const { data: existingGrade, error: existingGradeError } = await supabase
+    .from("student_grades")
+    .select("user_id")
+    .eq("id", req.params.id)
+    .maybeSingle();
+  if (existingGradeError) throw existingGradeError;
+  if (!existingGrade) throw new HttpError(404, "Grade record not found.");
+  await assertStaffCanAccessStudents(req.user, [existingGrade.user_id]);
+
   const updateRow = {
     subject_code: grade.subject_code,
     subject_name: grade.subject_name,
@@ -346,6 +343,15 @@ export const getMyGrades = async (req, res) => {
 };
 
 export const deleteStudentGrade = async (req, res) => {
+  const { data: existingGrade, error: existingGradeError } = await supabase
+    .from("student_grades")
+    .select("user_id")
+    .eq("id", req.params.id)
+    .maybeSingle();
+  if (existingGradeError) throw existingGradeError;
+  if (!existingGrade) throw new HttpError(404, "Grade record not found.");
+  await assertStaffCanAccessStudents(req.user, [existingGrade.user_id]);
+
   const { data, error } = await supabase
     .from("student_grades")
     .delete()

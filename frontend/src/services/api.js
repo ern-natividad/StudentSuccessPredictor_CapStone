@@ -184,6 +184,25 @@ export const api = {
 
   getMyPrediction: () => request("/predictions/me"),
   getStudentPrediction: (studentId) => request(`/predictions/${studentId}`),
+  getStudentPredictions: async (userIds) => {
+    const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
+    const batches = [];
+    for (let start = 0; start < uniqueUserIds.length; start += 5000) {
+      batches.push(uniqueUserIds.slice(start, start + 5000));
+    }
+    const responses = await Promise.all(
+      batches.map((user_ids) =>
+        request("/predictions/bulk", {
+          method: "POST",
+          body: JSON.stringify({ user_ids }),
+        }),
+      ),
+    );
+    return {
+      predictions: responses.flatMap((response) => response.predictions || []),
+    };
+  },
+  getPredictionModelInfo: () => request("/predictions/models"),
 
   getAcademicPerformanceForecasts: ({
     academicYear = "",

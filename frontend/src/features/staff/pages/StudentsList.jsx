@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useListPagination } from "../../../hooks/useListPagination";
@@ -30,6 +30,7 @@ const StudentsList = () => {
   const [riskLevel, setRiskLevel] = useState("");
   const [predictionsByUserId, setPredictionsByUserId] = useState({});
   const [predictionsLoading, setPredictionsLoading] = useState(false);
+  const [predictionsError, setPredictionsError] = useState("");
 
   const isAdmin = user?.role === "admin";
 
@@ -65,21 +66,29 @@ const StudentsList = () => {
       }
 
       setPredictionsLoading(true);
+      setPredictionsError("");
 
       try {
-        const results = await Promise.all(
-          visibleStudents.map(async (student) => {
-            try {
-              const result = await api.getStudentPrediction(student.user_id);
-              return [student.user_id, result.prediction || null];
-            } catch {
-              return [student.user_id, null];
-            }
-          }),
+        const result = await api.getStudentPredictions(
+          visibleStudents.map((student) => student.user_id),
         );
-
         if (isMounted) {
-          setPredictionsByUserId(Object.fromEntries(results));
+          setPredictionsByUserId(
+            Object.fromEntries(
+              (result.predictions || []).map(({ user_id, prediction }) => [
+                user_id,
+                prediction || null,
+              ]),
+            ),
+          );
+        }
+      } catch (requestError) {
+        console.error("Unable to load student predictions:", requestError);
+        if (isMounted) {
+          setPredictionsByUserId({});
+          setPredictionsError(
+            requestError.message || "Unable to load student predictions.",
+          );
         }
       } finally {
         if (isMounted) {
@@ -102,10 +111,14 @@ const StudentsList = () => {
 
         return {
           ...student,
-          current_gpa: prediction?.current_gpa ?? null,
-          predicted_gpa: prediction?.predicted_gpa ?? null,
-          confidence_score: prediction?.confidence_score ?? null,
-          risk_level: prediction?.risk_level || student.risk_level || "Low",
+          current_gpa:
+            prediction?.current_gpa ?? prediction?.current_gwa ?? null,
+          predicted_gpa:
+            prediction?.predicted_gpa ?? prediction?.predicted_gwa ?? null,
+          selected_model: prediction?.selected_model ?? null,
+          method: prediction?.method ?? null,
+          risk_level:
+            prediction?.risk_level || student.risk_level || "Not available",
         };
       }),
     [visibleStudents, predictionsByUserId],
@@ -181,7 +194,7 @@ const StudentsList = () => {
           { header: "Year Level", width: 12, align: "center" },
           { header: "Current GPA", width: 13, align: "center" },
           { header: "Predicted GPA", width: 14, align: "center" },
-          { header: "Confidence", width: 12, align: "center" },
+          { header: "Forecast Model", width: 18, align: "center" },
           { header: "Risk Level", width: 12, align: "center" },
         ],
         rows: filteredStudents.map((student) => [
@@ -194,9 +207,8 @@ const StudentsList = () => {
           student.predicted_gpa == null
             ? ""
             : Number(student.predicted_gpa).toFixed(2),
-          student.confidence_score == null
-            ? ""
-            : `${Number(student.confidence_score)}%`,
+          student.selected_model ||
+            (student.method === "grade-trend" ? "Grade-trend estimate" : ""),
           student.risk_level || "Low",
         ]),
       });
@@ -223,6 +235,7 @@ const StudentsList = () => {
       </div>
 
       {directoryError && <div className={styles.card}>{directoryError}</div>}
+      {predictionsError && <div className={styles.card}>{predictionsError}</div>}
 
       <div className={styles.card}>
         <div className={styles.cardTitle}>Statistics</div>
@@ -310,13 +323,13 @@ const StudentsList = () => {
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Year</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Current GPA</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "13%" }}>Predicted GPA</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Confidence</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Forecast Model</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Risk Level</th>
               </tr>
             </thead>
             <tbody>
               {paginatedStudents.map((student) => {
-                const riskKey = (student.risk_level || "low").toLowerCase();
+                const riskKey = (student.risk_level || "").toLowerCase();
                 return (
                   <tr
                     key={student.student_id}
@@ -339,9 +352,8 @@ const StudentsList = () => {
                       {formatMetric(student.predicted_gpa)}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                      {student.confidence_score == null
-                        ? "—"
-                        : `${Number(student.confidence_score)}%`}
+                      {student.selected_model ||
+                        (student.method === "grade-trend" ? "Grade-trend" : "—")}
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <span
@@ -350,7 +362,7 @@ const StudentsList = () => {
                         }`}
                         style={{ display: "inline-block", textAlign: "center" }}
                       >
-                        {student.risk_level || "Low"}
+                        {student.risk_level || "Not available"}
                       </span>
                     </td>
                   </tr>
