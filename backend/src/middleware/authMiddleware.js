@@ -17,6 +17,23 @@ export const requireAuth = (req, res, next) => {
   }
 };
 
+export const optionalAuth = (req, res, next) => {
+  const header = req.headers.authorization || "";
+  if (!header) return next();
+
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) {
+    return next(new HttpError(401, "Invalid authorization header."));
+  }
+
+  try {
+    req.user = verifyToken(token);
+    return next();
+  } catch {
+    return next(new HttpError(401, "Invalid or expired session."));
+  }
+};
+
 /** Restricts an endpoint to specific roles. Must run after requireAuth. */
 export const requireRole = (...roles) => (req, res, next) => {
   if (!req.user || !roles.includes(req.user.role)) {

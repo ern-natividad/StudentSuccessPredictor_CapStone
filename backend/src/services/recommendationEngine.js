@@ -5,111 +5,6 @@ import {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-/**
- * Computes the weighted CET subtest correlation score for a single program (0–100).
- */
-export const computeProgramSubtestScore = (cetScores, weights) => {
-  const entries = Object.entries(weights);
-  if (entries.length === 0) return 0;
-
-  const score = entries.reduce(
-    (total, [subtest, weight]) => total + (Number(cetScores[subtest]) || 0) * weight,
-    0,
-  );
-
-  return clamp(Math.round(score), 0, 100);
-};
-
-/**
- * Academic foundation index: GWA, EAT, and screening with optional STEM strand bonus.
- */
-export const computeAcademicIndex = ({ gwa, eatScore, screeningScore, strand }) => {
-  const academicBase =
-    Number(gwa) * 0.4 + Number(eatScore) * 0.35 + Number(screeningScore) * 0.25;
-
-  const strandBonus = String(strand || "").trim().toUpperCase() === "STEM" ? 5 : 0;
-
-  return clamp(Math.round(academicBase + strandBonus), 0, 100);
-};
-
-/**
- * Leadership role bonus (percentage points added to non-academic score).
- */
-const computeLeadershipBonus = (leadershipRole = "") => {
-  const role = leadershipRole.toLowerCase();
-
-  if (role.includes("president") || role.includes("student head") || role.includes("head")) {
-    return 5;
-  }
-  if (role.includes("officer") || role.includes("vice")) {
-    return 3;
-  }
-  if (role.includes("committee") || role.includes("member")) {
-    return 1;
-  }
-
-  return 0;
-};
-
-/**
- * Extracurricular relevance bonus.
- */
-const computeExtracurricularBonus = (extracurriculars = "") => {
-  const activity = extracurriculars.toLowerCase();
-
-  if (
-    activity.includes("robotics") ||
-    activity.includes("science") ||
-    activity.includes("math club")
-  ) {
-    return 5;
-  }
-  if (activity.includes("student council") || activity.includes("council")) {
-    return 3;
-  }
-
-  return 0;
-};
-
-/**
- * Special skills keyword match bonus against program-relevant and global keywords.
- */
-const computeSkillsBonus = (specialSkills = "", programSkillKeywords = []) => {
-  const skills = specialSkills.toLowerCase();
-  const globalKeywords = ["cad", "python", "electronics", "coding", "programming"];
-  const keywords = [...new Set([...globalKeywords, ...programSkillKeywords])];
-
-  const hasMatch = keywords.some((keyword) => skills.includes(keyword));
-  return hasMatch ? 5 : 0;
-};
-
-/**
- * Non-academic alignment score on a 0–100 scale (15% weight in final formula).
- */
-export const computeNonAcademicScore = (nonAcademic = {}, programSkillKeywords = []) => {
-  const baseline = 55;
-  const bonus =
-    computeLeadershipBonus(nonAcademic.leadershipRole) +
-    computeExtracurricularBonus(nonAcademic.extracurriculars) +
-    computeSkillsBonus(nonAcademic.specialSkills, programSkillKeywords);
-
-  return clamp(baseline + bonus, 0, 100);
-};
-
-/**
- * Final combined confidence using the specification weighting model.
- */
-export const computeMatchConfidence = (
-  programSubtestScore,
-  academicIndex,
-  nonAcademicScore,
-) =>
-  clamp(
-    Math.round(programSubtestScore * 0.6 + academicIndex * 0.25 + nonAcademicScore * 0.15),
-    0,
-    99,
-  );
-
 export const mapConfidenceToStatus = (confidence) => {
   if (confidence >= 85) return RECOMMENDATION_STATUSES.STRONGLY_RECOMMENDED;
   if (confidence >= 70) return RECOMMENDATION_STATUSES.RECOMMENDED_WITH_ADVISING;
@@ -117,9 +12,37 @@ export const mapConfidenceToStatus = (confidence) => {
 };
 
 export const computeOverallCet = (cetScores) => {
-  const values = Object.values(cetScores).map(Number).filter(Number.isFinite);
+  const values = [
+    cetScores.math,
+    cetScores.science,
+    cetScores.english,
+    cetScores.reading,
+    cetScores.abstract,
+  ]
+    .map(Number)
+    .filter(Number.isFinite);
   if (values.length === 0) return 0;
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+};
+
+export const computeCompositeScore = (cetScores, eatScore, weights) => {
+  const scoreParts = {
+    eat: Number(eatScore),
+    math: Number(cetScores.math),
+    science: Number(cetScores.science),
+    abstract: Number(cetScores.abstract),
+  };
+  const totalWeight = Object.values(weights).reduce(
+    (total, weight) => total + weight,
+    0,
+  );
+  if (totalWeight <= 0) return 0;
+
+  const weightedScore = Object.entries(weights).reduce(
+    (total, [key, weight]) => total + scoreParts[key] * weight,
+    0,
+  );
+  return clamp(Math.round(weightedScore / totalWeight), 0, 100);
 };
 
 /**
@@ -178,49 +101,56 @@ export const buildProfileInsights = (applicant, topProgramName) => {
  * Runs the full recommendation matrix for all engineering programs.
  */
 export const generateProgramRecommendations = (applicant) => {
-  const academicIndex = computeAcademicIndex(applicant);
   const overallCET = computeOverallCet(applicant.cetScores);
 
-  const rankedPrograms = ENGINEERING_PROGRAMS.map((program) => {
-    const programSubtestScore = computeProgramSubtestScore(
+  const evaluatedPrograms = ENGINEERING_PROGRAMS.map((program) => {
+    const compositeScore = computeCompositeScore(
       applicant.cetScores,
-      program.weights,
+      applicant.eatScore,
+      program.recommendationWeights,
     );
-    const nonAcademicScore = computeNonAcademicScore(
-      applicant.nonAcademic,
-      program.skillKeywords,
-    );
-    const confidence = computeMatchConfidence(
-      programSubtestScore,
-      academicIndex,
-      nonAcademicScore,
-    );
+    const eligible = overallCET >= program.minimumCetOapr;
 
     return {
       programId: program.id,
       name: program.name,
-      confidence,
-      status: mapConfidenceToStatus(confidence),
+      confidence: compositeScore,
+      compositeScore,
+      minimumCetOapr: program.minimumCetOapr,
+      eligible,
+      status: eligible ? mapConfidenceToStatus(compositeScore) : "Not Eligible",
       breakdown: {
-        programSubtestScore,
-        academicIndex,
-        nonAcademicScore,
+        eatScore: Number(applicant.eatScore),
+        cetQuantitative: Number(applicant.cetScores.math),
+        cetScience: Number(applicant.cetScores.science),
+        cetAbstract: Number(applicant.cetScores.abstract),
+        weights: program.recommendationWeights,
       },
     };
-  }).sort((left, right) => right.confidence - left.confidence);
+  }).sort((left, right) => {
+    if (left.eligible !== right.eligible) return left.eligible ? -1 : 1;
+    return right.compositeScore - left.compositeScore;
+  });
 
-  const insights = buildProfileInsights(applicant, rankedPrograms[0]?.name);
+  const eligiblePrograms = evaluatedPrograms.filter((program) => program.eligible);
+  const recommendedProgram = eligiblePrograms[0] || null;
+  const insights = buildProfileInsights(applicant, recommendedProgram?.name);
 
   return {
     applicantId: applicant.applicantId,
     fullName: applicant.fullName,
     overallCET,
-    academicIndex,
-    programs: rankedPrograms.map(({ breakdown, ...program }) => program),
+    eatScore: Number(applicant.eatScore),
+    programs: eligiblePrograms.slice(0, 3),
+    evaluations: evaluatedPrograms,
+    recommendedProgram: recommendedProgram?.name || null,
+    recommendationStatus: recommendedProgram?.status || "No Eligible Program",
     explanation:
-      "Top engineering program recommendations are calculated by combining academic/CET subtest correlations with student background and non-academic profile metrics.",
+      "Programs are eligible when the applicant's Overall CET meets the program-specific CET-OAPR minimum. Eligible programs are ranked by their weighted composite score using EAT, CET Quantitative, CET Science, and CET Abstract scores.",
     strengths: insights.strengths,
     improvementAreas: insights.improvementAreas,
-    remarks: insights.remarks,
+    remarks: recommendedProgram
+      ? `${insights.remarks} The highest eligible composite score is ${recommendedProgram.compositeScore}% for ${recommendedProgram.name}.`
+      : `The applicant's Overall CET is ${overallCET}%, below the minimum CET-OAPR for all listed engineering programs.`,
   };
 };

@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
-import { normalizeApplicantPayload } from "../../../utils/dataNormalization";
 import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
+import { downloadRecommendationPdf } from "../../../utils/downloadRecommendationPdf";
+import { api, isBackendAuthEnabled } from "../../../services/api";
 import styles from "../../../styles/Modules.module.css";
 
 const moduleLinks = [
@@ -53,8 +54,18 @@ const PreEnrollmentModule = () => {
   const exportMenuRef = useRef(null);
   const [formData, setFormData] = useState(initialForm);
   const [recommendation, setRecommendation] = useState(null);
+  const [recommendationHistory, setRecommendationHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(
+    user?.role === "admin" && isBackendAuthEnabled(),
+  );
+  const [historyError, setHistoryError] = useState("");
+  const [isRecommending, setIsRecommending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const historyMessage =
+    user?.role === "admin" && !isBackendAuthEnabled()
+      ? "Recommendation history requires backend authentication."
+      : historyError;
 
   // Public landing entry only (`/pre-enrollment` from Home CTA).
   // Authenticated staff/admin use `/modules/pre-enrollment` and should not see this.
@@ -64,9 +75,22 @@ const PreEnrollmentModule = () => {
 
   const filteredHistory = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
-    if (!query) return [];
-    return [];
-  }, [searchTerm]);
+    return recommendationHistory
+      .map((record) => ({
+        id: record.id,
+        applicantId: record.applicant_id,
+        name: record.full_name,
+        program: record.recommended_program || "No eligible program",
+        confidence: record.composite_score,
+        status: record.status,
+      }))
+      .filter(
+        (record) =>
+          !query ||
+          record.applicantId?.toLowerCase().includes(query) ||
+          record.name?.toLowerCase().includes(query),
+      );
+  }, [recommendationHistory, searchTerm]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -82,6 +106,55 @@ const PreEnrollmentModule = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    if (!isBackendAuthEnabled()) return;
+    let cancelled = false;
+    api
+      .getProgramRecommendationHistory()
+      .then((response) => {
+        if (!cancelled) {
+          setRecommendationHistory(response.records || []);
+          setHistoryError("");
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setHistoryError(error.message || "Unable to load recommendation history.");
+          toast.error("Unable to load recommendation history.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role, toast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getNextProgramApplicantId()
+      .then(({ applicantId }) => {
+        if (!cancelled) {
+          setFormData((current) =>
+            current.applicantId ? current : { ...current, applicantId },
+          );
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          toast.error(error.message || "Unable to generate an applicant ID.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [toast]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((current) => ({
@@ -90,69 +163,70 @@ const PreEnrollmentModule = () => {
     }));
   };
 
-  const handleResetForm = () => {
-    setFormData(initialForm);
+  const handleResetForm = async () => {
     setRecommendation(null);
+    setFormData(initialForm);
+    try {
+      const { applicantId } = await api.getNextProgramApplicantId();
+      setFormData({ ...initialForm, applicantId });
+    } catch (error) {
+      toast.error(error.message || "Unable to generate an applicant ID.");
+    }
   };
 
-  const handleRecommend = () => {
-    const math = parseFloat(formData.cetMath) || 0;
-    const science = parseFloat(formData.cetScience) || 0;
-    const english = parseFloat(formData.cetEnglish) || 0;
-    const reading = parseFloat(formData.cetReading) || 0;
-    const abstract = parseFloat(formData.cetAbstract) || 0;
+  const handleRecommend = async () => {
+    if (isRecommending) return;
+    setIsRecommending(true);
 
-    // Weight correlations for engineering specializations
-    const ceScore = Math.min(
-      99,
-      Math.round(math * 0.45 + science * 0.35 + abstract * 0.2)
-    );
-    const eeScore = Math.min(
-      99,
-      Math.round(math * 0.4 + science * 0.4 + abstract * 0.2)
-    );
-    const cpeScore = Math.min(
-      99,
-      Math.round(math * 0.4 + abstract * 0.35 + science * 0.25)
-    );
-    const ieScore = Math.min(
-      99,
-      Math.round(math * 0.3 + english * 0.25 + reading * 0.2 + abstract * 0.25)
-    );
+    try {
+      const result = await api.recommendProgram({
+        applicantId: formData.applicantId,
+        fullName: formData.fullName,
+        strand: formData.strand,
+        gwa: formData.gwa,
+        cetScores: {
+          math: formData.cetMath,
+          science: formData.cetScience,
+          english: formData.cetEnglish,
+          reading: formData.cetReading,
+          abstract: formData.cetAbstract,
+        },
+        eatScore: formData.eat,
+        screeningScore: formData.screening,
+        nonAcademic: {
+          socioeconomicCategory: formData.socioeconomicCategory,
+        },
+      });
+      setRecommendation(result);
+      setFormData((current) => ({
+        ...current,
+        applicantId: result.applicantId,
+      }));
+      toast.success("Recommendation saved to history.");
+      try {
+        const { applicantId } = await api.getNextProgramApplicantId();
+        setFormData((current) => ({ ...current, applicantId }));
+      } catch (error) {
+        toast.error(
+          `Recommendation saved, but a new applicant ID could not be generated: ${error.message}`,
+        );
+      }
 
-    const programScores = [
-      { name: "BS Civil Engineering", confidence: ceScore },
-      { name: "BS Electrical Engineering", confidence: eeScore },
-      { name: "BS Computer Engineering", confidence: cpeScore },
-      { name: "BS Industrial Engineering", confidence: ieScore },
-    ].sort((a, b) => b.confidence - a.confidence);
-
-    const normalizedApplicant = normalizeApplicantPayload({
-      ...formData,
-      cet: Math.round((math + science + english + reading + abstract) / 5),
-    });
-
-    setRecommendation({
-      applicant: normalizedApplicant,
-      programs: programScores.slice(0, 3),
-      explanation:
-        "Top engineering program recommendations are calculated by combining academic/CET subtest correlations with student background and non-academic profile metrics.",
-      strengths: [
-        math >= 80 ? "High Mathematics Proficiency" : "Quantitative Aptitude",
-        science >= 80 ? "Strong Science Core" : "Scientific Literacy",
-        parseFloat(formData.attendanceRate) >= 90
-          ? "Consistent Attendance"
-          : "Academic Discipline",
-      ],
-      improvementAreas: [
-        english < 75 || reading < 75
-          ? "Technical Communication Skills"
-          : "Engineering Interview Depth",
-        "Research & Hardware Exposure",
-      ],
-      remarks:
-        "Applicant demonstrates high correlation in heavily quantitative engineering tracks alongside positive non-academic behavioral metrics.",
-    });
+      if (user?.role === "admin") {
+        try {
+          const response = await api.getProgramRecommendationHistory();
+          setRecommendationHistory(response.records || []);
+          setHistoryError("");
+        } catch (error) {
+          setHistoryError(error.message || "Unable to refresh recommendation history.");
+          toast.error("Recommendation was saved, but history could not be refreshed.");
+        }
+      }
+    } catch (error) {
+      toast.error(error.message || "Unable to generate degree recommendations.");
+    } finally {
+      setIsRecommending(false);
+    }
   };
 
   const getExportRows = () => filteredHistory;
@@ -183,14 +257,14 @@ const PreEnrollmentModule = () => {
           { header: "Applicant ID", width: 16 },
           { header: "Name", width: 26 },
           { header: "Program", width: 22 },
-          { header: "Confidence", width: 12, align: "center" },
+          { header: "Composite Score", width: 16, align: "center" },
           { header: "Status", width: 14, align: "center" },
         ],
         rows: rows.map((item) => [
-          item.id,
+          item.applicantId,
           item.name,
           item.program,
-          `${item.confidence}%`,
+          item.confidence === null ? "N/A" : `${item.confidence}%`,
           item.status,
         ]),
       });
@@ -204,12 +278,12 @@ const PreEnrollmentModule = () => {
   const handleExportPDF = () => {
     setExportMenuOpen(false);
 
-    if (getExportRows().length === 0) {
-      toast.error("No records available to export.");
-      return;
+    try {
+      downloadRecommendationPdf(getExportRows());
+      toast.success("Recommendation history downloaded as PDF.");
+    } catch (exportError) {
+      toast.error(exportError.message || "Unable to download recommendation history.");
     }
-
-    window.print();
   };
 
   const toggleExportMenu = () => {
@@ -241,8 +315,8 @@ const PreEnrollmentModule = () => {
                 className={styles.formInput}
                 name="applicantId"
                 value={formData.applicantId}
-                onChange={handleChange}
-                placeholder="e.g. APP-2026-001"
+                readOnly
+                placeholder="Generating applicant ID..."
               />
             </div>
             <div className={styles.formField}>
@@ -283,7 +357,9 @@ const PreEnrollmentModule = () => {
 
             {/* CET Subtest Components */}
             <div className={styles.formField}>
-              <label className={styles.formLabel}>CET - Mathematics</label>
+              <label className={styles.formLabel}>
+                CET - Quantitative (Mathematics)
+              </label>
               <input
                 type="number"
                 className={styles.formInput}
@@ -460,6 +536,7 @@ const PreEnrollmentModule = () => {
             <button
               className={styles.primaryButton}
               onClick={handleRecommend}
+              disabled={isRecommending}
               style={{
                 flex: 2,
                 backgroundColor: "#800000",
@@ -471,7 +548,9 @@ const PreEnrollmentModule = () => {
                 cursor: "pointer",
               }}
             >
-              Recommend Degree Programs
+              {isRecommending
+                ? "Saving Recommendation..."
+                : "Recommend Degree Programs"}
             </button>
             <button
               className={styles.secondaryButton}
@@ -505,43 +584,60 @@ const PreEnrollmentModule = () => {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
             >
-              <div className={styles.metricGrid}>
-                {recommendation.programs.map((program) => (
-                  <div
-                    key={program.name}
-                    className={styles.metricCard}
-                    style={{
-                      padding: "0.85rem",
-                      borderRadius: "8px",
-                      background: "#fafafa",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    <div
-                      className={styles.metricLabel}
-                      style={{ fontWeight: "600", fontSize: "13px" }}
-                    >
-                      {program.name}
+              <div>
+                <p className={styles.moduleSubtitle}>
+                  Overall CET-OAPR: <strong>{recommendation.overallCET}%</strong>
+                </p>
+                {recommendation.programs.length > 0 ? (
+                  <>
+                    <p className={styles.moduleSubtitle}>
+                      Recommended program: <strong>{recommendation.recommendedProgram}</strong>
+                    </p>
+                    <div className={styles.metricGrid}>
+                      {recommendation.programs.map((program) => (
+                        <div
+                          key={program.programId}
+                          className={styles.metricCard}
+                          style={{
+                            padding: "0.85rem",
+                            borderRadius: "8px",
+                            background: "#fafafa",
+                            border: "1px solid #e2e8f0",
+                          }}
+                        >
+                          <div
+                            className={styles.metricLabel}
+                            style={{ fontWeight: "600", fontSize: "13px" }}
+                          >
+                            {program.name}
+                          </div>
+                          <div
+                            className={styles.metricValue}
+                            style={{
+                              color: "#800000",
+                              fontSize: "22px",
+                              fontWeight: "700",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {program.compositeScore}%
+                          </div>
+                          <div
+                            className={styles.metricSubtext}
+                            style={{ fontSize: "11px", color: "#64748b" }}
+                          >
+                            Composite score · CET-OAPR minimum {program.minimumCetOapr}%
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div
-                      className={styles.metricValue}
-                      style={{
-                        color: "#800000",
-                        fontSize: "22px",
-                        fontWeight: "700",
-                        marginTop: "4px",
-                      }}
-                    >
-                      {program.confidence}%
-                    </div>
-                    <div
-                      className={styles.metricSubtext}
-                      style={{ fontSize: "11px", color: "#64748b" }}
-                    >
-                      Match confidence
-                    </div>
-                  </div>
-                ))}
+                  </>
+                ) : (
+                  <p className={styles.moduleSubtitle}>
+                    Overall CET-OAPR does not meet the minimum threshold for any listed
+                    engineering program.
+                  </p>
+                )}
               </div>
 
               <div
@@ -697,7 +793,7 @@ const PreEnrollmentModule = () => {
             className={styles.moduleTitleSmall}
             style={{ marginBottom: "0.75rem" }}
           >
-            Recommendation History & Audits
+            Recommendation Records
           </div>
 
           <div className={styles.historyToolbar}>
@@ -740,7 +836,7 @@ const PreEnrollmentModule = () => {
                     onClick={handleExportPDF}
                   >
                     <i className="fas fa-file-pdf" aria-hidden="true" />
-                    Export PDF
+                    Download PDF
                   </button>
                 </div>
               ) : null}
@@ -748,7 +844,13 @@ const PreEnrollmentModule = () => {
           </div>
 
           <div className={styles.tableWrapper}>
-            {filteredHistory.length === 0 ? (
+            {historyLoading ? (
+              <div className={styles.placeholderChart}>
+                Loading recommendation history...
+              </div>
+            ) : historyMessage && recommendationHistory.length === 0 ? (
+              <div className={styles.placeholderChart}>{historyMessage}</div>
+            ) : filteredHistory.length === 0 ? (
               <div
                 className={styles.placeholderChart}
                 style={{
@@ -758,7 +860,7 @@ const PreEnrollmentModule = () => {
                 }}
               >
                 <div>
-                  No recommendation history records available for export.
+                  No recommendation history records match this search.
                 </div>
               </div>
             ) : (
@@ -777,7 +879,7 @@ const PreEnrollmentModule = () => {
                     <th style={{ padding: "0.6rem 0.8rem" }}>Applicant ID</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Name</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Program</th>
-                    <th style={{ padding: "0.6rem 0.8rem" }}>Confidence</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Composite Score</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Status</th>
                   </tr>
                 </thead>
@@ -790,13 +892,17 @@ const PreEnrollmentModule = () => {
                         fontSize: "13px",
                       }}
                     >
-                      <td style={{ padding: "0.6rem 0.8rem" }}>{item.id}</td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>
+                        {item.applicantId}
+                      </td>
                       <td style={{ padding: "0.6rem 0.8rem" }}>{item.name}</td>
                       <td style={{ padding: "0.6rem 0.8rem" }}>
                         {item.program}
                       </td>
                       <td style={{ padding: "0.6rem 0.8rem" }}>
-                        {item.confidence}%
+                        {item.confidence === null
+                          ? "N/A"
+                          : `${item.confidence}%`}
                       </td>
                       <td style={{ padding: "0.6rem 0.8rem" }}>
                         {item.status}

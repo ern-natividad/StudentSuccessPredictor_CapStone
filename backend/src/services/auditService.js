@@ -18,6 +18,7 @@ export const AUDIT_ACTIONS = {
   DATASET_DELETED: "Dataset Deleted",
   REPORT_GENERATED: "Report Generated",
   REPORT_DOWNLOADED: "Report Downloaded",
+  RECOMMENDATION_GENERATED: "Degree Recommendation Generated",
 };
 
 export const AUDIT_MODULES = {
@@ -25,6 +26,7 @@ export const AUDIT_MODULES = {
   USER_MANAGEMENT: "User Management",
   SYSTEM: "System Operations",
   ADMIN: "Administrative Actions",
+  PRE_ENROLLMENT: "Pre-Enrollment",
 };
 
 /**

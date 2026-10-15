@@ -125,6 +125,18 @@ export const api = {
   getAuditLogs: (limit = 100, offset = 0) =>
     request(`/audit-logs?limit=${limit}&offset=${offset}`),
 
+  recommendProgram: (payload) =>
+    request("/v1/recommendations/program", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getNextProgramApplicantId: () =>
+    request("/v1/recommendations/next-applicant-id"),
+
+  getProgramRecommendationHistory: (limit = 500) =>
+    request(`/v1/recommendations/history?limit=${limit}`),
+
   getManageableUsers: async (token) => {
     const authToken =
       token ||

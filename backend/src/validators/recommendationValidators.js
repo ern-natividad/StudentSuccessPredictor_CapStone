@@ -10,6 +10,9 @@ const requireString = (value, fieldName, { minLength = 1, maxLength = 200 } = {}
 };
 
 const requireScore = (value, fieldName) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    throw new HttpError(400, `${fieldName} is required.`);
+  }
   const score = Number(value);
   if (!Number.isFinite(score) || score < 0 || score > 100) {
     throw new HttpError(400, `${fieldName} must be a number from 0 to 100.`);
@@ -18,6 +21,9 @@ const requireScore = (value, fieldName) => {
 };
 
 const requireGwa = (value) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    throw new HttpError(400, "gwa is required.");
+  }
   const gwa = Number(value);
   if (!Number.isFinite(gwa) || gwa < 0 || gwa > 100) {
     throw new HttpError(400, "gwa must be a number from 0 to 100.");
@@ -26,7 +32,10 @@ const requireGwa = (value) => {
 };
 
 export const validateProgramRecommendationPayload = (body = {}) => {
-  const applicantId = requireString(body.applicantId, "applicantId");
+  const applicantId = String(body.applicantId ?? "").trim();
+  if (applicantId.length > 80) {
+    throw new HttpError(400, "applicantId must be 80 characters or fewer.");
+  }
   const fullName = requireString(body.fullName, "fullName", { maxLength: 120 });
   const strand = requireString(body.strand, "strand").toUpperCase();
 

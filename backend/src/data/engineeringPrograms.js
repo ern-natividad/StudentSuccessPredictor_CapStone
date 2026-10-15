@@ -1,6 +1,7 @@
 /**
  * Canonical engineering program catalog for pre-enrollment recommendations.
- * Each program defines CET subtest weights and optional fallback curriculum.
+ * Each program defines its CET-OAPR eligibility threshold, composite score
+ * weights, and optional fallback curriculum.
  */
 
 export const ENGINEERING_PROGRAMS = [
@@ -8,6 +9,8 @@ export const ENGINEERING_PROGRAMS = [
     id: "BSCE",
     name: "BS Civil Engineering",
     programKeys: ["BSCE", "BS-CE", "BS Civil Engineering", "Civil Engineering"],
+    minimumCetOapr: 90,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
     weights: { math: 0.45, science: 0.35, abstract: 0.2 },
     skillKeywords: ["cad", "autocad", "structural", "survey", "construction"],
   },
@@ -15,6 +18,8 @@ export const ENGINEERING_PROGRAMS = [
     id: "BSEE",
     name: "BS Electrical Engineering",
     programKeys: ["BSEE", "BS-EE", "BS Electrical Engineering", "Electrical Engineering"],
+    minimumCetOapr: 75,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
     weights: { math: 0.4, science: 0.4, abstract: 0.2 },
     skillKeywords: ["electronics", "circuit", "electrical", "arduino", "wiring"],
   },
@@ -22,6 +27,8 @@ export const ENGINEERING_PROGRAMS = [
     id: "BSCPE",
     name: "BS Computer Engineering",
     programKeys: ["BSCPE", "BS-CPE", "BS Computer Engineering", "Computer Engineering"],
+    minimumCetOapr: 70,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
     weights: { math: 0.4, abstract: 0.35, science: 0.25 },
     skillKeywords: ["python", "coding", "programming", "c++", "java", "embedded"],
   },
@@ -29,6 +36,8 @@ export const ENGINEERING_PROGRAMS = [
     id: "BSIE",
     name: "BS Industrial Engineering",
     programKeys: ["BSIE", "BS-IE", "BS Industrial Engineering", "Industrial Engineering"],
+    minimumCetOapr: 70,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
     weights: { math: 0.3, english: 0.25, reading: 0.2, abstract: 0.25 },
     skillKeywords: ["lean", "process", "optimization", "statistics", "excel"],
   },
@@ -36,8 +45,74 @@ export const ENGINEERING_PROGRAMS = [
     id: "BSME",
     name: "BS Mechanical Engineering",
     programKeys: ["BSME", "BS-ME", "BS Mechanical Engineering", "Mechanical Engineering"],
+    minimumCetOapr: 80,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
     weights: { math: 0.4, science: 0.35, abstract: 0.25 },
     skillKeywords: ["cad", "thermodynamics", "machining", "solidworks", "automotive"],
+  },
+  {
+    id: "BSECE",
+    name: "BS Electronics Engineering",
+    programKeys: [
+      "BSECE",
+      "BS-ECE",
+      "BS Electronics Engineering",
+      "BS Electronics and Communications Engineering",
+      "Electronics Engineering",
+      "Electronics Communication Engineering",
+    ],
+    minimumCetOapr: 70,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
+    weights: { math: 0.4, science: 0.35, abstract: 0.25 },
+    skillKeywords: ["electronics", "circuit", "communication", "arduino", "wiring"],
+  },
+  {
+    id: "BSABE",
+    name: "BS Agricultural and Biosystems Engineering",
+    programKeys: [
+      "BSABE",
+      "BS-ABE",
+      "BS Agricultural and Biosystems Engineering",
+      "Agricultural and Biosystems Engineering",
+      "Agricultural Biosystem Engineering",
+    ],
+    minimumCetOapr: 65,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
+    weights: { math: 0.4, science: 0.35, abstract: 0.25 },
+    skillKeywords: ["agriculture", "biosystems", "irrigation", "soil", "environment"],
+  },
+  {
+    id: "BSGE",
+    name: "BS Geodetic Engineering",
+    programKeys: ["BSGE", "BS-GE", "BS Geodetic Engineering", "Geodetic Engineering"],
+    minimumCetOapr: 75,
+    recommendationWeights: { eat: 50, math: 25, science: 25, abstract: 20 },
+    weights: { math: 0.4, science: 0.35, abstract: 0.25 },
+    skillKeywords: ["survey", "mapping", "gis", "geospatial", "autocad"],
+  },
+  {
+    id: "BSSE",
+    name: "BS Sanitary Engineering",
+    programKeys: ["BSSE", "BS-SanE", "BS Sanitary Engineering", "Sanitary Engineering"],
+    minimumCetOapr: 65,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
+    weights: { math: 0.4, science: 0.35, abstract: 0.25 },
+    skillKeywords: ["water", "wastewater", "sanitation", "environment", "public health"],
+  },
+  {
+    id: "BSEnE",
+    name: "BS Environmental Engineering",
+    programKeys: [
+      "BSEnE",
+      "BSENE",
+      "BS-EnvE",
+      "BS Environmental Engineering",
+      "Environmental Engineering",
+    ],
+    minimumCetOapr: 65,
+    recommendationWeights: { eat: 30, math: 25, science: 25, abstract: 20 },
+    weights: { math: 0.4, science: 0.35, abstract: 0.25 },
+    skillKeywords: ["environment", "sustainability", "water", "pollution", "waste"],
   },
 ];
 
