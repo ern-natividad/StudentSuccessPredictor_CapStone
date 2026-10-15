@@ -23,9 +23,13 @@ const PrivacyPolicy = () => {
               <p className={styles.brandTitle}>Student Success Predictor</p>
             </div>
           </div>
-          <Link to={authReturnPath} className={styles.backLink}>
+          <Link
+            to={authReturnPath}
+            state={legalState}
+            className={styles.backLink}
+          >
             <i className="fas fa-arrow-left" aria-hidden="true"></i>
-            Back to Sign In
+            Back to Sign Up
           </Link>
         </header>
 

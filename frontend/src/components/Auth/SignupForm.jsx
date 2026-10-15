@@ -5,11 +5,11 @@ import { getDashboardPath } from "../../utils/authUtils";
 import styles from "../../styles/Auth.module.css";
 
 const SignupForm = ({ roleConfig, onSwitch }) => {
-  const { signup, error, setError } = useAuth();
+  const { signup, error, setError, signupDraft, setSignupDraft } = useAuth();
   const navigate = useNavigate();
   const defaultGroupValue = roleConfig.groupOptions?.[0] ?? "1st Year";
 
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     firstName: "",
     lastName: "",
     email: "",
@@ -22,22 +22,25 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     password: "",
     confirmPassword: "",
     termsAccepted: false,
-  });
+    ...(signupDraft?.role === roleConfig.id ? signupDraft.formData : {}),
+  }));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
-  const [passwordReqs, setPasswordReqs] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    special: false,
-  });
+  const [passwordReqs, setPasswordReqs] = useState(() => ({
+    length: formData.password.length >= 8,
+    uppercase: /[A-Z]/.test(formData.password),
+    number: /[0-9]/.test(formData.password),
+    special: /[^A-Za-z0-9]/.test(formData.password),
+  }));
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === "checkbox" ? checked : value;
-    setFormData((prev) => ({ ...prev, [name]: newValue }));
+    const nextFormData = { ...formData, [name]: newValue };
+    setFormData(nextFormData);
+    setSignupDraft({ role: roleConfig.id, formData: nextFormData });
     setError("");
 
     if (name === "password") {
@@ -93,8 +96,10 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
     setSubmitting(false);
 
     if (result === "confirm-email") {
+      setSignupDraft(null);
       setConfirmationSent(true);
     } else if (result === true) {
+      setSignupDraft(null);
       navigate(getDashboardPath(roleConfig.id));
     }
   };
@@ -298,14 +303,20 @@ const SignupForm = ({ roleConfig, onSwitch }) => {
             I agree to the{" "}
             <Link
               to="/terms-of-service"
-              state={{ from: roleConfig.path || `/auth/${roleConfig.id}` }}
+              state={{
+                from: roleConfig.path || `/auth/${roleConfig.id}`,
+                view: "signup",
+              }}
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
               to="/privacy-policy"
-              state={{ from: roleConfig.path || `/auth/${roleConfig.id}` }}
+              state={{
+                from: roleConfig.path || `/auth/${roleConfig.id}`,
+                view: "signup",
+              }}
             >
               Privacy Policy
             </Link>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
@@ -9,7 +9,10 @@ import styles from "../../styles/Auth.module.css";
 import engineeringLogo from "../../assets/EngineeringLogo.jpg";
 
 const AuthPage = () => {
-  const [view, setView] = useState("login");
+  const location = useLocation();
+  const [view, setView] = useState(
+    location.state?.view === "signup" ? "signup" : "login",
+  );
   const { role = "student" } = useParams();
   const navigate = useNavigate();
   const { setError } = useAuth();

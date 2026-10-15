@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
 
   const [error, setError] = useState("");
   const [pendingMfa, setPendingMfa] = useState(null);
+  const [signupDraft, setSignupDraft] = useState(null);
 
   // Rehydrate the full profile (including two_factor_enabled) from the backend on reload.
   // storeUserSession() only persists name/role to localStorage, so without this the MFA
@@ -301,6 +302,8 @@ export const AuthProvider = ({ children }) => {
     error,
     setError,
     pendingMfa,
+    signupDraft,
+    setSignupDraft,
     completeMfaLogin,
     cancelMfa,
     expireSessionDueToInactivity,

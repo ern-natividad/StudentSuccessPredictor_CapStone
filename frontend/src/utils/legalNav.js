@@ -19,4 +19,5 @@ export const getAuthReturnPath = (location) => {
 /** Preserve return path when moving between legal pages. */
 export const buildLegalNavState = (location) => ({
   from: getAuthReturnPath(location),
+  ...(location?.state?.view === "signup" && { view: "signup" }),
 });
