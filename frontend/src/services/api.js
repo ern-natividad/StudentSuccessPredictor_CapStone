@@ -168,6 +168,12 @@ export const api = {
   },
 
   getStudentGrades: (studentId) => request(`/grades/${studentId}`),
+  getEligibleGradeSubjects: (studentId, semester) => {
+    const params = new URLSearchParams({ semester });
+    return request(
+      `/grades/${encodeURIComponent(studentId)}/eligible-subjects?${params}`,
+    );
+  },
   getMyGrades: () => request(`/grades/me`),
 
   previewStudentAccounts: (students) =>

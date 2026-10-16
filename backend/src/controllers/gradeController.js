@@ -2,6 +2,11 @@ import { supabase } from "../config/supabaseClient.js";
 import { env } from "../config/env.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { assertStaffCanAccessStudents } from "../services/staffStudentAccessService.js";
+import {
+  getEligibleGradeCourses,
+  getStudentGradeProfile,
+  normalizeCurriculumCourseCode,
+} from "../services/gradeCurriculumService.js";
 import { normalizeGradeValue } from "../utils/gradeValueUtils.js";
 
 const GRADE_SELECT_COLUMNS =
@@ -79,8 +84,23 @@ const validateImportRow = (row, index) => {
   if (!userId) throw new HttpError(400, `Row ${index + 1}: user_id is required.`);
 
   try {
+    const rawCohortStartYear =
+      row.cohort_start_year ?? row.cohortStartYear ?? null;
+    const cohortStartYear =
+      rawCohortStartYear === null || String(rawCohortStartYear).trim() === ""
+        ? null
+        : Number(rawCohortStartYear);
+    if (
+      cohortStartYear !== null &&
+      (!Number.isInteger(cohortStartYear) ||
+        cohortStartYear < 1900 ||
+        cohortStartYear > 9999)
+    ) {
+      throw new HttpError(400, "cohort_start_year must be a valid four-digit year.");
+    }
     return {
       user_id: userId,
+      cohort_start_year: cohortStartYear,
       ...validateGradePayload(row),
     };
   } catch (error) {
@@ -89,6 +109,74 @@ const validateImportRow = (row, index) => {
     }
     throw error;
   }
+};
+
+const validateRowsAgainstCurricula = async (rows) => {
+  const userIds = [...new Set(rows.map((row) => row.user_id))];
+  const { data: profiles, error } = await supabase
+    .from("student_info")
+    .select("user_id, program, year_level")
+    .in("user_id", userIds);
+  if (error) throw error;
+
+  const profileByUserId = new Map(
+    (profiles || []).map((profile) => [profile.user_id, profile]),
+  );
+  const coursesByTermAndProfile = new Map();
+  const validatedRows = [];
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const profile = profileByUserId.get(row.user_id);
+    if (!profile?.program || !profile?.year_level) {
+      throw new HttpError(
+        400,
+        `Row ${index + 1}: the student needs an assigned program and year level before grades can be added.`,
+      );
+    }
+
+    const cacheKey = [
+      profile.program.toLowerCase(),
+      String(profile.year_level).toLowerCase(),
+      row.school_year,
+      row.semester,
+      row.cohort_start_year ?? "",
+    ].join("|");
+    if (!coursesByTermAndProfile.has(cacheKey)) {
+      coursesByTermAndProfile.set(
+        cacheKey,
+        await getEligibleGradeCourses(
+          profile,
+          row.school_year,
+          row.semester,
+          row.cohort_start_year,
+        ),
+      );
+    }
+    const courses = coursesByTermAndProfile.get(cacheKey);
+    const normalizedCode = normalizeCurriculumCourseCode(row.subject_code);
+    const course = courses.find(
+      (candidate) =>
+        normalizeCurriculumCourseCode(candidate.code) === normalizedCode,
+    );
+    if (!course) {
+      throw new HttpError(
+        400,
+        `Row ${index + 1}: ${row.subject_code} is not in the student's published curriculum for ${profile.program}, ${row.school_year}, semester ${row.semester}.`,
+      );
+    }
+    validatedRows.push({
+      user_id: row.user_id,
+      subject_code: row.subject_code,
+      subject_name: course.title,
+      semester: row.semester,
+      school_year: row.school_year,
+      grade: row.grade,
+      remarks: row.remarks,
+    });
+  }
+
+  return validatedRows;
 };
 
 const requestPredictions = async (userIds) => {
@@ -184,7 +272,8 @@ export const importStudentGrades = async (req, res) => {
     throw new HttpError(404, `Student account not found for user_id ${missingUserIds[0]}.`);
   }
 
-  const savedGrades = await saveGradeRows(rows);
+  const curriculumValidatedRows = await validateRowsAgainstCurricula(rows);
+  const savedGrades = await saveGradeRows(curriculumValidatedRows);
 
   const predictions = await requestPredictions(userIds);
   res.status(200).json({
@@ -227,14 +316,17 @@ export const createStudentGrade = async (req, res) => {
     throw new HttpError(404, "Student account not found.");
   }
 
+  const [curriculumValidatedGrade] = await validateRowsAgainstCurricula([
+    { user_id: userId, ...grade },
+  ]);
   const insertRow = {
     user_id: userId,
-    subject_code: grade.subject_code,
-    subject_name: grade.subject_name,
-    semester: grade.semester,
-    school_year: grade.school_year,
-    grade: grade.grade,
-    remarks: grade.remarks,
+    subject_code: curriculumValidatedGrade.subject_code,
+    subject_name: curriculumValidatedGrade.subject_name,
+    semester: curriculumValidatedGrade.semester,
+    school_year: curriculumValidatedGrade.school_year,
+    grade: curriculumValidatedGrade.grade,
+    remarks: curriculumValidatedGrade.remarks,
   };
 
   const { data, error } = await supabase
@@ -290,10 +382,13 @@ export const createStudentGradesBulk = async (req, res) => {
       throw error;
     }
   });
+  const curriculumValidatedRows = await validateRowsAgainstCurricula(
+    insertRows,
+  );
 
   const { data, error } = await supabase
     .from("student_grades")
-    .insert(insertRows)
+    .insert(curriculumValidatedRows)
     .select(GRADE_SELECT_COLUMNS);
   if (error) throw error;
 
@@ -310,14 +405,20 @@ export const updateStudentGrade = async (req, res) => {
   if (existingGradeError) throw existingGradeError;
   if (!existingGrade) throw new HttpError(404, "Grade record not found.");
   await assertStaffCanAccessStudents(req.user, [existingGrade.user_id]);
+  const [curriculumValidatedGrade] = await validateRowsAgainstCurricula([
+    {
+      user_id: existingGrade.user_id,
+      ...grade,
+    },
+  ]);
 
   const updateRow = {
-    subject_code: grade.subject_code,
-    subject_name: grade.subject_name,
-    semester: grade.semester,
-    school_year: grade.school_year,
-    grade: grade.grade,
-    remarks: grade.remarks,
+    subject_code: curriculumValidatedGrade.subject_code,
+    subject_name: curriculumValidatedGrade.subject_name,
+    semester: curriculumValidatedGrade.semester,
+    school_year: curriculumValidatedGrade.school_year,
+    grade: curriculumValidatedGrade.grade,
+    remarks: curriculumValidatedGrade.remarks,
   };
 
   const { data, error } = await supabase
@@ -329,6 +430,19 @@ export const updateStudentGrade = async (req, res) => {
   if (error) throw error;
   if (!data) throw new HttpError(404, "Grade record not found.");
   res.status(200).json({ grade: data });
+};
+
+export const getEligibleStudentGradeSubjects = async (req, res) => {
+  const { userId } = req.params;
+  const semester = normalizeSemester(req.query.semester);
+  await assertStaffCanAccessStudents(req.user, [userId]);
+  const profile = await getStudentGradeProfile(userId);
+  const subjects = await getEligibleGradeCourses(profile, null, semester);
+  res.status(200).json({
+    program: profile.program,
+    semester,
+    subjects,
+  });
 };
 
 export const getMyGrades = async (req, res) => {

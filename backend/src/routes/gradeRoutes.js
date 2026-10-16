@@ -6,6 +6,7 @@ import {
   createStudentGradesBulk,
   importStudentGrades,
   deleteStudentGrade,
+  getEligibleStudentGradeSubjects,
   getStudentGrades,
   getMyGrades,
   updateStudentGrade,
@@ -25,6 +26,12 @@ router.post(
   requireAuth,
   requireRole("admin", "staff"),
   asyncHandler(importStudentGrades),
+);
+router.get(
+  "/:userId/eligible-subjects",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(getEligibleStudentGradeSubjects),
 );
 router.get("/:userId", requireAuth, asyncHandler(getStudentGrades));
 router.post("/", requireAuth, requireRole("admin", "staff"), asyncHandler(createStudentGrade));
