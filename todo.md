@@ -15,6 +15,8 @@
 **ALL ROLES**
 - Fix the auto increment in the preenrollmentmodule
 - The program filter and section in the Performance Forecasting modules, does not fetch the real program from the Students Management Page program column
+- Academic Performance Forecasting and Early Warning Module: Recommendation Column still constant, fix add ml
+- Student Management Page: Fix add grades (lacking subjecting failed to fetch all subject per semester)
 
 🟡 *In Progress*
 - 
