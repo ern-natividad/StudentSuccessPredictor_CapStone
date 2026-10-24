@@ -19,7 +19,7 @@ import {
 } from "../services/authService.js";
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password, accessCode, role } = req.body;
+  const { email, password, role } = req.body;
   const meta = getRequestMeta(req);
 
   if (!email || !password) {
@@ -29,7 +29,6 @@ export const login = asyncHandler(async (req, res) => {
   const result = await loginWithPassword(
     email,
     password,
-    accessCode,
     meta,
     role,
   );

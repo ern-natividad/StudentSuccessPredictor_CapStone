@@ -459,7 +459,7 @@ const ScreeningPage = () => {
           )}
         </div>
       </div>
-
+        {/*
       <div className={styles.card}>
         <div className={styles.cardTitle}>Recommendation and Remarks</div>
         <div style={{ display: "grid", gap: "14px" }}>
@@ -516,6 +516,7 @@ const ScreeningPage = () => {
           </div>
         </div>
       </div>
+      */}
     </div>
   );
 };

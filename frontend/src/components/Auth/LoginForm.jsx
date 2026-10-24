@@ -11,25 +11,17 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
   const location = useLocation();
   const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
-  const [accessCode, setAccessCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setAccessCode("");
     setError("");
   }, [roleConfig.id, location.key, setError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const requiresAccessCode = ["admin", "staff"].includes(roleConfig.id);
-    const trimmedAccessCode = accessCode.trim();
-    if (requiresAccessCode && !trimmedAccessCode) {
-      setError("Please enter your role access code.");
-      return;
-    }
     setSubmitting(true);
-    const result = await login(email, password, roleConfig.id, trimmedAccessCode);
+    const result = await login(email, password, roleConfig.id);
     setSubmitting(false);
     if (result === true) {
       navigate(getDashboardPath(roleConfig.id));
@@ -85,30 +77,6 @@ const LoginForm = ({ roleConfig, onSwitch }) => {
             }}
           />
         </div>
-
-        {["admin", "staff"].includes(roleConfig.id) && (
-          <div className={styles.fGroup}>
-            <label className={styles.fLabel} htmlFor="access-code">
-              {roleConfig.id === "admin" ? "Admin" : "Staff"} Access Code
-            </label>
-            <input
-              id="access-code"
-              type="password"
-              className={styles.fInput}
-              placeholder="Enter your access code"
-              value={accessCode}
-              onChange={(e) => {
-                setAccessCode(e.target.value);
-                setError("");
-              }}
-              autoComplete="off"
-              name="role-access-code"
-              data-1p-ignore="true"
-              data-lpignore="true"
-              required
-            />
-          </div>
-        )}
 
         <div className={styles.fGroup}>
           <label className={styles.fLabel} htmlFor="password">

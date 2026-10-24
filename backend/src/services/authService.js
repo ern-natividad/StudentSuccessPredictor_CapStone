@@ -135,7 +135,6 @@ const getRequiredAccessCode = (role) =>
 export const loginWithPassword = async (
   email,
   password,
-  accessCode,
   meta = {},
   selectedRole = null,
 ) => {
@@ -165,20 +164,6 @@ export const loginWithPassword = async (
       401,
       `This account is registered as ${user.role}. Please sign in using the ${user.role} portal.`,
     );
-  }
-
-  const requiredAccessCode = getRequiredAccessCode(user.role);
-
-  if (requiredAccessCode !== null && !accessCodesMatch(accessCode, requiredAccessCode)) {
-    await recordAuditLog({
-      userId: user.id,
-      username: user.email,
-      action: AUDIT_ACTIONS.LOGIN_FAILED,
-      module: AUDIT_MODULES.AUTH,
-      description: "Invalid role access code.",
-      ...meta,
-    });
-    throw new HttpError(401, "Invalid role access code.");
   }
 
   const { locked, remainingMs } = await checkLockStatus(user);

@@ -105,14 +105,9 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
-  const loginBackend = async (email, password, accessCode, selectedRole) => {
+  const loginBackend = async (email, password, selectedRole) => {
     try {
-      const result = await api.login(
-        email,
-        password,
-        String(accessCode || "").trim(),
-        selectedRole,
-      );
+      const result = await api.login(email, password, selectedRole);
       
       console.log("Backend API login raw response:", result);
 
@@ -151,10 +146,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = useCallback(async (email, password, selectedRole = "student", accessCode = "") => {
+  const login = useCallback(async (email, password, selectedRole = "student") => {
     setError("");
     if (isBackendAuthEnabled()) {
-      return loginBackend(email, password, accessCode, selectedRole);
+      return loginBackend(email, password, selectedRole);
     }
     return loginLocal(email, password, selectedRole);
   }, []);

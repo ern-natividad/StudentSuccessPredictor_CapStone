@@ -53,10 +53,10 @@ const request = async (path, options = {}) => {
 };
 
 export const api = {
-  login: (email, password, accessCode, role) =>
+  login: (email, password, role) =>
     request("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password, accessCode, role }),
+      body: JSON.stringify({ email, password, role }),
     }),
 
   signup: (userData) => {
