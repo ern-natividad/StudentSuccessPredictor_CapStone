@@ -6,7 +6,10 @@ import {
   getRiskLevel,
 } from "../utils/predictionEngine.js";
 import { getResolvedStudentUserIds } from "../services/studentRiskService.js";
-import { assertStaffCanAccessStudents } from "../services/staffStudentAccessService.js";
+import {
+  assertStaffCanAccessStudents,
+  getStaffAccessibleStudentUserIds,
+} from "../services/staffStudentAccessService.js";
 
 const requestGwaForecast = async (userId) => {
   if (!env.predictionServiceUrl) return null;
@@ -189,8 +192,14 @@ export const getStudentPredictionsBulk = async (req, res) => {
     .eq("role", "student")
     .in("id", userIds);
   if (studentError) throw studentError;
-  const validUserIds = new Set((students || []).map((student) => student.id));
-  await assertStaffCanAccessStudents(req.user, [...validUserIds]);
+  const existingUserIds = new Set((students || []).map((student) => student.id));
+  const accessibleUserIds = await getStaffAccessibleStudentUserIds(
+    req.user,
+    [...existingUserIds],
+  );
+  const validUserIds = new Set(
+    [...existingUserIds].filter((userId) => accessibleUserIds.has(userId)),
+  );
 
   let forecastResults = null;
   if (env.predictionServiceUrl && validUserIds.size > 0) {
@@ -228,7 +237,13 @@ export const getStudentPredictionsBulk = async (req, res) => {
 
   const predictions = userIds.map((userId) => {
     if (!validUserIds.has(userId)) {
-      return { user_id: userId, prediction: null, message: "Student account not found." };
+      return {
+        user_id: userId,
+        prediction: null,
+        message: existingUserIds.has(userId)
+          ? "Prediction is unavailable for this student."
+          : "Student account not found.",
+      };
     }
 
     if (forecastResults !== null) {

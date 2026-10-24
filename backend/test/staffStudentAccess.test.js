@@ -11,7 +11,10 @@ process.env.BREVO_SENDER_EMAIL = "sender@example.com";
 test("staff access checks assignment records before permitting student access", async () => {
   const [
     { supabase },
-    { assertStaffCanAccessStudents },
+    {
+      assertStaffCanAccessStudents,
+      getStaffAccessibleStudentUserIds,
+    },
     { getStudentGrades },
     { getStudentPrediction },
   ] = await Promise.all([
@@ -69,6 +72,15 @@ test("staff access checks assignment records before permitting student access", 
       { sub: "staff-1", role: "staff" },
       ["assigned-student"],
     );
+    assert.deepEqual(
+      [
+        ...(await getStaffAccessibleStudentUserIds(
+          { sub: "staff-1", role: "staff" },
+          ["assigned-student", "other-student"],
+        )),
+      ],
+      ["assigned-student"],
+    );
     await assert.rejects(
       assertStaffCanAccessStudents(
         { sub: "staff-1", role: "staff" },
@@ -95,6 +107,8 @@ test("staff access checks assignment records before permitting student access", 
       (error) => error.status === 403,
     );
     assert.deepEqual(queriedTables, [
+      "adviser_info",
+      "student_info",
       "adviser_info",
       "student_info",
       "adviser_info",

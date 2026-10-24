@@ -5,7 +5,7 @@ import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
 import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
-import { api } from "../../../services/api";
+import { api, isBackendAuthEnabled } from "../../../services/api";
 import { getPublishedCurricula } from "../../../services/curriculumService";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
@@ -30,9 +30,10 @@ import {
   normalizeSemesterCode,
 } from "../../../utils/gradeSemesterUtils";
 import {
-  getStaffAssignedSections,
+  areAllSectionsSelected,
   getStaffSectionLabel,
   getStudentSectionValue,
+  parseAssignedSections,
 } from "../../../utils/adviserAssignmentUtils";
 import {
   GRADE_INPUT_HELP_TEXT,
@@ -44,12 +45,19 @@ import {
 } from "../../../utils/gradeValueUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
+import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import ExcelGradeUploader from "../components/ExcelGradeUploader";
 import StudentAccountUploader from "../components/StudentAccountUploader";
 
 const YEAR_LEVEL_OPTIONS = AUTH_ROLES.student.groupOptions;
 const RISK_LEVEL_OPTIONS = ["Low", "Medium", "High", "Critical"];
 const REMARKS_OPTIONS = ["Pass", "Fail", "INC", "AW", "UW"];
+
+const normalizeRiskLevel = (value) =>
+  RISK_LEVEL_OPTIONS.find(
+    (riskLevel) =>
+      riskLevel.toLowerCase() === String(value ?? "").trim().toLowerCase(),
+  ) || "Not available";
 
 const createEmptyGradeForm = () => ({
   subjectCode: "",
@@ -188,6 +196,7 @@ const StudentManagementPage = () => {
   const {
     students,
     staffMembers,
+    sections,
     getStudentsForStaff,
     getSectionById,
     updateStudentGradeRecord,
@@ -224,7 +233,11 @@ const StudentManagementPage = () => {
     yearLevel: "",
     program: "",
     section: "",
+    riskLevel: "",
   });
+  const [predictionsByUserId, setPredictionsByUserId] = useState({});
+  const [predictionsLoading, setPredictionsLoading] = useState(false);
+  const [predictionsError, setPredictionsError] = useState("");
   const [importMode, setImportMode] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
@@ -248,6 +261,55 @@ const StudentManagementPage = () => {
   const [gradesError, setGradesError] = useState("");
   const [publishedCurricula, setPublishedCurricula] = useState([]);
   const [eligibleSubjectsResult, setEligibleSubjectsResult] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPredictions = async () => {
+      if (!isBackendAuthEnabled() || displayStudentList.length === 0) {
+        if (isMounted) {
+          setPredictionsByUserId({});
+          setPredictionsLoading(false);
+          setPredictionsError("");
+        }
+        return;
+      }
+
+      setPredictionsLoading(true);
+      setPredictionsError("");
+
+      try {
+        const result = await api.getStudentPredictions(
+          displayStudentList.map((student) => student.user_id),
+        );
+        if (isMounted) {
+          setPredictionsByUserId(
+            Object.fromEntries(
+              (result.predictions || []).map(({ user_id, prediction }) => [
+                user_id,
+                prediction || null,
+              ]),
+            ),
+          );
+        }
+      } catch (error) {
+        console.error("Unable to load student predictions:", error);
+        if (isMounted) {
+          setPredictionsByUserId({});
+          setPredictionsError(
+            error.message || "Unable to load student predictions.",
+          );
+        }
+      } finally {
+        if (isMounted) setPredictionsLoading(false);
+      }
+    };
+
+    loadPredictions();
+    return () => {
+      isMounted = false;
+    };
+  }, [displayStudentList]);
 
   const effectiveSelectedStudentId =
     selectedStudentId || displayStudentList[0]?.student_id || "";
@@ -454,11 +516,36 @@ const StudentManagementPage = () => {
 
   const studentTableRows = useMemo(
     () =>
-      displayStudentList.map((student) => ({
-        ...student,
-        sectionName: getStudentSectionLabel(student, getSectionById),
-      })),
-    [displayStudentList, getSectionById],
+      displayStudentList.map((student) => {
+        const prediction = predictionsByUserId[student.user_id] || null;
+        return {
+          ...student,
+          current_gpa:
+            prediction?.current_gpa ?? prediction?.current_gwa ?? null,
+          predicted_gpa:
+            prediction?.predicted_gpa ?? prediction?.predicted_gwa ?? null,
+          selected_model: prediction?.selected_model ?? null,
+          method: prediction?.method ?? null,
+          risk_level: normalizeRiskLevel(
+            prediction?.risk_level || student.risk_level,
+          ),
+          sectionName: getStudentSectionLabel(student, getSectionById),
+        };
+      }),
+    [displayStudentList, getSectionById, predictionsByUserId],
+  );
+
+  const riskLevelCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        RISK_LEVEL_OPTIONS.map((riskLevel) => [
+          riskLevel,
+          studentTableRows.filter(
+            (student) => student.risk_level === riskLevel,
+          ).length,
+        ]),
+      ),
+    [studentTableRows],
   );
 
   const studentFilterOptions = useMemo(() => {
@@ -497,6 +584,8 @@ const StudentManagementPage = () => {
           (!studentFilters.program || program === studentFilters.program) &&
           (!studentFilters.section ||
             student.sectionName === studentFilters.section) &&
+          (!studentFilters.riskLevel ||
+            student.risk_level === studentFilters.riskLevel) &&
           (!searchTerm ||
             [student.full_name, student.student_id]
               .some((value) => String(value || "").toLowerCase().includes(searchTerm)))
@@ -514,8 +603,63 @@ const StudentManagementPage = () => {
     pageSize: studentPageSize,
   } = useListPagination(filteredStudentRows, {
     pageSize: 10,
-    resetKey: `${studentSearch}|${studentFilters.yearLevel}|${studentFilters.program}|${studentFilters.section}|${displayStudentList.length}`,
+    resetKey: `${studentSearch}|${studentFilters.yearLevel}|${studentFilters.program}|${studentFilters.section}|${studentFilters.riskLevel}|${displayStudentList.length}`,
   });
+
+  const handleStudentExport = async () => {
+    if (filteredStudentRows.length === 0) {
+      toast.error("No students available to export.");
+      return;
+    }
+
+    try {
+      await downloadStyledExcel({
+        fileName: isAdmin ? "all-students.xlsx" : "assigned-students.xlsx",
+        sheetName: "Students",
+        title: isAdmin ? "All Students Directory" : "Assigned Students Directory",
+        subtitle: "WMSU HAWKS · Student Success Predictor",
+        meta: [
+          { label: "Students", value: String(filteredStudentRows.length) },
+          {
+            label: "Risk level",
+            value: studentFilters.riskLevel || "All risk levels",
+          },
+          { label: "Search", value: studentSearch.trim() || "None" },
+        ],
+        columns: [
+          { header: "Student ID", width: 16 },
+          { header: "Name", width: 28 },
+          { header: "Program", width: 24 },
+          { header: "Section", width: 16 },
+          { header: "Year Level", width: 14 },
+          { header: "Current GPA", width: 13, align: "center" },
+          { header: "Predicted GPA", width: 14, align: "center" },
+          { header: "Forecast Model", width: 20, align: "center" },
+          { header: "Risk Level", width: 14, align: "center" },
+        ],
+        rows: filteredStudentRows.map((student) => [
+          student.student_id,
+          student.full_name,
+          student.program || student.department || "",
+          student.sectionName,
+          student.yearLevel || student.year_level || "",
+          student.current_gpa == null
+            ? ""
+            : Number(student.current_gpa).toFixed(2),
+          student.predicted_gpa == null
+            ? ""
+            : Number(student.predicted_gpa).toFixed(2),
+          student.selected_model ||
+            (student.method === "grade-trend" ? "Grade-trend estimate" : ""),
+          student.risk_level,
+        ]),
+      });
+      toast.success("Student list exported as Excel.");
+    } catch (error) {
+      console.error("Unable to export student list:", error);
+      toast.error("Unable to export student list.");
+    }
+  };
 
   const handleGradeBatchMetaChange = (field, value) => {
     setGradeBatch((prev) => ({ ...prev, [field]: value }));
@@ -874,6 +1018,14 @@ const StudentManagementPage = () => {
     }
   };
 
+  const staffAssignedSections = useMemo(() => {
+    if (!loggedInStaff) return [];
+
+    const savedAssignment =
+      loggedInStaff.assignedSection || loggedInStaff.assignedSections;
+    return parseAssignedSections(savedAssignment);
+  }, [loggedInStaff]);
+
   const assignedSectionCount = useMemo(() => {
     if (isAdmin) {
       return new Set(
@@ -885,9 +1037,25 @@ const StudentManagementPage = () => {
       ).size;
     }
 
-    if (!loggedInStaff) return 0;
-    return getStaffAssignedSections(loggedInStaff).length;
-  }, [displayStudentList, isAdmin, loggedInStaff]);
+    return staffAssignedSections.length;
+  }, [displayStudentList, isAdmin, staffAssignedSections]);
+
+  const staffCoversAllSections = useMemo(() => {
+    if (isAdmin) return false;
+
+    const availableSections = [
+      ...new Set([
+        "A",
+        "B",
+        "C",
+        ...(Array.isArray(sections)
+          ? sections.map((section) => String(section.id).trim())
+          : []),
+      ]),
+    ];
+
+    return areAllSectionsSelected(staffAssignedSections, availableSections);
+  }, [isAdmin, sections, staffAssignedSections]);
 
   const summaryStats = useMemo(() => {
     const averageGrade =
@@ -907,15 +1075,25 @@ const StudentManagementPage = () => {
       },
       {
         label: isAdmin ? "Sections in use" : "Sections covered",
-        value: assignedSectionCount,
+        value: isAdmin
+          ? "All"
+          : staffCoversAllSections
+            ? "All"
+            : assignedSectionCount,
       },
       { label: "Average grade", value: averageGrade },
       {
-        label: "Current focus",
-        value: selectedStudent ? "Selected" : "None",
+        label: "Students needing attention",
+        value: riskLevelCounts.High + riskLevelCounts.Critical,
       },
     ];
-  }, [assignedSectionCount, displayStudentList, isAdmin, selectedStudent]);
+  }, [
+    assignedSectionCount,
+    displayStudentList,
+    isAdmin,
+    riskLevelCounts,
+    staffCoversAllSections,
+  ]);
 
   const allVisibleGradesSelected =
     filteredStudentGrades.length > 0 &&
@@ -946,6 +1124,12 @@ const StudentManagementPage = () => {
       )}
       {directoryLoading && (
         <div className={styles.contentCard}>Loading student directory…</div>
+      )}
+      {predictionsError && (
+        <div className={styles.contentCard} role="status">
+          Prediction metrics could not be loaded: {predictionsError} Student
+          records are still available below.
+        </div>
       )}
 
       <div className={styles.summaryGrid}>
@@ -1096,11 +1280,17 @@ const StudentManagementPage = () => {
               !studentSearch &&
               !studentFilters.yearLevel &&
               !studentFilters.program &&
-              !studentFilters.section
+              !studentFilters.section &&
+              !studentFilters.riskLevel
             }
             onClick={() => {
               setStudentSearch("");
-              setStudentFilters({ yearLevel: "", program: "", section: "" });
+              setStudentFilters({
+                yearLevel: "",
+                program: "",
+                section: "",
+                riskLevel: "",
+              });
             }}
           >
             Clear filters
@@ -1174,6 +1364,25 @@ const StudentManagementPage = () => {
               ))}
             </select>
           </label>
+          <label className={styles.studentDirectoryFilterField}>
+            <span>Risk level</span>
+            <select
+              value={studentFilters.riskLevel}
+              onChange={(event) =>
+                setStudentFilters((current) => ({
+                  ...current,
+                  riskLevel: event.target.value,
+                }))
+              }
+            >
+              <option value="">All risk levels</option>
+              {["Low", "Medium", "High", "Critical"].map((riskLevel) => (
+                <option key={riskLevel} value={riskLevel}>
+                  {riskLevel}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
@@ -1190,7 +1399,62 @@ const StudentManagementPage = () => {
           <div className={styles.contentCardHint}>
             Showing {studentTotalItems} of {displayStudentList.length} students
           </div>
+          <button
+            type="button"
+            className={styles.studentAccountImportButton}
+            onClick={handleStudentExport}
+            disabled={filteredStudentRows.length === 0}
+          >
+            <i className="fas fa-file-export" aria-hidden="true" /> Export
+          </button>
         </div>
+
+        <section className={styles.riskOverview} aria-label="Student risk summary">
+          <div className={styles.riskOverviewHeader}>
+            <div>
+              <div className={styles.riskOverviewTitle}>Risk overview</div>
+              <div className={styles.riskOverviewHint}>
+                Select a level to filter the directory
+              </div>
+            </div>
+          </div>
+          <div className={styles.riskOverviewGrid}>
+            {RISK_LEVEL_OPTIONS.map((riskLevel) => {
+              const isSelected = studentFilters.riskLevel === riskLevel;
+              return (
+                <button
+                  key={riskLevel}
+                  type="button"
+                  className={`${styles.riskOverviewCard} ${
+                    styles[`riskOverviewCard${riskLevel}`]
+                  } ${isSelected ? styles.riskOverviewCardSelected : ""}`}
+                  aria-pressed={isSelected}
+                  onClick={() =>
+                    setStudentFilters((current) => ({
+                      ...current,
+                      riskLevel:
+                        current.riskLevel === riskLevel ? "" : riskLevel,
+                    }))
+                  }
+                >
+                  <span className={styles.riskOverviewCardLabel}>
+                    <span
+                      className={styles.riskOverviewDot}
+                      aria-hidden="true"
+                    />
+                    {riskLevel} risk
+                  </span>
+                  <span className={styles.riskOverviewCardCount}>
+                    {riskLevelCounts[riskLevel]}
+                  </span>
+                  <span className={styles.riskOverviewCardCaption}>
+                    {riskLevelCounts[riskLevel] === 1 ? "student" : "students"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         <div
           className={`${commonStyles.tableWrapper} ${styles.studentTableWrapper}`}
@@ -1198,13 +1462,17 @@ const StudentManagementPage = () => {
         >
           <table className={`${commonStyles.table} ${styles.studentTable}`}>
             <colgroup>
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
+              <col style={{ width: "4%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "9%" }} />
               <col style={{ width: "10%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "23%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "13%" }} />
             </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
@@ -1214,13 +1482,17 @@ const StudentManagementPage = () => {
                 <th>Program</th>
                 <th>Section</th>
                 <th>Year Level</th>
+                <th>Current GPA</th>
+                <th>Predicted GPA</th>
+                <th>Forecast model</th>
+                <th>Risk level</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {paginatedStudentRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={styles.studentDirectoryEmpty}>
+                  <td colSpan={11} className={styles.studentDirectoryEmpty}>
                     No students match these search and filter criteria.
                   </td>
                 </tr>
@@ -1244,6 +1516,37 @@ const StudentManagementPage = () => {
                     <td>{row.program || row.department || "—"}</td>
                     <td>{row.sectionName}</td>
                     <td>{row.yearLevel || row.year_level || "—"}</td>
+                    <td>
+                      {row.current_gpa == null
+                        ? "—"
+                        : Number(row.current_gpa).toFixed(2)}
+                    </td>
+                    <td>
+                      {row.predicted_gpa == null
+                        ? "—"
+                        : Number(row.predicted_gpa).toFixed(2)}
+                    </td>
+                    <td>
+                      {row.selected_model ||
+                        (row.method === "grade-trend"
+                          ? "Grade trend"
+                          : "—")}
+                    </td>
+                    <td>
+                      <span
+                        className={`${styles.riskBadge} ${
+                          styles[
+                            `risk${String(row.risk_level)
+                              .charAt(0)
+                              .toUpperCase()}${String(row.risk_level)
+                              .slice(1)
+                              .toLowerCase()}`
+                          ] || ""
+                        }`}
+                      >
+                        {row.risk_level}
+                      </span>
+                    </td>
                     <td>
                       <div className={styles.tableActionGroup}>
                         <button
@@ -1301,6 +1604,11 @@ const StudentManagementPage = () => {
           onPageChange={setCurrentPage}
           itemLabel="students"
         />
+        {!directoryLoading && predictionsLoading && (
+          <div className={commonStyles.emptyState}>
+            Loading prediction metrics…
+          </div>
+        )}
       </div>
 
       {isGradeHistoryModalOpen && selectedStudent ? (

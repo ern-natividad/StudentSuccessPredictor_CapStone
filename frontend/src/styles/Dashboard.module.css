@@ -975,6 +975,132 @@
   border-radius: 12px;
 }
 
+.riskOverview {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  background: #fbfcfe;
+}
+
+.riskOverviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.riskOverviewTitle {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.riskOverviewHint {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.riskOverviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.riskOverviewCard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid var(--risk-accent, #64748b);
+  border-radius: 11px;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.riskOverviewCard:hover {
+  border-color: var(--risk-border, #cbd5e1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.riskOverviewCard:focus-visible {
+  outline: 2px solid var(--risk-accent, #64748b);
+  outline-offset: 2px;
+}
+
+.riskOverviewCardSelected {
+  border-color: var(--risk-border, #cbd5e1);
+  background: var(--risk-surface, #f8fafc);
+  box-shadow: 0 0 0 1px var(--risk-accent, #64748b);
+}
+
+.riskOverviewCardLow {
+  --risk-accent: #15803d;
+  --risk-border: #bbf7d0;
+  --risk-surface: #f0fdf4;
+}
+
+.riskOverviewCardMedium {
+  --risk-accent: #b45309;
+  --risk-border: #fde68a;
+  --risk-surface: #fffbeb;
+}
+
+.riskOverviewCardHigh {
+  --risk-accent: #c2410c;
+  --risk-border: #fed7aa;
+  --risk-surface: #fff7ed;
+}
+
+.riskOverviewCardCritical {
+  --risk-accent: #b91c1c;
+  --risk-border: #fecaca;
+  --risk-surface: #fef2f2;
+}
+
+.riskOverviewCardLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.riskOverviewDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--risk-accent, #64748b);
+}
+
+.riskOverviewCardCount {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: #0f172a;
+  font-size: 23px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.riskOverviewCardCaption {
+  color: #64748b;
+  font-size: 11px;
+}
+
 .studentDirectoryFilters {
   padding: 18px 20px;
   border: 1px solid #e2e8f0;
@@ -1027,7 +1153,7 @@
 
 .studentDirectoryFilterGrid {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(150px, 1fr));
+  grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(140px, 1fr));
   gap: 12px;
 }
 
@@ -1131,7 +1257,7 @@
 }
 
 .studentTable {
-  min-width: 1080px;
+  min-width: 1400px;
   table-layout: fixed;
 }
 
@@ -1153,8 +1279,6 @@
 
 .studentTable th:nth-child(1),
 .studentTable td:nth-child(1),
-.studentTable th:nth-child(4),
-.studentTable td:nth-child(4),
 .studentTable th:nth-child(5),
 .studentTable td:nth-child(5),
 .studentTable th:nth-child(6),
@@ -1164,7 +1288,11 @@
 .studentTable th:nth-child(8),
 .studentTable td:nth-child(8),
 .studentTable th:nth-child(9),
-.studentTable td:nth-child(9) {
+.studentTable td:nth-child(9),
+.studentTable th:nth-child(10),
+.studentTable td:nth-child(10),
+.studentTable th:nth-child(11),
+.studentTable td:nth-child(11) {
   text-align: center;
 }
 
@@ -1179,6 +1307,11 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
   font-size: 12px;
+}
+
+.studentTable td:nth-child(7),
+.studentTable td:nth-child(8) {
+  font-variant-numeric: tabular-nums;
 }
 
 .studentTable tbody tr:last-child td {
@@ -3159,6 +3292,10 @@
 }
 
 @media (max-width: 760px) {
+  .riskOverviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .summaryGrid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
@@ -3193,6 +3330,18 @@
 
   .studentDirectoryFilters {
     padding: 14px;
+  }
+
+  .riskOverview {
+    padding: 12px;
+  }
+
+  .riskOverviewGrid {
+    gap: 8px;
+  }
+
+  .riskOverviewCard {
+    padding: 10px;
   }
 
   .studentDirectoryFiltersHeader {

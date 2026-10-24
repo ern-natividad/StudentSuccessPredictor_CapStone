@@ -21,8 +21,6 @@
 - Student Management Page: Not saving memory (state)
 
 **MIDTERM REVISIONS**
-- Redundant ang side bar as one na 
-- log in wala na access code 
 - loading caching
 
 🟡 *In Progress*
@@ -31,6 +29,12 @@
 
 
 🟢 *Done*
+----------------------------------
+**MIDTERM REVISIONS**
+- Redundant ang side bar as one na 
+- log in wala na access code 
+----------------------------------
+
 - Fix confirmation modal UX (Button color)
 - Correlate CET components to each engineering Program
 - Consider non academic data (if available)

@@ -33,7 +33,6 @@ const getNavConfig = (role, unreadAlertCount) => {
       defaultTab: "dashboard",
       items: [
         { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
-        { id: "students", icon: "fas fa-users", label: "Students" },
         {
           id: "student-management",
           icon: "fas fa-user-edit",
@@ -82,7 +81,6 @@ const getNavConfig = (role, unreadAlertCount) => {
     defaultTab: "dashboard",
     items: [
       { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
-      { id: "students", icon: "fas fa-users", label: "Students" },
       {
         id: "student-management",
         icon: "fas fa-user-edit",

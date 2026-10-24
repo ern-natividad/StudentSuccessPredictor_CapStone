@@ -50,7 +50,6 @@ const Sidebar = () => {
         sectionLabel: "Staff Panel",
         items: [
           { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
-          { id: "students", icon: "fas fa-users", label: "Students" },
           {
             id: "student-management",
             icon: "fas fa-user-edit",
@@ -98,7 +97,6 @@ const Sidebar = () => {
       sectionLabel: "Admin Panel",
       items: [
         { id: "dashboard", icon: "fas fa-chart-bar", label: "Overview" },
-        { id: "students", icon: "fas fa-users", label: "Students" },
         {
           id: "student-management",
           icon: "fas fa-user-edit",
