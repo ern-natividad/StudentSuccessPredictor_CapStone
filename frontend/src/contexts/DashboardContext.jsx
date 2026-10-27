@@ -1,6 +1,7 @@
 import {
   createContext,
   useState,
+  useRef,
   useCallback,
   useEffect,
   useMemo,
@@ -9,11 +10,16 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { getUserDirectory } from "../services/userDirectory";
 import {
-  filterStudentsForAdviser,
+  filterStudentsForAssignments,
   parseAssignedSections,
 } from "../utils/adviserAssignmentUtils";
 import { fetchEarlyAlerts, scopeEarlyAlerts } from "../utils/earlyAlertsUtils";
-import { api, isBackendAuthEnabled } from "../services/api";
+import {
+  api,
+  getDashboardDataInvalidatedEvent,
+  invalidateStudentPredictionCache,
+  isBackendAuthEnabled,
+} from "../services/api";
 import { supabase } from "../lib/supabaseClient";
 
 export const DashboardContext = createContext();
@@ -61,10 +67,15 @@ export const DashboardProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
-  const [earlyAlerts, setEarlyAlerts] = useState([]);
+  const [earlyAlertData, setEarlyAlertData] = useState({
+    ownerId: null,
+    records: [],
+  });
+  const [alertsError, setAlertsError] = useState("");
   const [adminNotifications, setAdminNotifications] = useState([]);
   const [viewedAlertIds, setViewedAlertIds] = useState(() => new Set());
   const [alertsLoading, setAlertsLoading] = useState(false);
+  const alertsRequestRef = useRef(null);
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [directoryError, setDirectoryError] = useState("");
   const [directoryRefreshVersion, setDirectoryRefreshVersion] = useState(0);
@@ -79,7 +90,7 @@ export const DashboardProvider = ({ children }) => {
     if (!canLoadRoleAccounts) {
       setStudents([]);
       setStaffMembers([]);
-      setEarlyAlerts([]);
+      setEarlyAlertData({ ownerId: null, records: [] });
       return undefined;
     }
 
@@ -89,7 +100,9 @@ export const DashboardProvider = ({ children }) => {
       try {
         setDirectoryLoading(true);
         setDirectoryError("");
-        const accounts = await getUserDirectory();
+        const accounts = await getUserDirectory({
+          includeAdviserAssignments: ["admin", "staff"].includes(user?.role),
+        });
 
         const normalizedStudents = accounts
           .filter((account) => String(account.role).toLowerCase() === "student")
@@ -132,6 +145,8 @@ export const DashboardProvider = ({ children }) => {
               assignedStaffId: account.assignedStaffId || null,
               department: studentInfo?.department || null,
               program: studentInfo?.program || null,
+              school_year: studentInfo?.school_year || null,
+              schoolYear: studentInfo?.school_year || null,
               email: account.email || "",
               account_locked: Boolean(account.account_locked),
               created_at: account.created_at,
@@ -155,6 +170,7 @@ export const DashboardProvider = ({ children }) => {
             ),
             assignedYearLevel: account.adviser_info?.year_level || "N/A",
             assignedProgram: account.adviser_info?.program || null,
+            adviserAssignments: account.adviser_assignments || [],
             account_locked: Boolean(account.account_locked),
             created_at: account.created_at,
           }));
@@ -290,98 +306,102 @@ export const DashboardProvider = ({ children }) => {
 
       if (!staff) return [];
 
-      return filterStudentsForAdviser(
+      return filterStudentsForAssignments(
         students,
-        staff.assignedSections?.length
-          ? staff.assignedSections
-          : staff.assignedSection,
-        staff.assignedYearLevel,
-        staff.assignedProgram,
+        staff.adviserAssignments || [],
       );
     },
     [students, staffMembers],
   );
 
-  useEffect(() => {
-    if (!user?.isAuthenticated) {
-      setEarlyAlerts([]);
+  const refreshEarlyAlerts = useCallback(() => {
+    if (!user?.isAuthenticated || user.role === "student") {
       setAdminNotifications([]);
-      return undefined;
+      return Promise.resolve();
     }
 
-    // Students do not use Early Alerts or the notification bell.
-    if (user.role === "student") {
-      setEarlyAlerts([]);
-      setAdminNotifications([]);
-      setAlertsLoading(false);
-      return undefined;
+    if (alertsRequestRef.current?.userId === user.id) {
+      return alertsRequestRef.current.promise;
     }
 
-    let isMounted = true;
-
-    const loadAlerts = async () => {
+    const requestState = { userId: user.id, promise: null };
+    const request = (async () => {
       try {
         setAlertsLoading(true);
+        setAlertsError("");
         const fetchedAlerts = await fetchEarlyAlerts();
-        if (!isMounted) return;
+        setEarlyAlertData({ ownerId: user.id, records: fetchedAlerts });
+      } catch (error) {
+        console.error("Failed to load dashboard alerts:", error);
+        setAlertsError(error.message || "Unable to load alerts.");
+      }
 
-        setEarlyAlerts(
-          scopeEarlyAlerts({
-            alerts: fetchedAlerts,
-            role: user.role,
-            userId: user.id,
-            userEmail: user.email,
-            students,
-            staffMembers,
-            getStudentsForStaff,
-          }),
-        );
-
-        if (user.role === "admin" && isBackendAuthEnabled()) {
-          try {
-            const result = await api.getAdminAlertNotifications(false);
-            if (isMounted) setAdminNotifications(result.notifications || []);
-          } catch (notifyError) {
-            console.error("Failed to load admin notifications:", notifyError);
-            if (isMounted) setAdminNotifications([]);
-          }
-        } else if (isMounted) {
+      if (user.role === "admin" && isBackendAuthEnabled()) {
+        try {
+          const result = await api.getAdminAlertNotifications(false);
+          setAdminNotifications(result.notifications || []);
+        } catch (error) {
+          console.error("Failed to load admin notifications:", error);
           setAdminNotifications([]);
         }
-      } catch (error) {
-        console.error("Failed to load early alerts:", error);
-        if (isMounted) setEarlyAlerts([]);
-      } finally {
-        if (isMounted) setAlertsLoading(false);
+      } else {
+        setAdminNotifications([]);
       }
+    })().finally(() => {
+      if (alertsRequestRef.current === requestState) {
+        setAlertsLoading(false);
+        alertsRequestRef.current = null;
+      }
+    });
+
+    requestState.promise = request;
+    alertsRequestRef.current = requestState;
+    return request;
+  }, [user?.email, user?.id, user?.isAuthenticated, user?.role]);
+
+  useEffect(() => {
+    void Promise.resolve().then(refreshEarlyAlerts);
+    if (!user?.isAuthenticated || user.role === "student") {
+      return undefined;
+    }
+
+    const refreshForStudentChange = () => {
+      invalidateStudentPredictionCache();
     };
-
-    loadAlerts();
-
     const subscription = supabase
-      .channel("public:student_info_nav_alerts")
+      .channel("public:dashboard_student_alerts")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "student_info" },
-        () => {
-          loadAlerts();
-        },
+        refreshForStudentChange,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "student_grades" },
+        refreshForStudentChange,
       )
       .subscribe();
 
     return () => {
-      isMounted = false;
       supabase.removeChannel(subscription);
     };
-  }, [
-    getStudentsForStaff,
-    staffMembers,
-    students,
-    user?.email,
-    user?.id,
-    user?.isAuthenticated,
-    user?.role,
-  ]);
+  }, [refreshEarlyAlerts, user?.isAuthenticated, user?.role]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleDashboardDataInvalidated = () => {
+      void refreshEarlyAlerts();
+    };
+    window.addEventListener(
+      getDashboardDataInvalidatedEvent(),
+      handleDashboardDataInvalidated,
+    );
+    return () =>
+      window.removeEventListener(
+        getDashboardDataInvalidatedEvent(),
+        handleDashboardDataInvalidated,
+      );
+  }, [refreshEarlyAlerts]);
 
   // Keep admin bell in sync when staff escalate from another session.
   useEffect(() => {
@@ -400,7 +420,30 @@ export const DashboardProvider = ({ children }) => {
     return () => clearInterval(intervalId);
   }, [refreshAdminNotifications, user?.isAuthenticated, user?.role]);
 
-  const alerts = useMemo(() => earlyAlerts, [earlyAlerts]);
+  const currentUserId = user?.id;
+  const currentUserRole = user?.role;
+  const currentUserEmail = user?.email;
+  const earlyAlerts = useMemo(() => {
+    if (earlyAlertData.ownerId !== currentUserId) return [];
+    return scopeEarlyAlerts({
+      alerts: earlyAlertData.records,
+      role: currentUserRole,
+      userId: currentUserId,
+      userEmail: currentUserEmail,
+      students,
+      staffMembers,
+      getStudentsForStaff,
+    });
+  }, [
+    earlyAlertData,
+    getStudentsForStaff,
+    staffMembers,
+    students,
+    currentUserEmail,
+    currentUserId,
+    currentUserRole,
+  ]);
+  const alerts = earlyAlerts;
 
   const unreadAdminNotificationCount = useMemo(
     () => adminNotifications.filter((item) => !item.is_read).length,
@@ -469,6 +512,8 @@ export const DashboardProvider = ({ children }) => {
               yearLevel: infoUpdates.year_level ?? student.yearLevel,
               department: infoUpdates.department ?? student.department,
               program: infoUpdates.program ?? student.program,
+              school_year: infoUpdates.school_year ?? student.school_year,
+              schoolYear: infoUpdates.school_year ?? student.schoolYear,
               section: infoUpdates.section ?? student.section,
               assignedSectionId:
                 infoUpdates.section ?? student.assignedSectionId,
@@ -587,6 +632,8 @@ export const DashboardProvider = ({ children }) => {
     adminNotifications,
     unreadAlertCount,
     alertsLoading,
+    alertsError,
+    refreshEarlyAlerts,
     directoryLoading,
     directoryError,
     refreshStudentDirectory,

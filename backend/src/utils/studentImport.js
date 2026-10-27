@@ -7,6 +7,7 @@ const REQUIRED_FIELDS = [
   "program",
   "section",
   "year_level",
+  "school_year",
 ];
 const FORBIDDEN_HEADERS = new Set([
   "password",
@@ -69,6 +70,12 @@ const normalizeRow = (source, index) => {
 
   if (row.year_level && !/^\d+(st|nd|rd|th) year$/i.test(row.year_level)) {
     errors.push("year_level must look like '1st Year'");
+  }
+  if (row.school_year) {
+    const schoolYear = row.school_year.match(/^(\d{4})-(\d{4})$/);
+    if (!schoolYear || Number(schoolYear[2]) !== Number(schoolYear[1]) + 1) {
+      errors.push("school_year must be consecutive, like '2025-2026'");
+    }
   }
 
   return {

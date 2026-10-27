@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   getPredictionModelInfo,
+  generateStudentPythonForecast,
   getMyPrediction,
   getStudentPrediction,
   getStudentPredictionsBulk,
@@ -22,6 +23,12 @@ router.post(
   requireAuth,
   requireRole("admin", "staff"),
   asyncHandler(getStudentPredictionsBulk),
+);
+router.post(
+  "/:userId/forecast",
+  requireAuth,
+  requireRole("admin", "staff"),
+  asyncHandler(generateStudentPythonForecast),
 );
 router.get(
   "/:userId",

@@ -101,7 +101,11 @@ const requestGwaForecasts = async (userIds) => {
 };
 
 const normalizeGwaForecast = (forecast) => {
-  const predictedGpa = Number(forecast.predicted_gwa ?? forecast.predicted_gpa);
+  const rawPredictedGpa = forecast.predicted_gwa ?? forecast.predicted_gpa;
+  const predictedGpa =
+    rawPredictedGpa === null || rawPredictedGpa === undefined
+      ? Number.NaN
+      : Number(rawPredictedGpa);
   return {
     ...forecast,
     current_gpa: forecast.current_gpa ?? forecast.current_gwa ?? null,
@@ -111,6 +115,98 @@ const normalizeGwaForecast = (forecast) => {
       (Number.isFinite(predictedGpa) ? getRiskLevel(predictedGpa) : null),
     confidence_score: forecast.confidence_score ?? null,
   };
+};
+
+export const generateStudentPythonForecast = async (req, res) => {
+  const { userId } = req.params;
+  await assertStaffCanAccessStudents(req.user, [userId]);
+
+  const { data: student, error: studentError } = await supabase
+    .from("users")
+    .select("id, full_name, role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (studentError) throw studentError;
+  if (!student || student.role !== "student") {
+    throw new HttpError(404, "Student account not found.");
+  }
+  if (!env.predictionServiceUrl) {
+    throw new HttpError(
+      503,
+      "The Python forecast service is not configured. No fallback prediction was generated.",
+    );
+  }
+
+  let response;
+  try {
+    response = await fetch(
+      `${env.predictionServiceUrl.replace(/\/$/, "")}/forecast`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(env.predictionServiceSecret
+            ? { "X-Prediction-Service-Key": env.predictionServiceSecret }
+            : {}),
+        },
+        body: JSON.stringify({ user_ids: [userId] }),
+      },
+    );
+  } catch {
+    throw new HttpError(
+      502,
+      "The Python forecast service could not be reached. Check the service status and retry.",
+    );
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new HttpError(
+      502,
+      payload.detail || "The Python forecast service could not generate a forecast. Please retry.",
+    );
+  }
+
+  const result = Array.isArray(payload.results)
+    ? payload.results.find((item) => item.user_id === userId)
+    : null;
+  if (!result) {
+    throw new HttpError(
+      502,
+      "The Python forecast service returned an invalid response. Please retry.",
+    );
+  }
+  if (result.status !== "updated" || !result.prediction) {
+    return res.status(200).json({
+      student: {
+        id: student.id,
+        full_name: student.full_name,
+      },
+      prediction: null,
+      message:
+        result.reason ||
+        "The Python model could not generate a forecast for this student's grades.",
+    });
+  }
+
+  const prediction = normalizeGwaForecast(result.prediction);
+  if (
+    prediction.predicted_gpa === null ||
+    !prediction.selected_model
+  ) {
+    throw new HttpError(
+      502,
+      "The Python forecast service returned incomplete forecast details. Please retry.",
+    );
+  }
+
+  return res.status(200).json({
+    student: {
+      id: student.id,
+      full_name: student.full_name,
+    },
+    prediction,
+  });
 };
 
 export const getStudentPrediction = async (req, res) => {

@@ -10,7 +10,16 @@ import {
 import { normalizeGradeValue } from "../utils/gradeValueUtils.js";
 
 const GRADE_SELECT_COLUMNS =
-  "id, user_id, subject_code, subject_name, semester, school_year, grade, remarks, created_at";
+  "id, user_id, subject_code, subject_name, semester, school_year, year_level, grade, remarks, created_at";
+
+const formatYearLevel = (value) => {
+  const match = String(value ?? "").match(/\d+/);
+  const level = match ? Number(match[0]) : null;
+  if (!Number.isInteger(level) || level < 1 || level > 5) return null;
+  const suffix =
+    level === 1 ? "st" : level === 2 ? "nd" : level === 3 ? "rd" : "th";
+  return `${level}${suffix} Year`;
+};
 
 const parseGrade = (value) => {
   const normalized = normalizeGradeValue(value);
@@ -61,6 +70,14 @@ const validateGradePayload = (payload) => {
   const school_year = String(
     payload.school_year ?? payload.schoolYear ?? "",
   ).trim();
+  const rawYearLevel = payload.year_level ?? payload.yearLevel ?? "";
+  const year_level = String(rawYearLevel).trim()
+    ? formatYearLevel(rawYearLevel)
+    : null;
+
+  if (String(rawYearLevel).trim() && !year_level) {
+    throw new HttpError(400, "Year level must be between 1st Year and 5th Year.");
+  }
 
   if (!subject_code || !subject_name || !semester || !school_year) {
     throw new HttpError(
@@ -74,6 +91,7 @@ const validateGradePayload = (payload) => {
     subject_name,
     semester: normalizeSemester(semester),
     school_year: normalizeSchoolYear(school_year),
+    year_level,
     grade: parseGrade(payload.grade),
     remarks: payload.remarks?.trim() || null,
   };
@@ -128,28 +146,40 @@ const validateRowsAgainstCurricula = async (rows) => {
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index];
     const profile = profileByUserId.get(row.user_id);
-    if (!profile?.program || !profile?.year_level) {
+    if (!profile?.program) {
       throw new HttpError(
         400,
-        `Row ${index + 1}: the student needs an assigned program and year level before grades can be added.`,
+        `Row ${index + 1}: the student needs an assigned program before grades can be added.`,
       );
     }
 
+    const schoolYearStart = Number(row.school_year.slice(0, 4));
+    const cohortYearLevel = row.cohort_start_year
+      ? formatYearLevel(schoolYearStart - row.cohort_start_year + 1)
+      : null;
+    const effectiveYearLevel =
+      row.year_level || cohortYearLevel || formatYearLevel(profile.year_level);
+    if (!effectiveYearLevel) {
+      throw new HttpError(
+        400,
+        `Row ${index + 1}: provide the student's year level for this school year.`,
+      );
+    }
+
+    const effectiveProfile = { ...profile, year_level: effectiveYearLevel };
     const cacheKey = [
       profile.program.toLowerCase(),
-      String(profile.year_level).toLowerCase(),
+      effectiveYearLevel.toLowerCase(),
       row.school_year,
       row.semester,
-      row.cohort_start_year ?? "",
     ].join("|");
     if (!coursesByTermAndProfile.has(cacheKey)) {
       coursesByTermAndProfile.set(
         cacheKey,
         await getEligibleGradeCourses(
-          profile,
+          effectiveProfile,
           row.school_year,
           row.semester,
-          row.cohort_start_year,
         ),
       );
     }
@@ -171,6 +201,7 @@ const validateRowsAgainstCurricula = async (rows) => {
       subject_name: course.title,
       semester: row.semester,
       school_year: row.school_year,
+      year_level: effectiveYearLevel,
       grade: row.grade,
       remarks: row.remarks,
     });
@@ -325,6 +356,7 @@ export const createStudentGrade = async (req, res) => {
     subject_name: curriculumValidatedGrade.subject_name,
     semester: curriculumValidatedGrade.semester,
     school_year: curriculumValidatedGrade.school_year,
+    year_level: curriculumValidatedGrade.year_level,
     grade: curriculumValidatedGrade.grade,
     remarks: curriculumValidatedGrade.remarks,
   };
@@ -369,6 +401,7 @@ export const createStudentGradesBulk = async (req, res) => {
         subject_name: grade.subject_name,
         semester: grade.semester,
         school_year: grade.school_year,
+        year_level: grade.year_level,
         grade: grade.grade,
         remarks: grade.remarks,
       };
@@ -386,20 +419,19 @@ export const createStudentGradesBulk = async (req, res) => {
     insertRows,
   );
 
-  const { data, error } = await supabase
-    .from("student_grades")
-    .insert(curriculumValidatedRows)
-    .select(GRADE_SELECT_COLUMNS);
-  if (error) throw error;
+  const savedGrades = await saveGradeRows(curriculumValidatedRows);
 
-  res.status(201).json({ grades: data || [], count: data?.length || 0 });
+  res.status(201).json({
+    grades: savedGrades,
+    count: savedGrades.length,
+  });
 };
 
 export const updateStudentGrade = async (req, res) => {
   const grade = validateGradePayload(req.body);
   const { data: existingGrade, error: existingGradeError } = await supabase
     .from("student_grades")
-    .select("user_id")
+    .select("user_id, year_level")
     .eq("id", req.params.id)
     .maybeSingle();
   if (existingGradeError) throw existingGradeError;
@@ -409,6 +441,7 @@ export const updateStudentGrade = async (req, res) => {
     {
       user_id: existingGrade.user_id,
       ...grade,
+      year_level: grade.year_level || existingGrade.year_level,
     },
   ]);
 
@@ -417,6 +450,7 @@ export const updateStudentGrade = async (req, res) => {
     subject_name: curriculumValidatedGrade.subject_name,
     semester: curriculumValidatedGrade.semester,
     school_year: curriculumValidatedGrade.school_year,
+    year_level: curriculumValidatedGrade.year_level,
     grade: curriculumValidatedGrade.grade,
     remarks: curriculumValidatedGrade.remarks,
   };
@@ -435,11 +469,23 @@ export const updateStudentGrade = async (req, res) => {
 export const getEligibleStudentGradeSubjects = async (req, res) => {
   const { userId } = req.params;
   const semester = normalizeSemester(req.query.semester);
+  const requestedYearLevel = String(req.query.year_level ?? "").trim();
   await assertStaffCanAccessStudents(req.user, [userId]);
   const profile = await getStudentGradeProfile(userId);
-  const subjects = await getEligibleGradeCourses(profile, null, semester);
+  const yearLevel = requestedYearLevel
+    ? formatYearLevel(requestedYearLevel)
+    : formatYearLevel(profile.year_level);
+  if (!yearLevel) {
+    throw new HttpError(400, "Select a valid year level to load curriculum subjects.");
+  }
+  const subjects = await getEligibleGradeCourses(
+    { ...profile, year_level: yearLevel },
+    null,
+    semester,
+  );
   res.status(200).json({
     program: profile.program,
+    year_level: yearLevel,
     semester,
     subjects,
   });

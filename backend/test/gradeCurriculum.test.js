@@ -17,6 +17,10 @@ const curricula = [
         title: "Digital Logic Design",
         yearLevel: "2Y",
         semester: "1S",
+        lec: 3,
+        lab: 1,
+        units: 4,
+        prerequisites: "CPE 101",
       },
       {
         code: "CPE 202",
@@ -72,12 +76,20 @@ test("resolves subjects by assigned program and year level, not curriculum acade
       title: "Digital Logic Design",
       yearLevel: "2Y",
       semester: "1",
+      prerequisites: "CPE 101",
+      lec: 3,
+      lab: 1,
+      units: 4,
     },
     {
       code: "CPE 205",
       title: "Older Cohort Course",
       yearLevel: "2Y",
       semester: "1",
+      prerequisites: "",
+      lec: 0,
+      lab: 0,
+      units: 0,
     },
   ]);
 });
@@ -109,12 +121,20 @@ test("supports the explicit cohort selected during a historical grade import", (
       title: "Digital Logic Design",
       yearLevel: "2Y",
       semester: "1",
+      prerequisites: "CPE 101",
+      lec: 3,
+      lab: 1,
+      units: 4,
     },
     {
       code: "CPE 205",
       title: "Older Cohort Course",
       yearLevel: "2Y",
       semester: "1",
+      prerequisites: "",
+      lec: 0,
+      lab: 0,
+      units: 0,
     },
   ]);
 });

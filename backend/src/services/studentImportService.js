@@ -131,6 +131,7 @@ export const provisionStudentAccount = async (
       program: row.program,
       section: row.section,
       year_level: row.year_level,
+      school_year: row.school_year,
       risk_level: "Low",
     },
     { onConflict: "user_id" },

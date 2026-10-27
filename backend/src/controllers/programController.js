@@ -11,7 +11,7 @@ const normalizeProgramCode = (value) => {
 };
 
 const countProgramUsage = async (programName) => {
-  const [curricula, students, advisers, users] = await Promise.all([
+  const [curricula, students, advisers, assignments, users] = await Promise.all([
     supabase
       .from("curricula")
       .select("id", { count: "exact", head: true })
@@ -25,12 +25,16 @@ const countProgramUsage = async (programName) => {
       .select("user_id", { count: "exact", head: true })
       .eq("program", programName),
     supabase
+      .from("adviser_assignments")
+      .select("id", { count: "exact", head: true })
+      .eq("program", programName),
+    supabase
       .from("users")
       .select("id", { count: "exact", head: true })
       .eq("program", programName),
   ]);
 
-  for (const result of [curricula, students, advisers, users]) {
+  for (const result of [curricula, students, advisers, assignments, users]) {
     if (result.error) throw result.error;
   }
 
@@ -38,11 +42,13 @@ const countProgramUsage = async (programName) => {
     curricula: curricula.count || 0,
     students: students.count || 0,
     advisers: advisers.count || 0,
+    assignments: assignments.count || 0,
     users: users.count || 0,
     total:
       (curricula.count || 0) +
       (students.count || 0) +
       (advisers.count || 0) +
+      (assignments.count || 0) +
       (users.count || 0),
   };
 };
@@ -52,6 +58,7 @@ const renameProgramReferences = async (oldName, newName) => {
     supabase.from("curricula").update({ program: newName }).eq("program", oldName),
     supabase.from("student_info").update({ program: newName }).eq("program", oldName),
     supabase.from("adviser_info").update({ program: newName }).eq("program", oldName),
+    supabase.from("adviser_assignments").update({ program: newName }).eq("program", oldName),
     supabase.from("users").update({ program: newName }).eq("program", oldName),
   ]);
 

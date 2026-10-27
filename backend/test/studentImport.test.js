@@ -11,6 +11,7 @@ const studentRow = (overrides = {}) => ({
   program: "BS Agricultural and Biosystems Engineering",
   section: "DEMO-1A",
   year_level: "4th Year",
+  school_year: "2025-2026",
   ...overrides,
 });
 
@@ -28,9 +29,14 @@ test("normalizes account fields and email casing", () => {
   assert.equal("password" in result.rows[0], false);
 });
 
-test("reports missing required fields, invalid emails, and malformed year levels", () => {
+test("reports invalid required fields and school-year formats", () => {
   const result = validateStudentImportRows([
-    studentRow({ student_id: "", email: "not-an-email", year_level: "Senior" }),
+    studentRow({
+      student_id: "",
+      email: "not-an-email",
+      year_level: "Senior",
+      school_year: "2025",
+    }),
   ]);
 
   assert.equal(result.rows.length, 0);
@@ -38,6 +44,7 @@ test("reports missing required fields, invalid emails, and malformed year levels
     "student_id is required",
     "email must be a valid address",
     "year_level must look like '1st Year'",
+    "school_year must be consecutive, like '2025-2026'",
   ]);
 });
 
@@ -190,6 +197,7 @@ test("provisions a linked auth user and student profile without returning its pa
   assert.equal(userCall.payload.id, "generated-user-uuid");
   assert.equal(userCall.payload.password_hash, "hashed:PrivateRandomA1!");
   assert.equal(studentInfoCall.payload.user_id, "generated-user-uuid");
+  assert.equal(studentInfoCall.payload.school_year, "2025-2026");
   assert.deepEqual(studentInfoCall.options, { onConflict: "user_id" });
   assert.deepEqual(created, {
     student_id: "STU-2023-001",

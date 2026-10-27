@@ -21,6 +21,7 @@ const FIELDS = [
   "program",
   "section",
   "year_level",
+  "school_year",
 ];
 
 const normalizeHeader = (value) =>
@@ -38,6 +39,7 @@ const HEADER_ALIASES = {
   program: "program",
   section: "section",
   yearlevel: "year_level",
+  schoolyear: "school_year",
 };
 
 const readWorkbook = (file) =>
@@ -182,7 +184,7 @@ const StudentAccountUploader = ({ onImported }) => {
         <div className={styles.gradeImportRequirements}>
           <FiFileText size={15} aria-hidden="true" />
           <span>
-            CSV or XLSX · student ID, name, email, program, section, year
+            CSV or XLSX · student ID, name, email, program, section, year level, school year
           </span>
         </div>
         <button
@@ -199,6 +201,7 @@ const StudentAccountUploader = ({ onImported }) => {
                 program: "BS Agricultural and Biosystems Engineering",
                 section: "DEMO-1A",
                 year_level: "4th Year",
+                school_year: "2025-2026",
               },
             ]);
             const workbook = XLSX.utils.book_new();
@@ -287,6 +290,7 @@ const StudentAccountUploader = ({ onImported }) => {
                 <th>Email</th>
                 <th>Program</th>
                 <th>Year</th>
+                <th>School Year</th>
               </tr>
             </thead>
             <tbody>
@@ -302,6 +306,7 @@ const StudentAccountUploader = ({ onImported }) => {
                   <td>{student.email || "-"}</td>
                   <td>{student.program || "-"}</td>
                   <td>{student.year_level || "-"}</td>
+                  <td>{student.school_year || "-"}</td>
                 </tr>
               ))}
             </tbody>

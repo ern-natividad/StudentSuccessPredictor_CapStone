@@ -16,7 +16,7 @@ test("staff access checks assignment records before permitting student access", 
       getStaffAccessibleStudentUserIds,
     },
     { getStudentGrades },
-    { getStudentPrediction },
+    { getStudentPrediction, generateStudentPythonForecast },
   ] = await Promise.all([
     import("../src/config/supabaseClient.js"),
     import("../src/services/staffStudentAccessService.js"),
@@ -35,29 +35,50 @@ test("staff access checks assignment records before permitting student access", 
       eq() {
         return this;
       },
-      maybeSingle: async () => ({
-        data: {
-          assigned_section: "A",
-          year_level: "2",
-          program: "Computer Engineering",
-        },
-        error: null,
-      }),
+      then(resolve, reject) {
+        return Promise.resolve({
+          data:
+            table === "adviser_assignments"
+              ? [
+                  {
+                    school_year: "2025-2026",
+                    section: "2A",
+                    year_level: "2nd Year",
+                    program: "Computer Engineering",
+                    is_active: true,
+                  },
+                ]
+              : [],
+          error: null,
+        }).then(resolve, reject);
+      },
       in: async () => ({
         data:
-          table === "student_info"
+          table === "adviser_assignments"
+            ? [
+                {
+                  school_year: "2025-2026",
+                  section: "2A",
+                  year_level: "2nd Year",
+                  program: "Computer Engineering",
+                  is_active: true,
+                },
+              ]
+            : table === "student_info"
             ? [
                 {
                   user_id: "assigned-student",
                   section: "2A",
                   year_level: "2",
                   program: "Computer Engineering",
+                  school_year: "2025-2026",
                 },
                 {
                   user_id: "other-student",
                   section: "2B",
                   year_level: "2",
                   program: "Computer Engineering",
+                  school_year: "2025-2026",
                 },
               ]
             : [],
@@ -106,16 +127,25 @@ test("staff access checks assignment records before permitting student access", 
       ),
       (error) => error.status === 403,
     );
+    await assert.rejects(
+      generateStudentPythonForecast(
+        { user: { sub: "staff-1", role: "staff" }, params: { userId: "other-student" } },
+        {},
+      ),
+      (error) => error.status === 403,
+    );
     assert.deepEqual(queriedTables, [
-      "adviser_info",
+      "adviser_assignments",
       "student_info",
-      "adviser_info",
+      "adviser_assignments",
       "student_info",
-      "adviser_info",
+      "adviser_assignments",
       "student_info",
-      "adviser_info",
+      "adviser_assignments",
       "student_info",
-      "adviser_info",
+      "adviser_assignments",
+      "student_info",
+      "adviser_assignments",
       "student_info",
     ]);
   } finally {

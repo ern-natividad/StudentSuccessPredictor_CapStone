@@ -1,4 +1,3 @@
-export const MAX_ADVISER_SECTIONS = 3;
 export const ALL_PROGRAMS_OPTION = "All Programs";
 
 const PLACEHOLDER_SECTION_VALUES = new Set([
@@ -14,6 +13,12 @@ const PLACEHOLDER_SECTION_VALUES = new Set([
 
 export const normalizeMatchValue = (value) =>
   String(value || "").trim().toLowerCase();
+
+const normalizeYearLevel = (value) => {
+  const normalized = normalizeMatchValue(value);
+  const ordinal = normalized.match(/^(\d+)(?:st|nd|rd|th)?(?:\s+year)?$/);
+  return ordinal ? ordinal[1] : normalized;
+};
 
 const isRealSectionValue = (value) => {
   const normalized = normalizeMatchValue(value);
@@ -43,7 +48,7 @@ export const parseAssignedSections = (value) => {
           .map((section) => String(section).trim())
           .filter(isRealSectionValue),
       ),
-    ].slice(0, MAX_ADVISER_SECTIONS);
+    ];
   }
 
   return [
@@ -53,7 +58,7 @@ export const parseAssignedSections = (value) => {
         .map((section) => section.trim())
         .filter(isRealSectionValue),
     ),
-  ].slice(0, MAX_ADVISER_SECTIONS);
+  ];
 };
 
 export const serializeAssignedSections = (sections = []) =>
@@ -74,7 +79,6 @@ export const areAllSectionsSelected = (selectedSections = [], availableSections 
   if (available.length === 0) return false;
 
   return (
-    available.length <= MAX_ADVISER_SECTIONS &&
     available.every((section) => selected.includes(section)) &&
     selected.length === available.length
   );
@@ -105,16 +109,18 @@ export const isStudentAssignedToAdviser = (
   adviserSection,
   adviserYearLevel,
   adviserProgram = ALL_PROGRAMS_OPTION,
+  adviserSchoolYear,
 ) => {
   const normalizedAdviserSection = normalizeMatchValue(adviserSection);
-  const normalizedAdviserYear = normalizeMatchValue(adviserYearLevel);
+  const normalizedAdviserYear = normalizeYearLevel(adviserYearLevel);
   const adviserSectionValues = getSectionMatchValues(adviserSection);
   const studentSectionValues = getSectionMatchValues(
     getStudentSectionValue(student),
   );
-  const normalizedStudentYear = normalizeMatchValue(
+  const normalizedStudentYear = normalizeYearLevel(
     student.yearLevel || student.year_level,
   );
+  const normalizedAdviserSchoolYear = normalizeMatchValue(adviserSchoolYear);
 
   if (
     !normalizedAdviserSection ||
@@ -131,6 +137,13 @@ export const isStudentAssignedToAdviser = (
     normalizedStudentYear === normalizedAdviserYear;
 
   if (!sectionAndYearMatch) return false;
+  if (
+    normalizedAdviserSchoolYear &&
+    normalizeMatchValue(student.schoolYear || student.school_year) !==
+      normalizedAdviserSchoolYear
+  ) {
+    return false;
+  }
 
   return isProgramMatch(getStudentProgramValue(student), adviserProgram);
 };
@@ -140,6 +153,7 @@ export const filterStudentsForAdviser = (
   adviserSections,
   adviserYearLevel,
   adviserProgram = ALL_PROGRAMS_OPTION,
+  adviserSchoolYear,
 ) => {
   const sections = parseAssignedSections(adviserSections);
 
@@ -154,10 +168,25 @@ export const filterStudentsForAdviser = (
         section,
         adviserYearLevel,
         adviserProgram,
+        adviserSchoolYear,
       ),
     ),
   );
 };
+
+export const filterStudentsForAssignments = (studentList, assignments = []) =>
+  studentList.filter((student) =>
+    assignments.some((assignment) =>
+      assignment.is_active !== false &&
+      isStudentAssignedToAdviser(
+        student,
+        assignment.section,
+        assignment.year_level,
+        assignment.program,
+        assignment.school_year,
+      ),
+    ),
+  );
 
 export const getStaffSectionLabel = (assignedSection, getSectionById) => {
   if (!isRealSectionValue(assignedSection)) return "Unassigned";

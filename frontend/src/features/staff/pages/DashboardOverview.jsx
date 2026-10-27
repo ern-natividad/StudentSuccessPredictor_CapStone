@@ -13,7 +13,13 @@ import {
 } from "chart.js";
 import { Doughnut, Line } from "react-chartjs-2";
 import { useRoleScopedStudents } from "../../../hooks/useRoleScopedStudents";
-import { api, isBackendAuthEnabled } from "../../../services/api";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  api,
+  getDashboardDataInvalidatedEvent,
+  getDashboardDataRevision,
+  isBackendAuthEnabled,
+} from "../../../services/api";
 import { useEarlyAlerts } from "../hooks/useEarlyAlerts";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
@@ -37,6 +43,9 @@ const YEAR_LEVEL_ORDER = [
   "4th Year",
   "5th Year",
 ];
+const PERFORMANCE_CACHE_TTL_MS = 30_000;
+const MAX_PERFORMANCE_CACHE_ENTRIES = 12;
+const performanceMetricsCache = new Map();
 
 const average = (values) => {
   if (!values.length) return null;
@@ -78,19 +87,46 @@ const normalizeRiskLabel = (value) => {
 };
 
 const DashboardOverview = () => {
+  const { user } = useAuth();
   const { isAdmin, visibleStudents, visibleStudentIds } =
     useRoleScopedStudents();
   const { alerts, loading: alertsLoading } = useEarlyAlerts();
+  const visibleUserIdsKey = useMemo(() => {
+    const userIds = [
+      ...new Set(visibleStudents.map((student) => student.user_id).filter(Boolean)),
+    ].sort();
+    return userIds.join(",");
+  }, [visibleStudents]);
   const [performanceRows, setPerformanceRows] = useState([]);
   const [predictionsByUserId, setPredictionsByUserId] = useState({});
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
+  const [dashboardDataRevision, setDashboardDataRevision] = useState(
+    getDashboardDataRevision,
+  );
+
+  useEffect(() => {
+    const handleDashboardDataInvalidated = () => {
+      setDashboardDataRevision(getDashboardDataRevision());
+    };
+    window.addEventListener(
+      getDashboardDataInvalidatedEvent(),
+      handleDashboardDataInvalidated,
+    );
+    return () =>
+      window.removeEventListener(
+        getDashboardDataInvalidatedEvent(),
+        handleDashboardDataInvalidated,
+      );
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
+    const cacheKey = `${user?.id || ""}:${user?.role || ""}:${visibleUserIdsKey}`;
+    const requestRevision = dashboardDataRevision;
 
     const loadPerformanceMetrics = async () => {
-      if (!isBackendAuthEnabled() || visibleStudents.length === 0) {
+      if (!isBackendAuthEnabled() || !visibleUserIdsKey) {
         if (isMounted) {
           setPerformanceRows([]);
           setPredictionsByUserId({});
@@ -100,6 +136,22 @@ const DashboardOverview = () => {
         return;
       }
 
+      const cached = performanceMetricsCache.get(cacheKey);
+      if (
+        cached?.revision === requestRevision &&
+        cached.expiresAt > Date.now()
+      ) {
+        performanceMetricsCache.delete(cacheKey);
+        performanceMetricsCache.set(cacheKey, cached);
+        setPerformanceRows(cached.rows);
+        setPredictionsByUserId(cached.predictions);
+        setMetricsLoading(false);
+        setMetricsError("");
+        return;
+      }
+
+      const studentsForRequest = visibleStudents;
+      const studentIdsForRequest = visibleStudentIds;
       setMetricsLoading(true);
       setMetricsError("");
 
@@ -117,9 +169,10 @@ const DashboardOverview = () => {
 
         // Load the cohort forecasts in one request, matching the Students List.
         let livePredictions = {};
+        let predictionFetchFailed = false;
         try {
           const result = await api.getStudentPredictions(
-            visibleStudents.map((student) => student.user_id),
+            visibleUserIdsKey.split(","),
           );
           livePredictions = Object.fromEntries(
             (result.predictions || []).map(({ user_id, prediction }) => [
@@ -128,11 +181,12 @@ const DashboardOverview = () => {
             ]),
           );
         } catch (error) {
+          predictionFetchFailed = true;
           console.error("Unable to load dashboard student predictions:", error);
         }
 
         if (rows.length === 0) {
-          rows = visibleStudents
+          rows = studentsForRequest
             .map((student) => {
               const prediction = livePredictions[student.user_id];
               if (!prediction) return null;
@@ -154,7 +208,7 @@ const DashboardOverview = () => {
         const scopedRows = isAdmin
           ? rows
           : rows.filter((row) =>
-              visibleStudentIds.has(
+              studentIdsForRequest.has(
                 String(row.student_id || "")
                   .trim()
                   .toLowerCase(),
@@ -164,6 +218,23 @@ const DashboardOverview = () => {
         if (isMounted) {
           setPredictionsByUserId(livePredictions);
           setPerformanceRows(scopedRows);
+          if (
+            !predictionFetchFailed &&
+            requestRevision === getDashboardDataRevision()
+          ) {
+            performanceMetricsCache.set(cacheKey, {
+              rows: scopedRows,
+              predictions: livePredictions,
+              revision: requestRevision,
+              expiresAt: Date.now() + PERFORMANCE_CACHE_TTL_MS,
+            });
+            while (
+              performanceMetricsCache.size > MAX_PERFORMANCE_CACHE_ENTRIES
+            ) {
+              const oldestKey = performanceMetricsCache.keys().next().value;
+              performanceMetricsCache.delete(oldestKey);
+            }
+          }
         }
       } catch (error) {
         if (isMounted) {
@@ -181,11 +252,18 @@ const DashboardOverview = () => {
     return () => {
       isMounted = false;
     };
-  }, [isAdmin, visibleStudents, visibleStudentIds]);
-
-  const safeStudents = Array.isArray(visibleStudents) ? visibleStudents : [];
+  }, [
+    dashboardDataRevision,
+    isAdmin,
+    user?.id,
+    user?.role,
+    visibleStudents,
+    visibleStudentIds,
+    visibleUserIdsKey,
+  ]);
 
   const enrichedStudents = useMemo(() => {
+    const safeStudents = Array.isArray(visibleStudents) ? visibleStudents : [];
     const predictionByStudentId = new Map(
       performanceRows.map((row) => [
         String(row.student_id || "")
@@ -225,7 +303,7 @@ const DashboardOverview = () => {
         ),
       };
     });
-  }, [performanceRows, predictionsByUserId, safeStudents]);
+  }, [performanceRows, predictionsByUserId, visibleStudents]);
 
   const riskCounts = {
     Low: enrichedStudents.filter((s) => s.risk_level === "Low").length,

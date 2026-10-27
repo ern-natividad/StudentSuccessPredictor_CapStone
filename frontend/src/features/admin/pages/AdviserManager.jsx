@@ -4,20 +4,21 @@ import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
 import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
-import { upsertAdviserInfo } from "../../../services/adviserInfoService";
+import { api } from "../../../services/api";
 import { AUTH_ROLES } from "../../../utils/constants";
 import {
   ALL_PROGRAMS_OPTION,
   areAllSectionsSelected,
   filterStudentsForAdviser,
-  getStaffAssignedSections,
   getStaffSectionLabel,
   getStaffSectionsLabel,
   getStudentSectionValue,
-  MAX_ADVISER_SECTIONS,
   parseAssignedSections,
-  serializeAssignedSections,
 } from "../../../utils/adviserAssignmentUtils";
+import {
+  buildSchoolYearOptions,
+  getCurrentAcademicYear,
+} from "../../../utils/gradeSemesterUtils";
 import styles from "../../../styles/Dashboard.module.css";
 import commonStyles from "../../../styles/Common.module.css";
 
@@ -30,12 +31,14 @@ const countStudentsForAdviser = (
   adviserSections,
   adviserYearLevel,
   adviserProgram,
+  adviserSchoolYear,
 ) =>
   filterStudentsForAdviser(
     studentList,
     adviserSections,
     adviserYearLevel,
     adviserProgram,
+    adviserSchoolYear,
   ).length;
 
 const AdviserManager = () => {
@@ -45,9 +48,7 @@ const AdviserManager = () => {
     staffMembers,
     students,
     getSectionById,
-    updateSectionAdviser,
-    updateStaffRole,
-    updateAdviserInfoRecord,
+    refreshStudentDirectory,
     directoryLoading,
     directoryError,
   } = useDashboard();
@@ -60,24 +61,25 @@ const AdviserManager = () => {
 
   const [selectedEditRowId, setSelectedEditRowId] = useState(null);
   const [viewSectionId, setViewSectionId] = useState(null);
+  const [editSchoolYear, setEditSchoolYear] = useState("");
+  const [sectionInput, setSectionInput] = useState("");
   const [adviserSearch, setAdviserSearch] = useState("");
   const [yearAssignedFilter, setYearAssignedFilter] = useState("");
   const [editStaffId, setEditStaffId] = useState(staffMembers[0]?.id || "");
-  const [editSectionIds, setEditSectionIds] = useState(["A"]);
+  const [editSectionIds, setEditSectionIds] = useState([]);
   const [editYearAssigned, setEditYearAssigned] = useState(YEAR_LEVEL_OPTIONS[0]);
   const [editProgram, setEditProgram] = useState(ALL_PROGRAMS_OPTION);
-  const [editRole, setEditRole] = useState("Adviser");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTeacherStaffId, setNewTeacherStaffId] = useState("");
-  const [newTeacherRole, setNewTeacherRole] = useState("Adviser");
-  const [newTeacherSectionIds, setNewTeacherSectionIds] = useState(["A"]);
+  const [newTeacherSectionIds, setNewTeacherSectionIds] = useState([]);
+  const [newTeacherSchoolYear, setNewTeacherSchoolYear] = useState(
+    getCurrentAcademicYear(),
+  );
   const [newTeacherYearAssigned, setNewTeacherYearAssigned] = useState(
     YEAR_LEVEL_OPTIONS[0],
   );
   const [newTeacherProgram, setNewTeacherProgram] = useState(ALL_PROGRAMS_OPTION);
   const [isSaving, setIsSaving] = useState(false);
-  const [staffSectionAssignments, setStaffSectionAssignments] = useState({});
-
   // Confirmation modal state for row removal
   const [rowToDelete, setRowToDelete] = useState(null);
 
@@ -110,22 +112,9 @@ const AdviserManager = () => {
     [sections],
   );
 
-  const getAdviserSections = (staffId, staff) => {
-    if (staffSectionAssignments[staffId]) {
-      return parseAssignedSections(staffSectionAssignments[staffId]);
-    }
-
-    return getStaffAssignedSections(staff);
-  };
-
   const toggleSectionSelection = (sectionId, selectedSections, setSelectedSections) => {
     if (selectedSections.includes(sectionId)) {
       setSelectedSections(selectedSections.filter((section) => section !== sectionId));
-      return;
-    }
-
-    if (selectedSections.length >= MAX_ADVISER_SECTIONS) {
-      toast.error(`An adviser can be assigned up to ${MAX_ADVISER_SECTIONS} sections.`);
       return;
     }
 
@@ -138,44 +127,110 @@ const AdviserManager = () => {
       return;
     }
 
-    const allSections = parseAssignedSections(sectionOptions);
-    if (allSections.length > MAX_ADVISER_SECTIONS) {
-      toast.error(
-        `All sections cannot be selected because more than ${MAX_ADVISER_SECTIONS} sections exist.`,
-      );
-      return;
-    }
+    setSelectedSections(parseAssignedSections(sectionOptions));
+  };
 
-    setSelectedSections(allSections);
+  const addTypedSections = (selectedSections, setSelectedSections) => {
+    const typedSections = sectionInput
+      .split(/[,;]+/)
+      .map((section) => section.trim().replace(/\s+/g, " "))
+      .filter(Boolean);
+
+    if (typedSections.length === 0) return;
+
+    const selectedByNormalizedValue = new Map(
+      selectedSections.map((section) => [section.toLowerCase(), section]),
+    );
+    typedSections.forEach((section) => {
+      if (!["unassigned", "n/a", "na", "none", "-", "--"].includes(section.toLowerCase())) {
+        selectedByNormalizedValue.set(section.toLowerCase(), section);
+      }
+    });
+
+    setSelectedSections([...selectedByNormalizedValue.values()]);
+    setSectionInput("");
   };
 
   const sectionOverviewRows = useMemo(() => {
-    const rows = staffMembers.map((staff) => {
-      const assignedSections = getAdviserSections(staff.id, staff);
+    const rows = staffMembers.flatMap((staff) => {
+      const activeAssignments = (staff.adviserAssignments || []).filter(
+        (assignment) => assignment.is_active !== false,
+      );
+      const groups = new Map();
 
-      return {
-        id: staff.id,
-        name: staff.full_name,
-        section: getStaffSectionsLabel(
+      activeAssignments.forEach((assignment) => {
+        const key = JSON.stringify([
+          assignment.school_year,
+          assignment.program,
+          assignment.year_level,
+        ]);
+        const group = groups.get(key) || {
+          schoolYear: assignment.school_year,
+          program: assignment.program,
+          yearAssigned: assignment.year_level,
+          sections: [],
+        };
+        group.sections.push(assignment.section);
+        groups.set(key, group);
+      });
+
+      if (groups.size === 0 && staff.adviser_info) {
+        groups.set("legacy", {
+          schoolYear: "",
+          program: staff.adviser_info.program || ALL_PROGRAMS_OPTION,
+          yearAssigned: staff.adviser_info.year_level || "N/A",
+          sections: parseAssignedSections(staff.adviser_info.assigned_section),
+          isLegacy: true,
+        });
+      }
+
+      if (groups.size === 0) {
+        groups.set("unassigned", {
+          schoolYear: "",
+          program: ALL_PROGRAMS_OPTION,
+          yearAssigned: "N/A",
+          sections: [],
+          isLegacy: true,
+        });
+      }
+
+      return [...groups.entries()].map(([key, group]) => {
+        const assignedSections = parseAssignedSections(group.sections);
+        const assignmentGroup = group.isLegacy
+          ? null
+          : {
+              adviser_user_id: staff.id,
+              school_year: group.schoolYear,
+              program: group.program,
+              year_level: group.yearAssigned,
+            };
+        return {
+          id: `${staff.id}:${key}`,
+          name: staff.full_name,
+          section: getStaffSectionsLabel(
+            assignedSections,
+            getSectionById,
+            sectionOptions,
+          ),
+          schoolYear: group.schoolYear || "Needs confirmation",
+          yearAssigned: group.yearAssigned,
+          program: group.program || ALL_PROGRAMS_OPTION,
+          role: staff.title?.toLowerCase().includes("adviser")
+            ? "Adviser"
+            : staff.title || "Subject Teacher",
+          students: countStudentsForAdviser(
+            students,
+            assignedSections,
+            group.yearAssigned,
+            group.program,
+            group.schoolYear,
+          ),
+          adviserId: staff.id,
           assignedSections,
-          getSectionById,
-          sectionOptions,
-        ),
-        yearAssigned: staff.assignedYearLevel || "N/A",
-        program: staff.assignedProgram || ALL_PROGRAMS_OPTION,
-        role: staff.title?.toLowerCase().includes("adviser")
-          ? "Adviser"
-          : staff.title || "Subject Teacher",
-        students: countStudentsForAdviser(
-          students,
-          assignedSections,
-          staff.assignedYearLevel,
-          staff.assignedProgram,
-        ),
-        adviserId: staff.id,
-        assignedSections,
-        assignedProgram: staff.assignedProgram || ALL_PROGRAMS_OPTION,
-      };
+          assignedProgram: group.program || ALL_PROGRAMS_OPTION,
+          assignmentGroup,
+        };
+      });
     });
 
     return rows.filter((row) => !removedRowIds.includes(row.id));
@@ -183,7 +238,6 @@ const AdviserManager = () => {
     staffMembers,
     students,
     getSectionById,
-    staffSectionAssignments,
     removedRowIds,
     sectionOptions,
   ]);
@@ -211,7 +265,7 @@ const AdviserManager = () => {
         !yearAssignedFilter || row.yearAssigned === yearAssignedFilter;
       const matchesSearch =
         !searchTerm ||
-        [row.name, row.section, row.program, row.yearAssigned, row.role]
+        [row.name, row.section, row.schoolYear, row.program, row.yearAssigned, row.role]
           .some((value) => String(value || "").toLowerCase().includes(searchTerm));
 
       return matchesYear && matchesSearch;
@@ -233,45 +287,38 @@ const AdviserManager = () => {
   const viewSectionStudents = useMemo(() => {
     if (!viewSectionId) return [];
 
-    const adviser = staffMembers.find((staff) => staff.id === viewSectionId);
-    if (!adviser) return [];
-
-    const assignedSections = getAdviserSections(adviser.id, adviser);
+    const row = sectionOverviewRows.find((item) => item.id === viewSectionId);
+    if (!row?.assignmentGroup) return [];
 
     return filterStudentsForAdviser(
       students,
-      assignedSections,
-      adviser.assignedYearLevel,
-      adviser.assignedProgram,
+      row.assignedSections,
+      row.assignmentGroup.year_level,
+      row.assignmentGroup.program,
+      row.assignmentGroup.school_year,
     );
-  }, [students, viewSectionId, staffMembers, staffSectionAssignments]);
+  }, [students, viewSectionId, sectionOverviewRows]);
 
   const handleOpenEdit = (row) => {
-    const staff = staffMembers.find((member) => member.id === row.adviserId);
-    const assignedSections = row.assignedSections?.length
-      ? row.assignedSections
-      : getAdviserSections(row.adviserId, staff);
-
+    setSectionInput("");
     setSelectedEditRowId(row.id);
     setEditStaffId(row.adviserId || staffMembers[0]?.id || "");
-    setEditSectionIds(assignedSections.length > 0 ? assignedSections : ["A"]);
-    setEditYearAssigned(
-      staff?.assignedYearLevel && staff.assignedYearLevel !== "N/A"
-        ? staff.assignedYearLevel
-        : YEAR_LEVEL_OPTIONS[0],
-    );
-    setEditProgram(
-      staff?.assignedProgram || row.assignedProgram || ALL_PROGRAMS_OPTION,
-    );
-    setEditRole(row.role);
+    setEditSectionIds(row.assignedSections);
+    const assignedYear = YEAR_LEVEL_OPTIONS.includes(row.yearAssigned)
+      ? row.yearAssigned
+      : YEAR_LEVEL_OPTIONS[Number.parseInt(row.yearAssigned, 10) - 1];
+    setEditYearAssigned(assignedYear || YEAR_LEVEL_OPTIONS[0]);
+    setEditProgram(row.assignedProgram || ALL_PROGRAMS_OPTION);
+    setEditSchoolYear(row.assignmentGroup?.school_year || "");
   };
 
   const handleOpenAddModal = () => {
+    setSectionInput("");
     setNewTeacherStaffId(staffMembers[0]?.id || "");
-    setNewTeacherRole("Adviser");
-    setNewTeacherSectionIds(["A"]);
+    setNewTeacherSectionIds([]);
     setNewTeacherYearAssigned(YEAR_LEVEL_OPTIONS[0]);
     setNewTeacherProgram(ALL_PROGRAMS_OPTION);
+    setNewTeacherSchoolYear(getCurrentAcademicYear());
     setIsAddModalOpen(true);
   };
 
@@ -294,98 +341,73 @@ const AdviserManager = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!selectedEditRowId || !editStaffId || editSectionIds.length === 0) {
-      toast.error("Select at least one section for this adviser.");
+    if (
+      !selectedEditRowId ||
+      !editStaffId ||
+      editSectionIds.length === 0 ||
+      !/^\d{4}-(\d{4})$/.test(editSchoolYear) ||
+      Number(editSchoolYear.slice(5)) !== Number(editSchoolYear.slice(0, 4)) + 1
+    ) {
+      toast.error("Choose a school year and at least one section.");
       return;
     }
 
     try {
       setIsSaving(true);
-
-      if (updateStaffRole) {
-        updateStaffRole(editStaffId, editRole);
-      }
-
-      const serializedSections = serializeAssignedSections(editSectionIds);
-      const updatedInfo = await upsertAdviserInfo(editStaffId, {
-        assigned_sections: editSectionIds,
-        year_level: editYearAssigned,
+      const previousRow = sectionOverviewRows.find(
+        (row) => row.id === selectedEditRowId,
+      );
+      await api.saveAdviserAssignmentGroup({
+        adviser_user_id: editStaffId,
+        school_year: editSchoolYear,
         program: editProgram,
-      });
-
-      updateAdviserInfoRecord(editStaffId, updatedInfo);
-
-      setStaffSectionAssignments((currentAssignments) => ({
-        ...currentAssignments,
-        [editStaffId]: serializedSections,
-      }));
-
-      editSectionIds.forEach((sectionId) => {
-        if (sectionId && updateSectionAdviser) {
-          updateSectionAdviser(sectionId, editStaffId);
-        }
+        year_level: editYearAssigned,
+        sections: editSectionIds,
+        previous_group: previousRow?.assignmentGroup || null,
       });
 
       setRemovedRowIds((prev) =>
-        prev.filter(
-          (id) =>
-            id !== selectedEditRowId &&
-            id !== editStaffId,
-        ),
+        prev.filter((id) => id !== selectedEditRowId),
       );
-
       setSelectedEditRowId(null);
-      toast.success("Section assignment updated.");
+      refreshStudentDirectory();
+      toast.success("Adviser assignment saved.");
     } catch (error) {
-      toast.error(error.message || "Unable to save section assignment.");
+      toast.error(error.message || "Unable to save adviser assignment.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveNewTeacher = async () => {
-    if (!newTeacherStaffId || !newTeacherRole || newTeacherSectionIds.length === 0) {
-      toast.error("Select at least one section for this adviser.");
+    if (
+      !newTeacherStaffId ||
+      newTeacherSectionIds.length === 0 ||
+      !/^\d{4}-(\d{4})$/.test(newTeacherSchoolYear) ||
+      Number(newTeacherSchoolYear.slice(5)) !==
+        Number(newTeacherSchoolYear.slice(0, 4)) + 1
+    ) {
+      toast.error("Choose a school year and at least one section.");
       return;
     }
 
     try {
       setIsSaving(true);
 
-      if (updateStaffRole) {
-        updateStaffRole(newTeacherStaffId, newTeacherRole);
-      }
-
-      const serializedSections = serializeAssignedSections(newTeacherSectionIds);
-      const updatedInfo = await upsertAdviserInfo(newTeacherStaffId, {
-        assigned_sections: newTeacherSectionIds,
-        year_level: newTeacherYearAssigned,
+      await api.saveAdviserAssignmentGroup({
+        adviser_user_id: newTeacherStaffId,
+        school_year: newTeacherSchoolYear,
         program: newTeacherProgram,
+        year_level: newTeacherYearAssigned,
+        sections: newTeacherSectionIds,
       });
 
-      updateAdviserInfoRecord(newTeacherStaffId, updatedInfo);
-
-      setStaffSectionAssignments((currentAssignments) => ({
-        ...currentAssignments,
-        [newTeacherStaffId]: serializedSections,
-      }));
-
-      newTeacherSectionIds.forEach((sectionId) => {
-        if (sectionId && updateSectionAdviser) {
-          updateSectionAdviser(sectionId, newTeacherStaffId);
-        }
-      });
-
-      setRemovedRowIds((prev) =>
-        prev.filter(
-          (id) => id !== newTeacherStaffId,
-        ),
-      );
-
+      setRemovedRowIds((prev) => prev.filter((id) => id !== newTeacherStaffId));
+      refreshStudentDirectory();
       setIsAddModalOpen(false);
-      toast.success("Teacher assignment saved.");
+      toast.success("Adviser assignment saved.");
     } catch (error) {
-      toast.error(error.message || "Unable to save teacher assignment.");
+      toast.error(error.message || "Unable to save adviser assignment.");
     } finally {
       setIsSaving(false);
     }
@@ -397,8 +419,8 @@ const AdviserManager = () => {
         <div>
           <h1 className={styles.pageTitle}>Manage Adviser</h1>
           <p className={styles.pageSubtitle}>
-            Assign advisers to sections, review student coverage, and keep teaching
-            assignments organized.
+            Assign staff across school years, programs, year levels, and as many
+            sections as needed.
           </p>
         </div>
       </div>
@@ -437,7 +459,7 @@ const AdviserManager = () => {
               className={styles.adviserOverviewAddButton}
               onClick={handleOpenAddModal}
             >
-              <i className="fas fa-plus" aria-hidden="true" /> Add Teacher
+              <i className="fas fa-plus" aria-hidden="true" /> Add Assignment
             </button>
           </div>
         </div>
@@ -450,17 +472,18 @@ const AdviserManager = () => {
               <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
                 <th style={{ padding: "12px 16px", textAlign: "left", width: "18%" }}>Name</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Section</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>School Year</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "14%" }}>Program</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "12%" }}>Year Assigned</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", width: "16%" }}>Role</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "10%" }}>Students</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", width: "12%" }}>Role</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "8%" }}>Students</th>
                 <th style={{ padding: "12px 16px", textAlign: "center", width: "18%" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {directoryLoading && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 20, textAlign: "center" }}>
+                  <td colSpan={8} style={{ padding: 20, textAlign: "center" }}>
                     Loading staff…
                   </td>
                 </tr>
@@ -476,6 +499,9 @@ const AdviserManager = () => {
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>
                     {row.section}
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    {row.schoolYear}
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>
                     {row.program || ALL_PROGRAMS_OPTION}
@@ -505,7 +531,7 @@ const AdviserManager = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setViewSectionId(row.adviserId || row.id)}
+                        onClick={() => setViewSectionId(row.id)}
                         className={styles.tableActionButton}
                         aria-label={`View students assigned to ${row.name}`}
                         title="View assigned students"
@@ -528,7 +554,7 @@ const AdviserManager = () => {
               ))}
               {!directoryLoading && filteredOverviewRows.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
+                  <td colSpan={8} style={{ padding: 20, textAlign: "center", color: "#64748b" }}>
                     {sectionOverviewRows.length === 0
                       ? "No adviser records displayed."
                       : "No advisers match the selected search and year filter."}
@@ -811,12 +837,12 @@ const AdviserManager = () => {
                 </div>
                 <div>
                   <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "700", color: "#0f172a" }}>
-                    {isAddModalOpen ? "Add Teacher" : "Edit Section Assignment"}
+                    {isAddModalOpen ? "Add Adviser Assignment" : "Edit Adviser Assignment"}
                   </h2>
                   <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.85rem" }}>
                     {isAddModalOpen
-                      ? "Select a staff member from directory to assign role and section."
-                      : "Modify role or section assigned to this staff member."}
+                      ? "Add another school-year, program, year-level, and section scope for a staff member."
+                      : "Update this assignment scope without affecting the staff member's other assignments."}
                   </p>
                 </div>
               </div>
@@ -899,14 +925,14 @@ const AdviserManager = () => {
 
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
-                  Role Assignment
+                  School Year
                 </label>
                 <select
-                  value={isAddModalOpen ? newTeacherRole : editRole}
+                  value={isAddModalOpen ? newTeacherSchoolYear : editSchoolYear}
                   onChange={(e) =>
                     isAddModalOpen
-                      ? setNewTeacherRole(e.target.value)
-                      : setEditRole(e.target.value)
+                      ? setNewTeacherSchoolYear(e.target.value)
+                      : setEditSchoolYear(e.target.value)
                   }
                   style={{
                     padding: "0.65rem 0.85rem",
@@ -919,14 +945,22 @@ const AdviserManager = () => {
                     width: "100%",
                   }}
                 >
-                  <option value="Adviser">Adviser</option>
-                  <option value="Subject Teacher">Subject Teacher</option>
+                  <option value="">Select a school year</option>
+                  {[...new Set([
+                    ...buildSchoolYearOptions(),
+                    isAddModalOpen ? newTeacherSchoolYear : editSchoolYear,
+                  ])]
+                    .filter(Boolean)
+                    .map((schoolYear) => (
+                      <option key={schoolYear} value={schoolYear}>
+                        {schoolYear}
+                      </option>
+                    ))}
                 </select>
               </div>
-
               <div style={{ display: "grid", gap: "6px" }}>
                 <label style={{ fontSize: "0.825rem", color: "#334155", fontWeight: "600" }}>
-                  Assigned Sections (max {MAX_ADVISER_SECTIONS})
+                  Assigned Sections
                 </label>
                 <div
                   style={{
@@ -949,6 +983,13 @@ const AdviserManager = () => {
                     const allSelected = areAllSectionsSelected(
                       selectedSections,
                       sectionOptions,
+                    );
+                    const customSections = selectedSections.filter(
+                      (section) =>
+                        !sectionOptions.some(
+                          (option) =>
+                            option.toLowerCase() === section.toLowerCase(),
+                        ),
                     );
 
                     return (
@@ -1003,12 +1044,93 @@ const AdviserManager = () => {
                             </label>
                           );
                         })}
+                        {customSections.map((sectionId) => (
+                          <label
+                            key={sectionId}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              fontSize: "0.9rem",
+                              color: "#0f172a",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked
+                              onChange={() =>
+                                toggleSectionSelection(
+                                  sectionId,
+                                  selectedSections,
+                                  setSelectedSections,
+                                )
+                              }
+                            />
+                            Section {sectionId}
+                          </label>
+                        ))}
                       </>
                     );
                   })()}
                 </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    value={sectionInput}
+                    maxLength={60}
+                    placeholder="Type a section name (e.g. 2D)"
+                    aria-label="Type a section name"
+                    onChange={(event) => setSectionInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        const selectedSections = isAddModalOpen
+                          ? newTeacherSectionIds
+                          : editSectionIds;
+                        const setSelectedSections = isAddModalOpen
+                          ? setNewTeacherSectionIds
+                          : setEditSectionIds;
+                        addTypedSections(selectedSections, setSelectedSections);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "0.65rem 0.85rem",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.9rem",
+                      color: "#0f172a",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const selectedSections = isAddModalOpen
+                        ? newTeacherSectionIds
+                        : editSectionIds;
+                      const setSelectedSections = isAddModalOpen
+                        ? setNewTeacherSectionIds
+                        : setEditSectionIds;
+                      addTypedSections(selectedSections, setSelectedSections);
+                    }}
+                    disabled={!sectionInput.trim()}
+                    style={{
+                      padding: "0.65rem 1rem",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: "#ffffff",
+                      color: "#334155",
+                      fontWeight: "600",
+                      cursor: sectionInput.trim() ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Select up to {MAX_ADVISER_SECTIONS} sections, or choose All to assign every section.
+                  Select listed sections or type custom section names. Separate multiple names with commas.
                 </p>
               </div>
 
@@ -1129,7 +1251,7 @@ const AdviserManager = () => {
                   {isSaving
                     ? "Saving..."
                     : isAddModalOpen
-                      ? "Add Teacher"
+                      ? "Add Assignment"
                       : "Save Changes"}
                 </button>
               </div>

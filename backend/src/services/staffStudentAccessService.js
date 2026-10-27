@@ -12,16 +12,16 @@ export const getStaffAccessibleStudentUserIds = async (
   if (!staffId || userIds.length === 0) return new Set();
 
   const { data: adviser, error: adviserError } = await supabase
-    .from("adviser_info")
-    .select("assigned_section, year_level, program")
-    .eq("user_id", staffId)
-    .maybeSingle();
+    .from("adviser_assignments")
+    .select("school_year, program, year_level, section, is_active")
+    .eq("adviser_user_id", staffId)
+    .eq("is_active", true);
   if (adviserError) throw adviserError;
-  if (!adviser) return new Set();
+  if (!adviser?.length) return new Set();
 
   const { data: students, error: studentError } = await supabase
     .from("student_info")
-    .select("user_id, section, year_level, program, department")
+    .select("user_id, section, year_level, program, department, school_year")
     .in("user_id", userIds);
   if (studentError) throw studentError;
 

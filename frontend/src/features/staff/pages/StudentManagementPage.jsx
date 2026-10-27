@@ -5,7 +5,7 @@ import { useListPagination } from "../../../hooks/useListPagination";
 import { useToast } from "../../../components/Common/Toast";
 import ListPagination from "../../../components/Common/ListPagination";
 import { usePrograms } from "../../../hooks/usePrograms";
-import { api, isBackendAuthEnabled } from "../../../services/api";
+import { api } from "../../../services/api";
 import { getPublishedCurricula } from "../../../services/curriculumService";
 import { upsertStudentInfo } from "../../../services/studentInfoService";
 import { AUTH_ROLES } from "../../../utils/constants";
@@ -21,6 +21,7 @@ import {
   SCHOOL_YEAR_INFO_TEXT,
   formatSemesterCode,
   formatSchoolYear,
+  buildSchoolYearOptions,
   getCurrentAcademicYear,
   getSchoolYearFromRecord,
   getUniqueAcademicYears,
@@ -68,9 +69,10 @@ const createEmptyGradeForm = () => ({
   remarks: "",
 });
 
-const createEmptyGradeBatch = () => ({
+const createEmptyGradeBatch = (yearLevel = "") => ({
   semester: "1",
   schoolYear: getCurrentAcademicYear(),
+  yearLevel,
   rows: [],
 });
 
@@ -94,6 +96,18 @@ const modalFieldInputStyle = {
 
 const normalizeGradeFormValue = (value) => normalizeGradeValue(value) || "";
 
+const normalizeGradeInput = (value) => {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  if (/^\d*\.?\d*$/.test(normalized)) return normalized;
+  if (["I", "IN", "INC", "A", "AW", "U", "UW"].includes(normalized)) {
+    return normalized;
+  }
+  return null;
+};
+
+const normalizeRemarksInput = (value) =>
+  String(value ?? "").replace(/[^a-z0-9 ]/gi, "");
+
 const normalizeCourseCode = (value) =>
   String(value ?? "")
     .trim()
@@ -112,6 +126,11 @@ const getCourseYearLevel = (value) => {
   const match = String(value ?? "").match(/\d+/);
   return match ? Number(match[0]) : null;
 };
+
+const getYearLevelOption = (value) =>
+  YEAR_LEVEL_OPTIONS.find(
+    (option) => getCourseYearLevel(option) === getCourseYearLevel(value),
+  ) || "";
 
 const resolveGradeCourseUnits = (record, curricula, program) => {
   const schoolYearStart = getAcademicYearStart(
@@ -183,6 +202,7 @@ const createEmptyStudentInfoForm = (defaultProgram = "") => ({
   program: defaultProgram,
   section: "",
   year_level: YEAR_LEVEL_OPTIONS[0],
+  school_year: "",
   risk_level: "Low",
 });
 
@@ -236,8 +256,9 @@ const StudentManagementPage = () => {
     riskLevel: "",
   });
   const [predictionsByUserId, setPredictionsByUserId] = useState({});
-  const [predictionsLoading, setPredictionsLoading] = useState(false);
-  const [predictionsError, setPredictionsError] = useState("");
+  const [predictionStudent, setPredictionStudent] = useState(null);
+  const [predictionStatus, setPredictionStatus] = useState("idle");
+  const [predictionMessage, setPredictionMessage] = useState("");
   const [importMode, setImportMode] = useState("");
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
@@ -262,55 +283,6 @@ const StudentManagementPage = () => {
   const [publishedCurricula, setPublishedCurricula] = useState([]);
   const [eligibleSubjectsResult, setEligibleSubjectsResult] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadPredictions = async () => {
-      if (!isBackendAuthEnabled() || displayStudentList.length === 0) {
-        if (isMounted) {
-          setPredictionsByUserId({});
-          setPredictionsLoading(false);
-          setPredictionsError("");
-        }
-        return;
-      }
-
-      setPredictionsLoading(true);
-      setPredictionsError("");
-
-      try {
-        const result = await api.getStudentPredictions(
-          displayStudentList.map((student) => student.user_id),
-        );
-        if (isMounted) {
-          setPredictionsByUserId(
-            Object.fromEntries(
-              (result.predictions || []).map(({ user_id, prediction }) => [
-                user_id,
-                prediction || null,
-              ]),
-            ),
-          );
-        }
-      } catch (error) {
-        console.error("Unable to load student predictions:", error);
-        if (isMounted) {
-          setPredictionsByUserId({});
-          setPredictionsError(
-            error.message || "Unable to load student predictions.",
-          );
-        }
-      } finally {
-        if (isMounted) setPredictionsLoading(false);
-      }
-    };
-
-    loadPredictions();
-    return () => {
-      isMounted = false;
-    };
-  }, [displayStudentList]);
-
   const effectiveSelectedStudentId =
     selectedStudentId || displayStudentList[0]?.student_id || "";
   const selectedStudent = useMemo(
@@ -325,6 +297,7 @@ const StudentManagementPage = () => {
   const eligibleSubjectsRequestKey = JSON.stringify({
     studentId: selectedStudent?.user_id,
     schoolYear: gradeBatch.schoolYear,
+    yearLevel: gradeBatch.yearLevel,
     semester: gradeBatch.semester,
     grades: studentGrades.map((grade) => [
       grade.id,
@@ -343,10 +316,18 @@ const StudentManagementPage = () => {
     ? eligibleSubjectsResult.error
     : "";
   const eligibleSubjectsLoading =
-    isGradeModalOpen && !hasCurrentEligibleSubjects;
+    isGradeModalOpen &&
+    Boolean(gradeBatch.yearLevel) &&
+    !hasCurrentEligibleSubjects;
 
   const pendingGradeCount = gradeBatch.rows.filter(
-    (row) => !row.existingGrade && String(row.grade || "").trim(),
+    (row) =>
+      String(row.grade || "").trim() &&
+      (!row.existingGrade ||
+        normalizeGradeValue(row.grade) !==
+          normalizeGradeValue(row.existingGrade.grade) ||
+        String(row.remarks || "").trim() !==
+          String(row.existingGrade.remarks || "").trim()),
   ).length;
 
   const gradeUnitsById = useMemo(
@@ -428,13 +409,16 @@ const StudentManagementPage = () => {
   }, [toast]);
 
   useEffect(() => {
-    if (!isGradeModalOpen || !selectedStudent) return undefined;
+    if (!isGradeModalOpen || !selectedStudent || !gradeBatch.yearLevel) {
+      return undefined;
+    }
 
     let isMounted = true;
     api
       .getEligibleGradeSubjects(
         selectedStudent.user_id,
         gradeBatch.semester,
+        gradeBatch.yearLevel,
       )
       .then(({ subjects = [] }) => {
         if (!isMounted) return;
@@ -448,7 +432,10 @@ const StudentManagementPage = () => {
           .filter(
             (record) =>
               getSchoolYearFromRecord(record) === gradeBatch.schoolYear &&
-              normalizeSemesterCode(record.semester) === gradeBatch.semester,
+              normalizeSemesterCode(record.semester) === gradeBatch.semester &&
+              (!record.year_level ||
+                getCourseYearLevel(record.year_level) ===
+                  getCourseYearLevel(gradeBatch.yearLevel)),
           )
           .forEach((record) => {
             const code = normalizeCourseCode(record.subject_code);
@@ -466,8 +453,12 @@ const StudentManagementPage = () => {
               id: `grade-row-${course.code}`,
               subjectCode: course.code,
               subject: course.title,
-              grade: "",
-              remarks: "",
+              prerequisites: course.prerequisites || "",
+              lec: course.lec || 0,
+              lab: course.lab || 0,
+              units: course.units || 0,
+              grade: existing?.grade || "",
+              remarks: existing?.remarks || "",
               existingGrade: existing || null,
             };
           }),
@@ -489,6 +480,7 @@ const StudentManagementPage = () => {
   }, [
     gradeBatch.schoolYear,
     gradeBatch.semester,
+    gradeBatch.yearLevel,
     eligibleSubjectsRequestKey,
     isGradeModalOpen,
     selectedStudent,
@@ -632,9 +624,6 @@ const StudentManagementPage = () => {
           { header: "Program", width: 24 },
           { header: "Section", width: 16 },
           { header: "Year Level", width: 14 },
-          { header: "Current GPA", width: 13, align: "center" },
-          { header: "Predicted GPA", width: 14, align: "center" },
-          { header: "Forecast Model", width: 20, align: "center" },
           { header: "Risk Level", width: 14, align: "center" },
         ],
         rows: filteredStudentRows.map((student) => [
@@ -643,14 +632,6 @@ const StudentManagementPage = () => {
           student.program || student.department || "",
           student.sectionName,
           student.yearLevel || student.year_level || "",
-          student.current_gpa == null
-            ? ""
-            : Number(student.current_gpa).toFixed(2),
-          student.predicted_gpa == null
-            ? ""
-            : Number(student.predicted_gpa).toFixed(2),
-          student.selected_model ||
-            (student.method === "grade-trend" ? "Grade-trend estimate" : ""),
           student.risk_level,
         ]),
       });
@@ -666,6 +647,14 @@ const StudentManagementPage = () => {
   };
 
   const handleGradeRowChange = (rowId, field, value) => {
+    if (field === "grade") {
+      const normalizedValue = normalizeGradeInput(value);
+      if (normalizedValue === null) return;
+      value = normalizedValue;
+    } else if (field === "remarks") {
+      value = normalizeRemarksInput(value);
+    }
+
     setGradeBatch((prev) => ({
       ...prev,
       rows: prev.rows.map((row) => {
@@ -674,10 +663,20 @@ const StudentManagementPage = () => {
           return { ...row, [field]: value };
         }
         const nextRemarks = remarksFromGrade(value);
+        const currentAutoRemarks = remarksFromGrade(row.grade);
+        const shouldReplaceAutoRemarks =
+          !String(row.remarks || "").trim() ||
+          String(row.remarks).trim() === currentAutoRemarks;
         return {
           ...row,
           grade: value,
-          remarks: nextRemarks || (String(value).trim() ? row.remarks : ""),
+          remarks: nextRemarks
+            ? shouldReplaceAutoRemarks
+              ? nextRemarks
+              : row.remarks
+            : String(value).trim()
+              ? row.remarks
+              : "",
         };
       }),
     }));
@@ -700,9 +699,58 @@ const StudentManagementPage = () => {
 
   const openGradeModal = (studentId) => {
     setSelectedStudentId(studentId);
-    setGradeBatch(createEmptyGradeBatch());
+    const student = displayStudentList.find(
+      (item) => item.student_id === studentId,
+    );
+    setGradeBatch(
+      createEmptyGradeBatch(
+        getYearLevelOption(student?.yearLevel || student?.year_level),
+      ),
+    );
     setEligibleSubjectsResult(null);
     setIsGradeModalOpen(true);
+  };
+
+  const openPredictionModal = (student) => {
+    setPredictionStudent(student);
+    setPredictionStatus("idle");
+    setPredictionMessage("");
+  };
+
+  const closePredictionModal = () => {
+    setPredictionStudent(null);
+    setPredictionStatus("idle");
+    setPredictionMessage("");
+  };
+
+  const generatePythonForecast = async () => {
+    if (!predictionStudent || predictionStatus === "loading") return;
+    setPredictionStatus("loading");
+    setPredictionMessage("");
+
+    try {
+      const result = await api.generateStudentPythonForecast(
+        predictionStudent.user_id,
+      );
+      if (!result.prediction) {
+        setPredictionStatus("empty");
+        setPredictionMessage(
+          result.message || "The Python model could not generate a forecast for this student.",
+        );
+        return;
+      }
+
+      setPredictionsByUserId((current) => ({
+        ...current,
+        [predictionStudent.user_id]: result.prediction,
+      }));
+      setPredictionStatus("success");
+    } catch (error) {
+      setPredictionStatus("error");
+      setPredictionMessage(
+        error.message || "Unable to reach the Python forecast service. Please retry.",
+      );
+    }
   };
 
   const closeGradeModal = () => {
@@ -756,6 +804,7 @@ const StudentManagementPage = () => {
       section: student.section || student.assignedSectionId || "",
       year_level:
         student.yearLevel || student.year_level || YEAR_LEVEL_OPTIONS[0],
+      school_year: student.school_year || "",
       risk_level: student.risk_level || "Low",
     });
     setIsEditStudentModalOpen(true);
@@ -776,6 +825,16 @@ const StudentManagementPage = () => {
       toast.error("Student ID is required.");
       return;
     }
+    const schoolYearMatch = studentInfoForm.school_year.match(
+      /^(\d{4})-(\d{4})$/,
+    );
+    if (
+      !schoolYearMatch ||
+      Number(schoolYearMatch[2]) !== Number(schoolYearMatch[1]) + 1
+    ) {
+      toast.error("Select the student's current school year.");
+      return;
+    }
 
     try {
       setIsSavingStudentInfo(true);
@@ -785,6 +844,7 @@ const StudentManagementPage = () => {
         program: studentInfoForm.program,
         section: studentInfoForm.section,
         year_level: studentInfoForm.year_level,
+        school_year: studentInfoForm.school_year,
         risk_level: studentInfoForm.risk_level,
       });
 
@@ -851,13 +911,27 @@ const StudentManagementPage = () => {
       toast.error(`School year is required. ${SCHOOL_YEAR_INFO_TEXT}`);
       return;
     }
+    if (!gradeBatch.yearLevel) {
+      toast.error("Select the student's year level for this school year.");
+      return;
+    }
 
     const preparedRows = [];
     for (let index = 0; index < gradeBatch.rows.length; index += 1) {
       const row = gradeBatch.rows[index];
-      if (row.existingGrade || !String(row.grade || "").trim()) continue;
+      const gradeValue = String(row.grade || "").trim();
+      const remarksValue = String(row.remarks || "").trim();
+      if (!row.existingGrade && !gradeValue) continue;
+      if (
+        row.existingGrade &&
+        normalizeGradeValue(gradeValue) ===
+          normalizeGradeValue(row.existingGrade.grade) &&
+        remarksValue === String(row.existingGrade.remarks || "").trim()
+      ) {
+        continue;
+      }
       const selectedGrade = normalizeGradeValue(row.grade);
-      const remarks = remarksFromGrade(selectedGrade) || row.remarks.trim();
+      const remarks = remarksValue || remarksFromGrade(selectedGrade);
       if (!isValidGradeValue(selectedGrade)) {
         toast.error(
           `${row.subjectCode}: enter a valid grade. ${GRADE_INPUT_HELP_TEXT}`,
@@ -870,6 +944,7 @@ const StudentManagementPage = () => {
         subject_name: row.subject,
         semester: gradeBatch.semester,
         school_year: gradeBatch.schoolYear.trim(),
+        year_level: gradeBatch.yearLevel,
         grade: selectedGrade,
         remarks,
       });
@@ -891,13 +966,15 @@ const StudentManagementPage = () => {
         throw new Error("No grades were saved. Please try again.");
       }
 
-      setStudentGrades((prevGrades) => [...savedGrades, ...prevGrades]);
+      const mergedGradesById = new Map(
+        studentGrades.map((grade) => [grade.id, grade]),
+      );
+      savedGrades.forEach((grade) => mergedGradesById.set(grade.id, grade));
+      const mergedGrades = [...mergedGradesById.values()];
+      setStudentGrades(mergedGrades);
       setGradeBatch(createEmptyGradeBatch());
       setIsGradeModalOpen(false);
-      updateStudentGradeRecord(selectedStudent.student_id, [
-        ...savedGrades,
-        ...studentGrades,
-      ]);
+      updateStudentGradeRecord(selectedStudent.student_id, mergedGrades);
       toast.success(
         savedGrades.length === 1
           ? "Grade record saved successfully."
@@ -1021,9 +1098,11 @@ const StudentManagementPage = () => {
   const staffAssignedSections = useMemo(() => {
     if (!loggedInStaff) return [];
 
-    const savedAssignment =
-      loggedInStaff.assignedSection || loggedInStaff.assignedSections;
-    return parseAssignedSections(savedAssignment);
+    return parseAssignedSections(
+      (loggedInStaff.adviserAssignments || []).map(
+        (assignment) => assignment.section,
+      ),
+    );
   }, [loggedInStaff]);
 
   const assignedSectionCount = useMemo(() => {
@@ -1125,13 +1204,6 @@ const StudentManagementPage = () => {
       {directoryLoading && (
         <div className={styles.contentCard}>Loading student directory…</div>
       )}
-      {predictionsError && (
-        <div className={styles.contentCard} role="status">
-          Prediction metrics could not be loaded: {predictionsError} Student
-          records are still available below.
-        </div>
-      )}
-
       <div className={styles.summaryGrid}>
         {summaryStats.map((item) => (
           <div key={item.label} className={styles.summaryCard}>
@@ -1462,17 +1534,14 @@ const StudentManagementPage = () => {
         >
           <table className={`${commonStyles.table} ${styles.studentTable}`}>
             <colgroup>
-              <col style={{ width: "4%" }} />
-              <col style={{ width: "11%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "18%" }} />
               <col style={{ width: "16%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "9%" }} />
               <col style={{ width: "10%" }} />
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "13%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "18%" }} />
             </colgroup>
             <thead className={commonStyles.tableHead}>
               <tr>
@@ -1482,9 +1551,6 @@ const StudentManagementPage = () => {
                 <th>Program</th>
                 <th>Section</th>
                 <th>Year Level</th>
-                <th>Current GPA</th>
-                <th>Predicted GPA</th>
-                <th>Forecast model</th>
                 <th>Risk level</th>
                 <th>Action</th>
               </tr>
@@ -1492,7 +1558,7 @@ const StudentManagementPage = () => {
             <tbody>
               {paginatedStudentRows.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className={styles.studentDirectoryEmpty}>
+                  <td colSpan={8} className={styles.studentDirectoryEmpty}>
                     No students match these search and filter criteria.
                   </td>
                 </tr>
@@ -1516,22 +1582,6 @@ const StudentManagementPage = () => {
                     <td>{row.program || row.department || "—"}</td>
                     <td>{row.sectionName}</td>
                     <td>{row.yearLevel || row.year_level || "—"}</td>
-                    <td>
-                      {row.current_gpa == null
-                        ? "—"
-                        : Number(row.current_gpa).toFixed(2)}
-                    </td>
-                    <td>
-                      {row.predicted_gpa == null
-                        ? "—"
-                        : Number(row.predicted_gpa).toFixed(2)}
-                    </td>
-                    <td>
-                      {row.selected_model ||
-                        (row.method === "grade-trend"
-                          ? "Grade trend"
-                          : "—")}
-                    </td>
                     <td>
                       <span
                         className={`${styles.riskBadge} ${
@@ -1588,6 +1638,18 @@ const StudentManagementPage = () => {
                         >
                           <i className="fas fa-plus" aria-hidden="true" />
                         </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPredictionModal(row);
+                          }}
+                          className={styles.tableActionButton}
+                          aria-label={`Generate Python forecast for ${row.full_name}`}
+                          title="Predict next-term GWA with Python"
+                        >
+                          <i className="fas fa-wand-magic-sparkles" aria-hidden="true" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1604,12 +1666,178 @@ const StudentManagementPage = () => {
           onPageChange={setCurrentPage}
           itemLabel="students"
         />
-        {!directoryLoading && predictionsLoading && (
-          <div className={commonStyles.emptyState}>
-            Loading prediction metrics…
-          </div>
-        )}
       </div>
+
+      {predictionStudent && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 1100,
+          }}
+          onClick={closePredictionModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-prediction-title"
+            style={{
+              width: "min(560px, 100%)",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.contentCardHeader}>
+              <div>
+                <div className={styles.contentCardEyebrow}>Python forecast</div>
+                <h2 id="student-prediction-title" style={{ margin: 0 }}>
+                  {predictionStudent.full_name}
+                </h2>
+                <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                  {predictionStudent.student_id} ·{" "}
+                  {predictionStudent.program ||
+                    predictionStudent.department ||
+                    "Program not assigned"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closePredictionModal}
+                aria-label="Close prediction dialog"
+                disabled={predictionStatus === "loading"}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  color: "#64748b",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {predictionStatus === "loading" && (
+              <p role="status" style={{ color: "#64748b" }}>
+                <i className="fas fa-spinner fa-spin" aria-hidden="true" />{" "}
+                Connecting to the Python model and generating forecast…
+              </p>
+            )}
+            {(predictionStatus === "error" ||
+              predictionStatus === "empty") && (
+              <p
+                role={predictionStatus === "error" ? "alert" : "status"}
+                style={{ color: predictionStatus === "error" ? "#b91c1c" : "#92400e" }}
+              >
+                {predictionMessage}
+              </p>
+            )}
+            {predictionStatus === "success" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 16,
+                  margin: "18px 0",
+                }}
+              >
+                <div style={{ display: "grid", gap: 8 }}>
+                  <strong style={{ color: "#475569" }}>Current GPA</strong>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a" }}>
+                    {predictionsByUserId[predictionStudent.user_id]
+                      ?.current_gpa == null
+                      ? "—"
+                      : Number(
+                          predictionsByUserId[predictionStudent.user_id]
+                            .current_gpa,
+                        ).toFixed(2)}
+                  </div>
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <strong style={{ color: "#475569" }}>Predicted GPA</strong>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a" }}>
+                    {Number(
+                      predictionsByUserId[predictionStudent.user_id]
+                        ?.predicted_gpa,
+                    ).toFixed(2)}
+                  </div>
+                </div>
+                <div style={{ display: "grid", alignContent: "start", gap: 8 }}>
+                  <strong style={{ color: "#475569" }}>Risk level</strong>
+                  <div>
+                    <span
+                      className={`${styles.riskBadge} ${
+                        styles[
+                          `risk${String(
+                            predictionsByUserId[predictionStudent.user_id]
+                              ?.risk_level || "",
+                          )
+                            .charAt(0)
+                            .toUpperCase()}${String(
+                            predictionsByUserId[predictionStudent.user_id]
+                              ?.risk_level || "",
+                          )
+                            .slice(1)
+                            .toLowerCase()}`
+                        ] || ""
+                      }`}
+                    >
+                      {predictionsByUserId[predictionStudent.user_id]
+                        ?.risk_level || "Unavailable"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+                borderTop: "1px solid #e2e8f0",
+                paddingTop: 16,
+                marginTop: 20,
+              }}
+            >
+              <button
+                type="button"
+                onClick={closePredictionModal}
+                disabled={predictionStatus === "loading"}
+                className={styles.tableActionButton}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={generatePythonForecast}
+                disabled={predictionStatus === "loading"}
+                className={styles.studentAccountImportButton}
+              >
+                {predictionStatus === "loading" ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin" aria-hidden="true" />{" "}
+                    Generating…
+                  </>
+                ) : predictionStatus === "success" ? (
+                  "Generate Again"
+                ) : (
+                  "Generate Python ML Forecast"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isGradeHistoryModalOpen && selectedStudent ? (
         <div
@@ -2106,8 +2334,8 @@ const StudentManagementPage = () => {
             style={{
               background: "#ffffff",
               borderRadius: "16px",
-              width: "min(820px, 100%)",
-              padding: "28px",
+              width: "min(1200px, 100%)",
+              padding: "24px",
               boxShadow:
                 "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
               border: "1px solid #e2e8f0",
@@ -2194,10 +2422,28 @@ const StudentManagementPage = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                   gap: "12px",
                 }}
               >
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <label style={modalFieldLabelStyle}>Year Level</label>
+                  <select
+                    value={gradeBatch.yearLevel}
+                    onChange={(e) =>
+                      handleGradeBatchMetaChange("yearLevel", e.target.value)
+                    }
+                    disabled={isSavingGrade}
+                    style={modalFieldInputStyle}
+                  >
+                    <option value="">Select year level</option>
+                    {YEAR_LEVEL_OPTIONS.map((yearLevel) => (
+                      <option key={yearLevel} value={yearLevel}>
+                        {yearLevel}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div style={{ display: "grid", gap: "6px" }}>
                   <label style={modalFieldLabelStyle}>School Year</label>
                   <select
@@ -2238,14 +2484,45 @@ const StudentManagementPage = () => {
                 {GRADE_INPUT_HELP_TEXT}
               </p>
 
-              <div style={{ display: "grid", gap: "10px" }}>
+              <div style={{ display: "grid", gap: "10px", minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    justifyItems: "center",
+                    gap: "3px",
+                    padding: "2px 0 6px",
+                    color: "#0f172a",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                  }}
+                >
+                  <span>{gradeBatch.yearLevel || "Select year level"}</span>
+                  <span
+                    style={{
+                      fontSize: "0.82rem",
+                      fontStyle: "italic",
+                      fontWeight: 600,
+                      textTransform: "none",
+                    }}
+                  >
+                    {SEMESTER_FORM_OPTIONS.find(
+                      (option) => option.value === gradeBatch.semester,
+                    )?.label || ""}
+                  </span>
+                </div>
+
                 <label style={{ ...modalFieldLabelStyle, margin: 0 }}>
                   Curriculum subjects ({eligibleGradeSubjects.length})
                 </label>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>
-                  Subjects come from this student’s published program
-                  curriculum. Subjects with an existing grade must be edited
-                  from grade history.
+                  Showing {gradeBatch.yearLevel || "the selected year level"}{" "}
+                  subjects for {selectedStudent.program || selectedStudent.department},
+                  {` SY ${gradeBatch.schoolYear} · `}
+                  {SEMESTER_FORM_OPTIONS.find(
+                    (option) => option.value === gradeBatch.semester,
+                  )?.label}
+                  . Enter grades and optional remarks in the table. Existing
+                  grades are prefilled; changes update the existing record.
                 </p>
 
                 {eligibleSubjectsLoading ? (
@@ -2262,111 +2539,192 @@ const StudentManagementPage = () => {
                 !eligibleSubjectsError &&
                 eligibleGradeSubjects.length === 0 ? (
                   <p role="status" style={{ margin: 0, color: "#b91c1c" }}>
-                    No published subjects were found for this student’s
-                    assigned program, year level, and semester. Check that the
-                    student’s program is assigned correctly and that its
-                    curriculum is published.
+                    {!gradeBatch.yearLevel
+                      ? "Select the year level for the selected school year to load the matching curriculum."
+                      : "No published subjects were found for this student's selected year level and semester. Check that the student's program is assigned correctly and that its curriculum is published."}
                   </p>
                 ) : null}
 
-                {!eligibleSubjectsLoading && !eligibleSubjectsError
-                  ? gradeBatch.rows.map((row) => (
-                  <div
-                    key={row.id}
-                    style={{
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "12px",
-                      padding: "12px",
-                      background: "#f8fafc",
-                      display: "grid",
-                      gap: "10px",
-                    }}
-                  >
-                    <div
+                {!eligibleSubjectsLoading && !eligibleSubjectsError ? (
+                  <div style={{ overflowX: "auto", border: "1px solid #64748b" }}>
+                    <table
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        borderCollapse: "collapse",
+                        width: "100%",
+                        minWidth: "900px",
+                        fontSize: "0.78rem",
+                        color: "#0f172a",
                       }}
                     >
-                      <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
-                        {row.subjectCode} · {row.subject}
-                      </strong>
-                      {row.existingGrade ? (
-                        <span
-                          style={{
-                            color: "#64748b",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Already recorded: {row.existingGrade.grade}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                        gap: "8px",
-                      }}
-                    >
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <label
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Grade
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="1.25 / INC"
-                          value={row.grade}
-                          disabled={Boolean(row.existingGrade) || isSavingGrade}
-                          onChange={(e) =>
-                            handleGradeRowChange(
-                              row.id,
-                              "grade",
-                              e.target.value,
-                            )
-                          }
-                          style={modalFieldInputStyle}
-                        />
-                      </div>
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <label
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Remarks
-                        </label>
-                        <input
-                          type="text"
-                          value={row.remarks || "—"}
-                          readOnly
-                          style={{
-                            ...modalFieldInputStyle,
-                            backgroundColor: "#ffffff",
-                            color: isAlertRemark(row.remarks)
-                              ? "#dc2626"
-                              : "#334155",
-                            fontWeight: isAlertRemark(row.remarks) ? 700 : 500,
-                            cursor: "default",
-                          }}
-                        />
-                      </div>
-                    </div>
+                      <thead>
+                        <tr style={{ backgroundColor: "#f8fafc" }}>
+                          {["Grade", "Code", "Description", "Prereq"].map(
+                            (heading) => (
+                              <th
+                                key={heading}
+                                rowSpan={2}
+                                scope="col"
+                                style={{
+                                  border: "1px solid #64748b",
+                                  padding: "8px 6px",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {heading}
+                              </th>
+                            ),
+                          )}
+                          <th
+                            colSpan={3}
+                            scope="colgroup"
+                            style={{
+                              border: "1px solid #64748b",
+                              padding: "6px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Units
+                          </th>
+                          <th
+                            rowSpan={2}
+                            scope="col"
+                            style={{
+                              border: "1px solid #64748b",
+                              padding: "8px 6px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Remarks
+                          </th>
+                        </tr>
+                        <tr style={{ backgroundColor: "#f8fafc" }}>
+                          {["Lec", "Lab", "Total"].map((heading) => (
+                            <th
+                              key={heading}
+                              scope="col"
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "6px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {heading}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gradeBatch.rows.map((row) => (
+                          <tr key={row.id}>
+                            <td
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "5px",
+                                minWidth: "120px",
+                              }}
+                            >
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                aria-label={`Grade for ${row.subjectCode}`}
+                                placeholder={
+                                  row.existingGrade
+                                    ? `Recorded: ${row.existingGrade.grade}`
+                                    : "Enter grade"
+                                }
+                                value={row.grade}
+                                disabled={isSavingGrade}
+                                onChange={(e) =>
+                                  handleGradeRowChange(
+                                    row.id,
+                                    "grade",
+                                    e.target.value,
+                                  )
+                                }
+                                style={{
+                                  ...modalFieldInputStyle,
+                                  padding: "0.45rem",
+                                  fontSize: "0.78rem",
+                                }}
+                              />
+                            </td>
+                            <td
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "7px",
+                                textAlign: "center",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {row.subjectCode}
+                            </td>
+                            <td
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "7px",
+                                minWidth: "180px",
+                              }}
+                            >
+                              {row.subject}
+                            </td>
+                            <td
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "7px",
+                                textAlign: "center",
+                                minWidth: "90px",
+                              }}
+                            >
+                              {row.prerequisites || "---"}
+                            </td>
+                            {[row.lec, row.lab, getCourseTotalUnits(row)].map(
+                              (units, index) => (
+                                <td
+                                  key={`${row.id}-units-${index}`}
+                                  style={{
+                                    border: "1px solid #64748b",
+                                    padding: "7px",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {units}
+                                </td>
+                              ),
+                            )}
+                            <td
+                              style={{
+                                border: "1px solid #64748b",
+                                padding: "5px",
+                                minWidth: "130px",
+                              }}
+                            >
+                              <input
+                                type="text"
+                                aria-label={`Remarks for ${row.subjectCode}`}
+                                placeholder="Optional notes"
+                                value={row.remarks}
+                                disabled={isSavingGrade}
+                                onChange={(e) =>
+                                  handleGradeRowChange(
+                                    row.id,
+                                    "remarks",
+                                    e.target.value,
+                                  )
+                                }
+                                style={{
+                                  ...modalFieldInputStyle,
+                                  padding: "0.45rem",
+                                  fontSize: "0.78rem",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                    ))
-                  : null}
+                ) : null}
               </div>
 
               <div
@@ -2409,6 +2767,7 @@ const StudentManagementPage = () => {
                     isSavingGrade ||
                     eligibleSubjectsLoading ||
                     Boolean(eligibleSubjectsError) ||
+                    !gradeBatch.yearLevel ||
                     pendingGradeCount === 0
                   }
                   style={{
@@ -2420,11 +2779,17 @@ const StudentManagementPage = () => {
                     fontWeight: "600",
                     fontSize: "0.875rem",
                     cursor:
-                      isSavingGrade || eligibleSubjectsLoading || pendingGradeCount === 0
+                      isSavingGrade ||
+                      eligibleSubjectsLoading ||
+                      !gradeBatch.yearLevel ||
+                      pendingGradeCount === 0
                         ? "not-allowed"
                         : "pointer",
                     opacity:
-                      isSavingGrade || eligibleSubjectsLoading || pendingGradeCount === 0
+                      isSavingGrade ||
+                      eligibleSubjectsLoading ||
+                      !gradeBatch.yearLevel ||
+                      pendingGradeCount === 0
                         ? 0.75
                         : 1,
                     boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
@@ -3137,6 +3502,46 @@ const StudentManagementPage = () => {
                       {option}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    fontSize: "0.825rem",
+                    color: "#334155",
+                    fontWeight: "600",
+                  }}
+                >
+                  Current School Year
+                </label>
+                <select
+                  value={studentInfoForm.school_year}
+                  onChange={(e) =>
+                    handleStudentInfoChange("school_year", e.target.value)
+                  }
+                  style={{
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.9rem",
+                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    width: "100%",
+                  }}
+                >
+                  <option value="">Select a school year</option>
+                  {[...new Set([
+                    ...buildSchoolYearOptions(),
+                    studentInfoForm.school_year,
+                  ])]
+                    .filter(Boolean)
+                    .map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                 </select>
               </div>
 

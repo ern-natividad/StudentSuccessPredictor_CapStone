@@ -1,22 +1,27 @@
 import { supabase } from "../lib/supabaseClient";
+import { api } from "./api";
 
 // Keep this allow-list deliberate. In particular, password_hash, totp_secret,
 // lock_until, and failed_attempts must never be returned to the browser.
 const USER_DIRECTORY_COLUMNS =
   "id, email, full_name, role, year_level, created_at, updated_at, account_locked";
 const STUDENT_INFO_COLUMNS =
-  "user_id, student_id, department, program, section, year_level, risk_level";
+  "user_id, student_id, department, program, section, year_level, school_year, risk_level";
 const ADVISER_INFO_COLUMNS = "user_id, assigned_section, year_level, program";
 
-export const getUserDirectory = async () => {
-  const [usersResult, studentInfoResult, adviserInfoResult] = await Promise.all([
-    supabase
-      .from("users")
-      .select(USER_DIRECTORY_COLUMNS)
-      .order("created_at", { ascending: false }),
-    supabase.from("student_info").select(STUDENT_INFO_COLUMNS),
-    supabase.from("adviser_info").select(ADVISER_INFO_COLUMNS),
-  ]);
+export const getUserDirectory = async ({
+  includeAdviserAssignments = true,
+} = {}) => {
+  const [usersResult, studentInfoResult, adviserInfoResult, assignments] =
+    await Promise.all([
+      supabase
+        .from("users")
+        .select(USER_DIRECTORY_COLUMNS)
+        .order("created_at", { ascending: false }),
+      supabase.from("student_info").select(STUDENT_INFO_COLUMNS),
+      supabase.from("adviser_info").select(ADVISER_INFO_COLUMNS),
+      includeAdviserAssignments ? api.getAdviserAssignments() : [],
+    ]);
 
   if (usersResult.error) throw usersResult.error;
   if (studentInfoResult.error) throw studentInfoResult.error;
@@ -34,10 +39,17 @@ export const getUserDirectory = async () => {
       adviserInfo,
     ]),
   );
+  const assignmentsByUserId = new Map();
+  for (const assignment of assignments) {
+    const records = assignmentsByUserId.get(assignment.adviser_user_id) || [];
+    records.push(assignment);
+    assignmentsByUserId.set(assignment.adviser_user_id, records);
+  }
 
   return (usersResult.data || []).map((user) => ({
     ...user,
     student_info: studentInfoByUserId.get(user.id) || null,
     adviser_info: adviserInfoByUserId.get(user.id) || null,
+    adviser_assignments: assignmentsByUserId.get(user.id) || [],
   }));
 };

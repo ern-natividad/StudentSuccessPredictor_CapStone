@@ -103,6 +103,10 @@ export const resolveEligibleCurriculumCourses = (
         title,
         yearLevel: String(course.yearLevel),
         semester: semesterCode,
+        prerequisites: String(course.prerequisites ?? ""),
+        lec: Number(course.lec) || 0,
+        lab: Number(course.lab) || 0,
+        units: Number(course.units) || 0,
       });
     }
   }
@@ -119,10 +123,10 @@ export const getStudentGradeProfile = async (userId) => {
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
-  if (!data?.program || !data?.year_level) {
+  if (!data?.program) {
     throw new HttpError(
       400,
-      "The student needs an assigned program and year level before grades can be added.",
+      "The student needs an assigned program before grades can be added.",
     );
   }
   return data;

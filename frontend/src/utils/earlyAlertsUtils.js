@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabaseClient";
 import { api, isBackendAuthEnabled } from "../services/api";
-import { filterStudentsForAdviser } from "./adviserAssignmentUtils";
+import { filterStudentsForAssignments } from "./adviserAssignmentUtils";
 
 const normalizeRiskLabel = (value) => {
   const raw = String(value || "").trim().toLowerCase();
@@ -37,6 +37,7 @@ export const fetchEarlyAlerts = async () => {
       program,
       section,
       year_level,
+      school_year,
       risk_level,
       created_at,
       users (
@@ -165,13 +166,9 @@ export const scopeEarlyAlerts = ({
 
     const visibleStudents = getStudentsForStaff
       ? getStudentsForStaff(loggedInStaff.id)
-      : filterStudentsForAdviser(
+      : filterStudentsForAssignments(
           students,
-          loggedInStaff.assignedSections?.length
-            ? loggedInStaff.assignedSections
-            : loggedInStaff.assignedSection,
-          loggedInStaff.assignedYearLevel,
-          loggedInStaff.assignedProgram,
+          loggedInStaff.adviserAssignments || [],
         );
 
     const visibleStudentIds = new Set(

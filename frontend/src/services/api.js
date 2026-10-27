@@ -3,6 +3,48 @@ import axios from "axios";
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
 
+const PREDICTION_CACHE_TTL_MS = 30_000;
+const MAX_CACHED_PREDICTIONS = 5_000;
+const DASHBOARD_DATA_INVALIDATED_EVENT = "hawk:dashboard-data-invalidated";
+const studentPredictionCache = new Map();
+const inFlightPredictionRequests = new Map();
+let predictionCacheToken = null;
+let predictionCacheSession = 0;
+let dashboardDataRevision = 0;
+
+const clearStudentPredictionCache = () => {
+  studentPredictionCache.clear();
+  inFlightPredictionRequests.clear();
+};
+
+export const invalidateStudentPredictionCache = (userIds) => {
+  if (Array.isArray(userIds) && userIds.length > 0) {
+    userIds.forEach((userId) => studentPredictionCache.delete(userId));
+  } else {
+    clearStudentPredictionCache();
+  }
+
+  dashboardDataRevision += 1;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(DASHBOARD_DATA_INVALIDATED_EVENT));
+  }
+};
+
+export const getDashboardDataRevision = () => dashboardDataRevision;
+export const getDashboardDataInvalidatedEvent = () =>
+  DASHBOARD_DATA_INVALIDATED_EVENT;
+
+const shouldInvalidateDashboardData = (path, method) => {
+  if (method === "GET") return false;
+  return (
+    /^\/grades(?:\/|$)/.test(path) ||
+    path === "/academic-performance/sync" ||
+    /^\/predictions\/[^/]+\/forecast$/.test(path) ||
+    path === "/students/import" ||
+    path === "/adviser-assignments"
+  );
+};
+
 export const isEmptyDataError = (error) => {
   if (!error) return false;
   if (error.status === 404) return true;
@@ -24,6 +66,7 @@ export const isEmptyDataError = (error) => {
 
 const request = async (path, options = {}) => {
   const token = sessionStorage.getItem("authToken");
+  const method = String(options.method || "GET").toUpperCase();
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -47,6 +90,10 @@ const request = async (path, options = {}) => {
     );
     error.status = response.status;
     throw error;
+  }
+
+  if (shouldInvalidateDashboardData(path, method)) {
+    invalidateStudentPredictionCache();
   }
 
   return data;
@@ -74,6 +121,17 @@ export const api = {
     }),
 
   getMe: () => request("/auth/me"),
+
+  getAdviserAssignments: async () => {
+    const data = await request("/adviser-assignments");
+    return data.assignments || [];
+  },
+
+  saveAdviserAssignmentGroup: (payload) =>
+    request("/adviser-assignments", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 
   updateProfile: (payload) =>
     request("/auth/profile", {
@@ -168,8 +226,8 @@ export const api = {
   },
 
   getStudentGrades: (studentId) => request(`/grades/${studentId}`),
-  getEligibleGradeSubjects: (studentId, semester) => {
-    const params = new URLSearchParams({ semester });
+  getEligibleGradeSubjects: (studentId, semester, yearLevel) => {
+    const params = new URLSearchParams({ semester, year_level: yearLevel });
     return request(
       `/grades/${encodeURIComponent(studentId)}/eligible-subjects?${params}`,
     );
@@ -190,22 +248,89 @@ export const api = {
 
   getMyPrediction: () => request("/predictions/me"),
   getStudentPrediction: (studentId) => request(`/predictions/${studentId}`),
+  generateStudentPythonForecast: (studentId) =>
+    request(`/predictions/${encodeURIComponent(studentId)}/forecast`, {
+      method: "POST",
+    }),
   getStudentPredictions: async (userIds) => {
     const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
-    const batches = [];
-    for (let start = 0; start < uniqueUserIds.length; start += 5000) {
-      batches.push(uniqueUserIds.slice(start, start + 5000));
+    if (uniqueUserIds.length === 0) return { predictions: [] };
+
+    const token = sessionStorage.getItem("authToken") || "";
+    if (token !== predictionCacheToken) {
+      clearStudentPredictionCache();
+      predictionCacheToken = token;
+      predictionCacheSession += 1;
     }
+
+    const session = predictionCacheSession;
+    const now = Date.now();
+    const resultByUserId = new Map();
+    const missingIds = [];
+
+    uniqueUserIds.forEach((userId) => {
+      const cached = studentPredictionCache.get(userId);
+      if (cached?.expiresAt > now) {
+        resultByUserId.set(userId, cached.result);
+        studentPredictionCache.delete(userId);
+        studentPredictionCache.set(userId, cached);
+      } else {
+        studentPredictionCache.delete(userId);
+        missingIds.push(userId);
+      }
+    });
+
+    const batches = [];
+    for (let start = 0; start < missingIds.length; start += 5000) {
+      batches.push(missingIds.slice(start, start + 5000));
+    }
+
     const responses = await Promise.all(
-      batches.map((user_ids) =>
-        request("/predictions/bulk", {
+      batches.map((batch) => {
+        const requestKey = batch.slice().sort().join(",");
+        const existingRequest = inFlightPredictionRequests.get(requestKey);
+        if (existingRequest) return existingRequest;
+
+        const batchRequest = request("/predictions/bulk", {
           method: "POST",
-          body: JSON.stringify({ user_ids }),
-        }),
-      ),
+          body: JSON.stringify({ user_ids: batch }),
+        })
+          .then((response) => {
+            const results = response.predictions || [];
+            if (session === predictionCacheSession) {
+              results.forEach((result) => {
+                if (!result?.user_id) return;
+                studentPredictionCache.set(result.user_id, {
+                  result,
+                  expiresAt: Date.now() + PREDICTION_CACHE_TTL_MS,
+                });
+              });
+              while (studentPredictionCache.size > MAX_CACHED_PREDICTIONS) {
+                const oldestId = studentPredictionCache.keys().next().value;
+                studentPredictionCache.delete(oldestId);
+              }
+            }
+            return results;
+          })
+          .finally(() => {
+            if (inFlightPredictionRequests.get(requestKey) === batchRequest) {
+              inFlightPredictionRequests.delete(requestKey);
+            }
+          });
+
+        inFlightPredictionRequests.set(requestKey, batchRequest);
+        return batchRequest;
+      }),
     );
+
+    responses.flat().forEach((result) => {
+      if (result?.user_id) resultByUserId.set(result.user_id, result);
+    });
+
     return {
-      predictions: responses.flatMap((response) => response.predictions || []),
+      predictions: uniqueUserIds
+        .map((userId) => resultByUserId.get(userId))
+        .filter(Boolean),
     };
   },
   getPredictionModelInfo: () => request("/predictions/models"),
