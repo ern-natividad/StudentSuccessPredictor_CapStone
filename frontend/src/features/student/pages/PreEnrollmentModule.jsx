@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
 import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
 import { useToast } from "../../../components/Common/Toast";
@@ -797,13 +798,17 @@ const PreEnrollmentModule = () => {
           </div>
 
           <div className={styles.historyToolbar}>
-            <input
-              type="search"
-              className={`${styles.formInput} ${styles.historySearchInput}`}
-              placeholder="Search history by applicant ID or name..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
+            <label className={styles.historySearch}>
+              <FiSearch className={styles.historySearchIcon} aria-hidden="true" />
+              <input
+                type="search"
+                className={styles.historySearchInput}
+                aria-label="Search recommendation history by applicant ID or name"
+                placeholder="Search by applicant ID or name"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </label>
 
             <div className={styles.exportMenuWrapper} ref={exportMenuRef}>
               <button
