@@ -325,7 +325,7 @@ export const DashboardProvider = ({ children }) => {
     }
 
     const requestState = { userId: user.id, promise: null };
-    const request = (async () => {
+    const request = Promise.resolve().then(async () => {
       try {
         setAlertsLoading(true);
         setAlertsError("");
@@ -347,7 +347,7 @@ export const DashboardProvider = ({ children }) => {
       } else {
         setAdminNotifications([]);
       }
-    })().finally(() => {
+    }).finally(() => {
       if (alertsRequestRef.current === requestState) {
         setAlertsLoading(false);
         alertsRequestRef.current = null;

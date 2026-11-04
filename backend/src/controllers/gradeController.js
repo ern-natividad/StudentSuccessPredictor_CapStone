@@ -11,6 +11,31 @@ import { normalizeGradeValue } from "../utils/gradeValueUtils.js";
 
 const GRADE_SELECT_COLUMNS =
   "id, user_id, subject_code, subject_name, semester, school_year, year_level, grade, remarks, created_at";
+const LEGACY_GRADE_SELECT_COLUMNS =
+  "id, user_id, subject_code, subject_name, semester, school_year, grade, remarks, created_at";
+
+const isMissingYearLevelColumn = (error) =>
+  ["42703", "PGRST204"].includes(error?.code) &&
+  /year_level/i.test(`${error.message || ""} ${error.details || ""}`);
+
+const getGradesForStudent = async (userId) => {
+  const queryGrades = (columns) =>
+    supabase
+      .from("student_grades")
+      .select(columns)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+  let { data, error } = await queryGrades(GRADE_SELECT_COLUMNS);
+  if (isMissingYearLevelColumn(error)) {
+    ({ data, error } = await queryGrades(LEGACY_GRADE_SELECT_COLUMNS));
+    if (!error) {
+      data = (data || []).map((grade) => ({ ...grade, year_level: null }));
+    }
+  }
+  if (error) throw error;
+  return data || [];
+};
 
 const formatYearLevel = (value) => {
   const match = String(value ?? "").match(/\d+/);
@@ -322,13 +347,8 @@ export const getStudentGrades = async (req, res) => {
   }
   await assertStaffCanAccessStudents(req.user, [userId]);
 
-  const { data, error } = await supabase
-    .from("student_grades")
-    .select(GRADE_SELECT_COLUMNS)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  res.status(200).json({ grades: data || [] });
+  const grades = await getGradesForStudent(userId);
+  res.status(200).json({ grades });
 };
 
 export const createStudentGrade = async (req, res) => {
@@ -493,13 +513,8 @@ export const getEligibleStudentGradeSubjects = async (req, res) => {
 
 export const getMyGrades = async (req, res) => {
   const studentId = req.user.sub;
-  const { data, error } = await supabase
-    .from("student_grades")
-    .select(GRADE_SELECT_COLUMNS)
-    .eq("user_id", studentId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  res.status(200).json({ grades: data || [] });
+  const grades = await getGradesForStudent(studentId);
+  res.status(200).json({ grades });
 };
 
 export const deleteStudentGrade = async (req, res) => {
