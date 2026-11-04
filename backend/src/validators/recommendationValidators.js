@@ -61,7 +61,10 @@ export const validateProgramRecommendationPayload = (body = {}) => {
     gwa: requireGwa(body.gwa),
     cetScores: parsedCet,
     eatScore: requireScore(body.eatScore, "eatScore"),
-    screeningScore: requireScore(body.screeningScore, "screeningScore"),
+    screeningScore: requireScore(
+      body.screeningScore ?? body.screening,
+      "screeningScore",
+    ),
     nonAcademic: {
       extracurriculars: String(nonAcademic.extracurriculars || "").trim(),
       leadershipRole: String(nonAcademic.leadershipRole || "").trim(),

@@ -51,7 +51,8 @@ const buildSummary = (rows = []) => {
 
 const AcademicPerformanceModule = () => {
   const toast = useToast();
-  const { isAdmin, visibleStudentIds } = useRoleScopedStudents();
+  const { isAdmin, visibleStudents, visibleStudentIds } =
+    useRoleScopedStudents();
   const [filters, setFilters] = useState({
     program: "All",
     yearLevel: "All",
@@ -83,7 +84,6 @@ const AcademicPerformanceModule = () => {
       const result = await api.getAcademicPerformanceForecasts({
         academicYear: filters.academicYear,
         riskLevel: filters.risk === "All" ? "" : filters.risk,
-        program: filters.program === "All" ? "" : filters.program,
         search,
         sync: sync ? "true" : "false",
       });
@@ -96,16 +96,36 @@ const AcademicPerformanceModule = () => {
               String(row.student_id || "").trim().toLowerCase(),
             ),
           );
+      const studentsById = new Map(
+        visibleStudents.flatMap((student) => [
+          [
+            String(student.student_id || "").trim().toLowerCase(),
+            student,
+          ],
+          [String(student.user_id || "").trim().toLowerCase(), student],
+        ]),
+      );
+      const directoryRows = scopedRows.map((row) => {
+        const student =
+          studentsById.get(
+            String(row.student_id || "").trim().toLowerCase(),
+          ) ||
+          studentsById.get(String(row.user_id || "").trim().toLowerCase());
+        return {
+          ...row,
+          program: student?.program || student?.department || row.program,
+        };
+      });
 
-      setForecasts(scopedRows);
+      setForecasts(directoryRows);
 
       setProgramOptions([
         "All",
-        ...new Set(scopedRows.map((row) => row.program).filter(Boolean)),
+        ...new Set(directoryRows.map((row) => row.program).filter(Boolean)),
       ]);
       setYearLevelOptions([
         "All",
-        ...new Set(scopedRows.map((row) => row.year_level).filter(Boolean)),
+        ...new Set(directoryRows.map((row) => row.year_level).filter(Boolean)),
       ]);
     } catch (requestError) {
       setError(requestError.message || "Unable to load academic performance forecasts.");
@@ -120,7 +140,13 @@ const AcademicPerformanceModule = () => {
     const shouldSync = !hasSyncedRef.current;
     if (shouldSync) hasSyncedRef.current = true;
     loadForecasts({ sync: shouldSync });
-  }, [filters.academicYear, filters.risk, filters.program, isAdmin, visibleStudentIds]);
+  }, [
+    filters.academicYear,
+    filters.risk,
+    isAdmin,
+    visibleStudentIds,
+    visibleStudents,
+  ]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -128,13 +154,16 @@ const AcademicPerformanceModule = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [search, isAdmin, visibleStudentIds]);
+  }, [search, isAdmin, visibleStudentIds, visibleStudents]);
 
   const filteredStudents = useMemo(() => {
-    if (filters.yearLevel === "All") return forecasts;
-
-    return forecasts.filter((student) => student.year_level === filters.yearLevel);
-  }, [filters.yearLevel, forecasts]);
+    return forecasts.filter(
+      (student) =>
+        (filters.program === "All" || student.program === filters.program) &&
+        (filters.yearLevel === "All" ||
+          student.year_level === filters.yearLevel),
+    );
+  }, [filters.program, filters.yearLevel, forecasts]);
 
   const {
     currentPage,

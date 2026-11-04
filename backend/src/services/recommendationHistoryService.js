@@ -2,7 +2,7 @@ import { supabase } from "../config/supabaseClient.js";
 
 export const getNextApplicantId = async () => {
   const { data, error } = await supabase.rpc(
-    "next_pre_enrollment_applicant_id",
+    "preview_pre_enrollment_applicant_id",
   );
 
   if (error) throw error;
@@ -17,27 +17,19 @@ export const saveProgramRecommendation = async ({
   recommendation,
   createdBy,
 }) => {
-  const { data, error } = await supabase
-    .from("pre_enrollment_recommendations")
-    .insert({
-      ...(applicant.applicantId
-        ? { applicant_id: applicant.applicantId }
-        : {}),
-      full_name: applicant.fullName,
-      applicant_data: applicant,
-      recommendation_summary: recommendation,
-      recommended_program: recommendation.recommendedProgram,
-      composite_score: recommendation.programs[0]?.compositeScore ?? null,
-      overall_cet: recommendation.overallCET,
-      status: recommendation.recommendationStatus,
-      created_by: createdBy,
-    })
-    .select(
-      "id, applicant_id, full_name, recommended_program, composite_score, overall_cet, status, created_at",
-    )
-    .single();
+  const { data, error } = await supabase.rpc(
+    "create_pre_enrollment_recommendation",
+    {
+      p_applicant: applicant,
+      p_created_by: createdBy,
+      p_recommendation: recommendation,
+    },
+  );
 
   if (error) throw error;
+  if (!data?.applicant_id || !data?.id) {
+    throw new Error("The database returned an invalid recommendation record.");
+  }
   return data;
 };
 

@@ -102,7 +102,7 @@ export const syncAcademicPerformanceRecords = async (
 
   const { data: studentRows, error: studentError } = await supabase
     .from("student_info")
-    .select("student_id, user_id, department, year_level");
+    .select("student_id, user_id");
 
   if (studentError) throw studentError;
 
@@ -161,7 +161,7 @@ const enrichForecastRows = async (rows) => {
 
   const { data: infoRows, error: infoError } = await supabase
     .from("student_info")
-    .select("student_id, user_id, year_level, department")
+    .select("student_id, user_id, year_level, program")
     .in("student_id", studentIds);
 
   if (infoError) throw infoError;
@@ -202,7 +202,7 @@ const enrichForecastRows = async (rows) => {
         : row.risk_level,
       full_name: resolvedName,
       year_level: info?.year_level || "N/A",
-      program: row.program || info?.department || "N/A",
+      program: info?.program || row.program || "N/A",
     };
   });
 };
@@ -219,14 +219,14 @@ export const getAcademicPerformanceForecasts = async ({
     query = query.eq("academic_year", academicYear);
   }
 
-  if (program && program !== "All") {
-    query = query.eq("program", program);
-  }
-
   const { data, error } = await query.order("full_name", { ascending: true });
   if (error) throw error;
 
   let forecasts = await enrichForecastRows(data || []);
+
+  if (program && program !== "All") {
+    forecasts = forecasts.filter((row) => row.program === program);
+  }
 
   if (riskLevel && riskLevel !== "All") {
     forecasts = forecasts.filter((row) => row.risk_level === riskLevel);

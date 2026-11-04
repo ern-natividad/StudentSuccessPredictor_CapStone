@@ -29,3 +29,13 @@ test("preserves an applicant ID supplied by the prefilled form", () => {
   });
   assert.equal(applicant.applicantId, "APP-2026-004");
 });
+
+test("accepts the legacy screening field while clients update to screeningScore", () => {
+  const { screeningScore, ...payload } = validPayload;
+  const applicant = validateProgramRecommendationPayload({
+    ...payload,
+    screening: screeningScore,
+  });
+
+  assert.equal(applicant.screeningScore, screeningScore);
+});

@@ -315,12 +315,16 @@ export const DashboardProvider = ({ children }) => {
   );
 
   const refreshEarlyAlerts = useCallback(() => {
-    if (!user?.isAuthenticated || user.role === "student") {
+    if (!user?.isAuthenticated || user.role === "student" || !user.id) {
       setAdminNotifications([]);
       return Promise.resolve();
     }
 
-    if (alertsRequestRef.current?.userId === user.id) {
+    if (
+      user.id &&
+      alertsRequestRef.current?.userId === user.id &&
+      alertsRequestRef.current.promise
+    ) {
       return alertsRequestRef.current.promise;
     }
 

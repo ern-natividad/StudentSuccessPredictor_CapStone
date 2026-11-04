@@ -40,7 +40,7 @@ const initialForm = {
   cetReading: "",
   cetAbstract: "",
   eat: "",
-  screening: "",
+  screeningScore: "",
   attendanceRate: "",
   studyHours: "",
   libraryVisits: "",
@@ -164,15 +164,12 @@ const PreEnrollmentModule = () => {
     }));
   };
 
-  const handleResetForm = async () => {
+  const handleResetForm = () => {
     setRecommendation(null);
-    setFormData(initialForm);
-    try {
-      const { applicantId } = await api.getNextProgramApplicantId();
-      setFormData({ ...initialForm, applicantId });
-    } catch (error) {
-      toast.error(error.message || "Unable to generate an applicant ID.");
-    }
+    setFormData((current) => ({
+      ...initialForm,
+      applicantId: current.applicantId,
+    }));
   };
 
   const handleRecommend = async () => {
@@ -181,7 +178,6 @@ const PreEnrollmentModule = () => {
 
     try {
       const result = await api.recommendProgram({
-        applicantId: formData.applicantId,
         fullName: formData.fullName,
         strand: formData.strand,
         gwa: formData.gwa,
@@ -193,23 +189,20 @@ const PreEnrollmentModule = () => {
           abstract: formData.cetAbstract,
         },
         eatScore: formData.eat,
-        screeningScore: formData.screening,
+        screeningScore: formData.screeningScore,
         nonAcademic: {
           socioeconomicCategory: formData.socioeconomicCategory,
         },
       });
       setRecommendation(result);
-      setFormData((current) => ({
-        ...current,
-        applicantId: result.applicantId,
-      }));
+      setFormData(initialForm);
       toast.success("Recommendation saved to history.");
       try {
         const { applicantId } = await api.getNextProgramApplicantId();
-        setFormData((current) => ({ ...current, applicantId }));
+        setFormData({ ...initialForm, applicantId });
       } catch (error) {
         toast.error(
-          `Recommendation saved, but a new applicant ID could not be generated: ${error.message}`,
+          `Recommendation saved, but the next applicant ID could not be loaded: ${error.message}`,
         );
       }
 
@@ -432,8 +425,8 @@ const PreEnrollmentModule = () => {
               </label>
               <input
                 className={styles.formInput}
-                name="screening"
-                value={formData.screening}
+                name="screeningScore"
+                value={formData.screeningScore}
                 onChange={handleChange}
                 placeholder="Screening score"
               />

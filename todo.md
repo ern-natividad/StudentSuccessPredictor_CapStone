@@ -13,17 +13,14 @@
 - 
 
 **ALL ROLES**
-- Fix the auto increment in the preenrollmentmodule
-- The program filter and section in the Performance Forecasting modules, does not fetch the real program from the Students Management Page program column
-- Academic Performance Forecasting and Early Warning Module: Recommendation Column still constant, fix add ml 
+- Academic Performance Forecasting and Early Warning Module: Recommendation Column still constant
 
 **MIDTERM REVISIONS**
 - loading caching
 
 🟡 *In Progress*
 - Student Management Page: Fix add grades (lacking subjecting failed to fetch all subject per semester) DI KO ALAM ANO ERROR DITO
-
-
+- Pre-Enrollment Degree Recommendation Module (NO ML YET)
 
 🟢 *Done*
 ----------------------------------
@@ -31,7 +28,8 @@
 - Redundant ang side bar as one na 
 - log in wala na access code 
 ----------------------------------
-
+- Fix the auto increment in the preenrollmentmodule
+- The program filter and section in the Performance Forecasting modules, does not fetch the real program from the Students Management Page program column
 - Pre-Enrollment Degree Recommendation Module Page: Fix search bars
 - Fix confirmation modal UX (Button color)
 - Correlate CET components to each engineering Program
