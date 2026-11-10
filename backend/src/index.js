@@ -5,8 +5,8 @@ import authRoutes from './routes/authRoutes.js';
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "8mb" }));
-app.use(express.urlencoded({ extended: true, limit: "8mb" }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 // Mount all auth routes under /api/auth
 app.use('/api/auth', authRoutes);

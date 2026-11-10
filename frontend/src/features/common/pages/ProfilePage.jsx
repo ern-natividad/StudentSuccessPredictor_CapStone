@@ -10,6 +10,9 @@ const ROLE_LABELS = {
   staff: "Academic Staff",
   student: "Student",
 };
+const MAX_PROFILE_IMAGE_BYTES = 10 * 1024 * 1024;
+const PROFILE_DATABASE = "hawkpredict-profile";
+const PROFILE_STORE = "profiles";
 
 const readImageFile = (file) =>
   new Promise((resolve, reject) => {
@@ -19,7 +22,56 @@ const readImageFile = (file) =>
     reader.readAsDataURL(file);
   });
 
-const getLocalProfileKey = (email) => `hawkpredict-profile:${email || "guest"}`;
+const getLocalProfileKey = (email) => email || "guest";
+
+const openLocalProfileDatabase = () =>
+  new Promise((resolve, reject) => {
+    const request = indexedDB.open(PROFILE_DATABASE, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(PROFILE_STORE, { keyPath: "email" });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(new Error("Unable to access local profile storage."));
+  });
+
+const readLocalProfile = async (email) => {
+  const database = await openLocalProfileDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(PROFILE_STORE, "readonly");
+    const request = transaction.objectStore(PROFILE_STORE).get(getLocalProfileKey(email));
+    request.onsuccess = () => {
+      database.close();
+      resolve(request.result || null);
+    };
+    request.onerror = () => {
+      database.close();
+      reject(new Error("Unable to load the saved local profile."));
+    };
+  });
+};
+
+const persistLocalProfile = async (email, nextProfile) => {
+  const database = await openLocalProfileDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(PROFILE_STORE, "readwrite");
+    transaction.objectStore(PROFILE_STORE).put({
+      email: getLocalProfileKey(email),
+      ...nextProfile,
+    });
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      database.close();
+      reject(new Error("Unable to save the local profile."));
+    };
+    transaction.onabort = () => {
+      database.close();
+      reject(new Error("Unable to save the local profile."));
+    };
+  });
+};
 
 const ProfilePage = () => {
   const { user, updateUserFields } = useAuth();
@@ -30,29 +82,39 @@ const ProfilePage = () => {
   );
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setFullName(user?.name || "");
-    setProfilePicture(user?.profilePicture || user?.profile_picture || "");
-  }, [user?.name, user?.profilePicture, user?.profile_picture]);
-
   const initials = useMemo(() => generateInitials(fullName || user?.name), [fullName, user?.name]);
   const roleLabel = ROLE_LABELS[user?.role] || "User";
 
-  const persistLocalProfile = (nextProfile) => {
-    localStorage.setItem(getLocalProfileKey(user?.email), JSON.stringify(nextProfile));
-  };
+  useEffect(() => {
+    if (isBackendAuthEnabled() && user?.isAuthenticated) return undefined;
+
+    let active = true;
+    readLocalProfile(user?.email)
+      .then((profile) => {
+        if (!active || !profile) return;
+        setFullName((current) => current || profile.fullName || "");
+        setProfilePicture((current) => current || profile.profilePicture || "");
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [user?.email, user?.isAuthenticated]);
 
   const handleImageChange = async (event) => {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
+    input.value = "";
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select a valid image file.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Please choose a JPG, PNG, or WebP image.");
       return;
     }
 
-    if (file.size > 1_000_000) {
-      toast.error("Image must be 1 MB or smaller.");
+    if (file.size > MAX_PROFILE_IMAGE_BYTES) {
+      toast.error("Image must be 10 MB or smaller.");
       return;
     }
 
@@ -61,8 +123,6 @@ const ProfilePage = () => {
       setProfilePicture(String(dataUrl));
     } catch (error) {
       toast.error(error.message || "Unable to load the image.");
-    } finally {
-      event.target.value = "";
     }
   };
 
@@ -93,7 +153,7 @@ const ProfilePage = () => {
           profile_picture: profile.profilePicture || null,
         });
       } else {
-        persistLocalProfile({
+        await persistLocalProfile(user?.email, {
           fullName: trimmedName,
           profilePicture: profilePicture || null,
         });
@@ -122,7 +182,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className={styles.contentCard}>
+      <div className={`${styles.contentCard} ${styles.profileCard}`}>
         <div className={styles.profileLayout}>
           <div className={styles.profileAvatarSection}>
             <div className={styles.profileAvatarPreview}>
@@ -132,9 +192,16 @@ const ProfilePage = () => {
                 <span>{initials}</span>
               )}
             </div>
-            <label className={styles.profileUploadButton}>
-              <input type="file" accept="image/*" onChange={handleImageChange} hidden />
-              Upload Photo
+            <label className={styles.profileUploadButton} htmlFor="profile-photo">
+              <input
+                id="profile-photo"
+                className={styles.profileFileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
+                aria-label="Choose a profile photo"
+              />
+              {profilePicture ? "Change photo" : "Choose photo"}
             </label>
             {profilePicture ? (
               <button
@@ -145,15 +212,24 @@ const ProfilePage = () => {
                 Remove Photo
               </button>
             ) : null}
-            <p className={styles.profilePhotoHint}>JPG or PNG, up to 1 MB.</p>
+            <p className={styles.profilePhotoHint}>
+              JPG, PNG, or WebP. Up to 10 MB.
+            </p>
           </div>
 
           <div className={styles.profileFormSection}>
+            <div className={styles.profileFormHeader}>
+              <h2 className={styles.profileSectionTitle}>Personal details</h2>
+              <p className={styles.profileSectionDescription}>
+                Manage the information shown on your account.
+              </p>
+            </div>
             <div className={styles.profileField}>
               <label htmlFor="profile-full-name">Full Name</label>
               <input
                 id="profile-full-name"
                 type="text"
+                autoComplete="name"
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
                 placeholder="Enter your full name"

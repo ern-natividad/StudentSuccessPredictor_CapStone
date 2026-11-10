@@ -393,8 +393,8 @@ export const updateUserProfile = async (authUser, payload) => {
     throw new HttpError(400, "Profile picture must be a valid image string.");
   }
 
-  if (profilePicture && profilePicture.length > 1_500_000) {
-    throw new HttpError(400, "Profile picture is too large. Use an image under 1 MB.");
+  if (profilePicture && profilePicture.length > 14_500_000) {
+    throw new HttpError(400, "Profile picture is too large. Use an image up to 10 MB.");
   }
 
   const updates = {
