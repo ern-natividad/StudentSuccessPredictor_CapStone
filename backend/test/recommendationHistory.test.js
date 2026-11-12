@@ -68,3 +68,80 @@ test("recommendation saves allocate an applicant ID in the atomic database write
     supabase.rpc = originalRpc;
   }
 });
+
+test("recommendation history deletes only the requested unique record IDs", async () => {
+  const [
+    { supabase },
+    { deleteProgramRecommendationHistoryRecords },
+  ] = await Promise.all([
+    import("../src/config/supabaseClient.js"),
+    import("../src/controllers/recommendationController.js"),
+  ]);
+  const originalFrom = supabase.from;
+  const ids = [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
+  ];
+  let deletedIds;
+
+  supabase.from = (table) => ({
+    delete() {
+      return this;
+    },
+    in(column, values) {
+      assert.equal(table, "pre_enrollment_recommendations");
+      assert.equal(column, "id");
+      deletedIds = values;
+      return this;
+    },
+    select() {
+      return Promise.resolve({
+        data: valuesResult(deletedIds),
+        error: null,
+      });
+    },
+  });
+
+  try {
+    let responseBody;
+    const response = {
+      status(status) {
+        assert.equal(status, 200);
+        return this;
+      },
+      json(body) {
+        responseBody = body;
+        return this;
+      },
+    };
+
+    await deleteProgramRecommendationHistoryRecords(
+      { body: { ids: [...ids, ids[0]] } },
+      response,
+    );
+
+    assert.deepEqual(deletedIds, ids);
+    assert.deepEqual(responseBody, {
+      deletedCount: 2,
+      deletedIds: ids,
+    });
+  } finally {
+    supabase.from = originalFrom;
+  }
+});
+
+test("recommendation history delete rejects empty or invalid ID lists", async () => {
+  const { deleteProgramRecommendationHistoryRecords } = await import(
+    "../src/controllers/recommendationController.js"
+  );
+  const response = {};
+
+  for (const ids of [[], ["not-a-uuid"]]) {
+    await assert.rejects(
+      deleteProgramRecommendationHistoryRecords({ body: { ids } }, response),
+      (error) => error.status === 400,
+    );
+  }
+});
+
+const valuesResult = (ids) => ids.map((id) => ({ id }));

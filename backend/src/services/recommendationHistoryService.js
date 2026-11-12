@@ -45,3 +45,14 @@ export const listProgramRecommendationHistory = async ({ limit = 500 } = {}) => 
   if (error) throw error;
   return data;
 };
+
+export const deleteProgramRecommendationHistory = async (ids) => {
+  const { data, error } = await supabase
+    .from("pre_enrollment_recommendations")
+    .delete()
+    .in("id", ids)
+    .select("id");
+
+  if (error) throw error;
+  return data || [];
+};

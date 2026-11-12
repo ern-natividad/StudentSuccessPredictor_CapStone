@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiTrash2 } from "react-icons/fi";
 import { useAuth } from "../../../hooks/useAuth";
 import ModuleShell from "../../../components/Common/ModuleShell";
+import ConfirmModal from "../../../components/Common/ConfirmModal";
 import { useToast } from "../../../components/Common/Toast";
 import { downloadStyledExcel } from "../../../utils/exportStyledExcel";
 import { downloadRecommendationPdf } from "../../../utils/downloadRecommendationPdf";
@@ -62,6 +63,9 @@ const PreEnrollmentModule = () => {
   const [historyError, setHistoryError] = useState("");
   const [isRecommending, setIsRecommending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState(new Set());
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeletingHistory, setIsDeletingHistory] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const historyMessage =
     user?.role === "admin" && !isBackendAuthEnabled()
@@ -92,6 +96,9 @@ const PreEnrollmentModule = () => {
           record.name?.toLowerCase().includes(query),
       );
   }, [recommendationHistory, searchTerm]);
+  const allFilteredHistorySelected =
+    filteredHistory.length > 0 &&
+    filteredHistory.every((record) => selectedHistoryIds.has(record.id));
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -282,6 +289,55 @@ const PreEnrollmentModule = () => {
 
   const toggleExportMenu = () => {
     setExportMenuOpen((current) => !current);
+  };
+
+  const toggleHistoryRecord = (recordId) => {
+    setSelectedHistoryIds((current) => {
+      const next = new Set(current);
+      if (next.has(recordId)) next.delete(recordId);
+      else next.add(recordId);
+      return next;
+    });
+  };
+
+  const toggleAllFilteredHistory = () => {
+    setSelectedHistoryIds((current) => {
+      const next = new Set(current);
+      if (allFilteredHistorySelected) {
+        filteredHistory.forEach((record) => next.delete(record.id));
+      } else {
+        filteredHistory.forEach((record) => next.add(record.id));
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteHistory = async () => {
+    if (!deleteTarget || isDeletingHistory) return;
+
+    setIsDeletingHistory(true);
+    try {
+      const result = await api.deleteProgramRecommendationHistory(
+        deleteTarget.ids,
+      );
+      const deletedIds = new Set(result.deletedIds || []);
+      setRecommendationHistory((current) =>
+        current.filter((record) => !deletedIds.has(record.id)),
+      );
+      setSelectedHistoryIds((current) => {
+        const next = new Set(current);
+        deletedIds.forEach((id) => next.delete(id));
+        return next;
+      });
+      setDeleteTarget(null);
+      toast.success(
+        `${result.deletedCount} recommendation record${result.deletedCount === 1 ? "" : "s"} deleted.`,
+      );
+    } catch (error) {
+      toast.error(error.message || "Unable to delete recommendation records.");
+    } finally {
+      setIsDeletingHistory(false);
+    }
   };
 
   return (
@@ -839,6 +895,18 @@ const PreEnrollmentModule = () => {
                 </div>
               ) : null}
             </div>
+            <button
+              type="button"
+              className={styles.performanceIconButton}
+              onClick={() =>
+                setDeleteTarget({ ids: [...selectedHistoryIds] })
+              }
+              disabled={selectedHistoryIds.size === 0 || isDeletingHistory}
+              title="Delete selected recommendation records"
+              aria-label={`Delete ${selectedHistoryIds.size} selected recommendation records`}
+            >
+              <FiTrash2 aria-hidden="true" />
+            </button>
           </div>
 
           <div className={styles.tableWrapper}>
@@ -874,11 +942,21 @@ const PreEnrollmentModule = () => {
                       fontSize: "13px",
                     }}
                   >
+                    <th style={{ padding: "0.6rem 0.8rem" }}>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all filtered recommendation records"
+                        checked={allFilteredHistorySelected}
+                        onChange={toggleAllFilteredHistory}
+                        disabled={isDeletingHistory}
+                      />
+                    </th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Applicant ID</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Name</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Program</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Composite Score</th>
                     <th style={{ padding: "0.6rem 0.8rem" }}>Status</th>
+                    <th style={{ padding: "0.6rem 0.8rem" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody className={styles.tableStriped}>
@@ -890,6 +968,15 @@ const PreEnrollmentModule = () => {
                         fontSize: "13px",
                       }}
                     >
+                      <td style={{ padding: "0.6rem 0.8rem" }}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select recommendation ${item.applicantId}`}
+                          checked={selectedHistoryIds.has(item.id)}
+                          onChange={() => toggleHistoryRecord(item.id)}
+                          disabled={isDeletingHistory}
+                        />
+                      </td>
                       <td style={{ padding: "0.6rem 0.8rem" }}>
                         {item.applicantId}
                       </td>
@@ -905,6 +992,18 @@ const PreEnrollmentModule = () => {
                       <td style={{ padding: "0.6rem 0.8rem" }}>
                         {item.status}
                       </td>
+                      <td style={{ padding: "0.6rem 0.8rem" }}>
+                        <button
+                          type="button"
+                          className={styles.performanceIconButton}
+                          onClick={() => setDeleteTarget({ ids: [item.id] })}
+                          disabled={isDeletingHistory}
+                          title={`Delete recommendation ${item.applicantId}`}
+                          aria-label={`Delete recommendation ${item.applicantId}`}
+                        >
+                          <FiTrash2 aria-hidden="true" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -913,6 +1012,21 @@ const PreEnrollmentModule = () => {
           </div>
         </div>
       ) : null}
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        title={
+          deleteTarget?.ids.length === 1
+            ? "Delete recommendation record?"
+            : `Delete ${deleteTarget?.ids.length || 0} recommendation records?`
+        }
+        description="This permanently deletes the selected recommendation record(s). This action cannot be undone."
+        confirmText={isDeletingHistory ? "Deleting…" : "Delete"}
+        cancelText="Cancel"
+        onCancel={() => {
+          if (!isDeletingHistory) setDeleteTarget(null);
+        }}
+        onConfirm={handleDeleteHistory}
+      />
     </ModuleShell>
   );
 };

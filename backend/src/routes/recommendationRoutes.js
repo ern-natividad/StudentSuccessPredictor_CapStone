@@ -11,6 +11,7 @@ import {
   recommendProgram,
   getProgramRecommendationHistory,
   getNextProgramApplicantId,
+  deleteProgramRecommendationHistoryRecords,
 } from "../controllers/recommendationController.js";
 
 const router = Router();
@@ -38,6 +39,13 @@ router.get(
   requireAuth,
   requireRole("admin"),
   getProgramRecommendationHistory,
+);
+
+router.delete(
+  "/history",
+  requireAuth,
+  requireRole("admin"),
+  deleteProgramRecommendationHistoryRecords,
 );
 
 router.post(

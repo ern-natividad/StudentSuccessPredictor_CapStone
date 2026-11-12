@@ -195,6 +195,12 @@ export const api = {
   getProgramRecommendationHistory: (limit = 500) =>
     request(`/v1/recommendations/history?limit=${limit}`),
 
+  deleteProgramRecommendationHistory: (ids) =>
+    request("/v1/recommendations/history", {
+      method: "DELETE",
+      body: JSON.stringify({ ids }),
+    }),
+
   getManageableUsers: async (token) => {
     const authToken =
       token ||
