@@ -328,10 +328,6 @@ export const acknowledgeIntervention = async (req, res) => {
     .single();
   if (error) throw error;
 
-  if (status === "resolved") {
-    await updateStudentRiskLevel(intervention.student_user_id, "Low");
-  }
-
   await insertEvent({
     interventionId: intervention.id,
     actorUserId: actorId,
